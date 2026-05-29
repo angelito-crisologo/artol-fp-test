@@ -1,0 +1,76 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "wide_two_bedroom_distributed",
+  "label": "Wide 2BR — horizontal split: front band (ensuite|standard|living), rear band (master|hall+common|stacked dining+kitchen)",
+  "target_shell": "wide",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private",     "size_priority": "master_bedroom" },
+    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private",     "size_priority": "service_and_baths" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" },
+    { "id": "hall",     "type": "hallway",          "zone": "circulation", "size_priority": "service_and_baths" },
+    { "id": "living",   "type": "living_room",      "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "dining",   "type": "dining_room",      "zone": "public",      "size_priority": "public_LDK" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "ensuite", "min_shared_wall_m": 0.70, "kind": "ensuite_door",      "note": "ensuite at far-left of FRONT band, master at left of REAR band — share the front/rear-band boundary wall directly above ensuite" },
+    { "a": "master",   "b": "hall",    "min_shared_wall_m": 0.70, "kind": "bedroom_to_hall",   "note": "master's east face is hall's west — master accessed via hall" },
+    { "a": "standard", "b": "living",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public", "note": "standard accessed via living (both in FRONT band, side by side)" },
+    { "a": "hall",     "b": "common",  "min_shared_wall_m": 0.70, "kind": "bath_door",         "note": "common bath's west face is hall's east — bath door faces the hall" },
+    { "a": "hall",     "b": "dining",  "min_shared_wall_m": 0.70, "kind": "private_to_public", "note": "hall ends at dining — single bridge from the private notch to the public LDK" },
+    { "a": "common",   "b": "kitchen", "min_shared_wall_m": 1.00, "kind": "wet_core",          "note": "shared plumbing wall between common bath and kitchen — concentrates wet stack in the rear band" },
+    { "a": "common",   "b": "dining",  "min_shared_wall_m": 0.50, "kind": "bath_to_public_wall","note": "common's south face touches dining's portion that wraps around — shared wall, no door (door faces hall)" },
+    { "a": "living",   "b": "dining",  "min_shared_wall_m": 1.50, "kind": "open_plan",         "note": "living and dining share the front/rear-band boundary wall (cross-band open plan flow)" },
+    { "a": "dining",   "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan",         "note": "dining stacks above kitchen — kitchen at rear edge, dining in front of it within the rear band" }
+  ],
+
+  "soft_proximities": [],
+
+  "entry_point": "living",
+
+  "front_to_rear_stacks": [
+    ["ensuite", "master"],
+    ["standard", "hall"],
+    ["standard", "common"],
+    ["living", "dining"],
+    ["living", "kitchen"],
+    ["dining", "kitchen"]
+  ],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" },
+    { "type": "service_area",  "location": "rear_setback", "covered": false }
+  ],
+
+  "notes": [
+    "Authored from the user's layout spec for wide shell:",
+    "  - Buildable shell split horizontally into two bands (front + rear).",
+    "  - FRONT band (street side): ensuite at the far-left end, then standard",
+    "    bedroom, then living room (left to right).",
+    "  - REAR band: master bedroom (left), then a small hall, then common T&B,",
+    "    then dining + kitchen STACKED inside the right end of the rear band",
+    "    (dining in front of kitchen, kitchen against rear wall).",
+    "",
+    "Access flows:",
+    "  - Master accessed via the hall (master ↔ hall direct).",
+    "  - Standard accessed via living (cross-band shared wall).",
+    "  - Common bath has its door on the hall side (private circulation); its",
+    "    other wall touches the kitchen for the wet-core plumbing.",
+    "  - Single hall-mouth bridge from hall to dining (private → public).",
+    "",
+    "Front_to_rear_stacks chain enforces the band partition: each FRONT-band",
+    "room is constrained to be in front of its REAR-band counterpart, and",
+    "within the rear band, dining is in front of kitchen (so they stack).",
+    "",
+    "Lot-depth note: 11x5 (16x9 lot) is extremely tight for this 8-room",
+    "program — dining + kitchen stacked within a 2.5 m rear-band depth runs",
+    "into the hard min area + aspect cap for dining_room. Test results:",
+    "    16x9  (5 m depth) → infeasible or marginal",
+    "    16x10 (6 m depth) → solves, dining and kitchen compact",
+    "    16x11 (7 m depth) → comfortable"
+  ]
+}
