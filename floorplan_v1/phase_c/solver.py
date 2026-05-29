@@ -426,6 +426,16 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             if a in ry_end and b in ry:
                 model.Add(ry_end[a] <= ry[b])
 
+    # ---------- rear-anchored rooms ----------
+    # Kitchen is already pinned to the rear wall via a hard solver rule.
+    # Topologies can opt other rooms into the same anchoring (e.g., dining)
+    # to force side-by-side LDK arrangements: when two adjacent rooms both
+    # touch the rear, they can't be stacked front-to-rear and must share a
+    # vertical wall instead.
+    for rid in topology.rear_anchored:
+        if rid in ry_end:
+            model.Add(ry_end[rid] == ey1)
+
     # ---------- canonical orientation (symmetry break) ----------
     # Anchor the kitchen on the RIGHT half of the envelope. With an x-symmetric
     # topology, the layout and its left-right mirror score identically; without

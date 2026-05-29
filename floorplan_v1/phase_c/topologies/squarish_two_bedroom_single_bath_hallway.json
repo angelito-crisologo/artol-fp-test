@@ -1,0 +1,73 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "squarish_two_bedroom_single_bath_hallway",
+  "label": "Squarish 2BR + 1 T&B — public/private split, common bath between bedrooms with a hall notch",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private",     "size_priority": "master_bedroom" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" },
+    { "id": "hall",     "type": "hallway",          "zone": "circulation", "size_priority": "service_and_baths" },
+    { "id": "living",   "type": "living_room",      "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "dining",   "type": "dining_room",      "zone": "public",      "size_priority": "public_LDK" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "hall",    "min_shared_wall_m": 0.70, "kind": "bedroom_to_hall",     "note": "master's door opens onto the hall notch" },
+    { "a": "standard", "b": "hall",    "min_shared_wall_m": 0.70, "kind": "bedroom_to_hall",     "note": "standard's door opens onto the hall notch" },
+    { "a": "master",   "b": "common",  "min_shared_wall_m": 0.50, "kind": "bath_to_bedroom_wall","note": "master's south wall is common's north — solid, no door (bath access goes via the hall)" },
+    { "a": "standard", "b": "common",  "min_shared_wall_m": 0.50, "kind": "bath_to_bedroom_wall","note": "standard's north wall is common's south — solid, no door" },
+    { "a": "common",   "b": "hall",    "min_shared_wall_m": 0.70, "kind": "bath_door",           "note": "common bath's east is the hall's west — bath door is on the hall side" },
+    { "a": "hall",     "b": "dining",  "min_shared_wall_m": 0.90, "kind": "private_to_public",   "note": "single hallway-mouth bridge across the dividing wall — guests reach the bath via dining → hall → bath" },
+    { "a": "living",   "b": "dining",  "min_shared_wall_m": 1.50, "kind": "open_plan" },
+    { "a": "dining",   "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan" }
+  ],
+
+  "soft_proximities": [],
+
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["master", "standard", "common", "hall"],
+    "public_rooms":  ["living", "dining", "kitchen"]
+  },
+
+  "entry_point": "living",
+
+  "match_bedroom_widths": true,
+
+  "front_to_rear_stacks": [
+    ["standard", "common", "master"],
+    ["standard", "hall",   "master"]
+  ],
+
+  "rear_anchored": ["dining"],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" },
+    { "type": "service_area",  "location": "rear_setback", "covered": false }
+  ],
+
+  "notes": [
+    "Compact 2BR + 1 T&B with a public/private zone split. The envelope is",
+    "partitioned by a vertical wall: LDK on one half, sleeping + bath + hall",
+    "on the other.",
+    "",
+    "Private column (front to rear): standard, [common T&B | hall notch],",
+    "master. The bath sits between the bedrooms; the hall is a small east-side",
+    "notch (against the dividing wall) that connects both bedrooms and the",
+    "bath, and bridges to dining via a single doorway.",
+    "",
+    "Public column: living at front, dining + kitchen side-by-side at the rear.",
+    "No LDK front-to-rear stacking constraint — open-plan, casual feel.",
+    "",
+    "Replaces the earlier non-split hallway variant, which had no real wall",
+    "between hall and LDK and was therefore functionally equivalent to the",
+    "off-dining single_bath topology. The wall here makes the hall do real",
+    "work: it buffers the bedrooms from LDK noise, and routes both bath access",
+    "and public bath access through a single controlled doorway."
+  ]
+}

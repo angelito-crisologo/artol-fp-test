@@ -85,6 +85,13 @@ class Topology:
     # of kitchen.
     front_to_rear_stacks: List[List[str]] = field(default_factory=list)
 
+    # Optional list of room ids that must touch the REAR exterior wall.
+    # Kitchen is already rear-anchored by the solver's hard rule; adding
+    # another room here (e.g. dining) makes it sit beside the kitchen at
+    # the rear rather than stacked in front of it. Useful for forcing a
+    # side-by-side open-plan LDK layout.
+    rear_anchored: List[str] = field(default_factory=list)
+
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
             if r.id == room_id:
@@ -120,6 +127,7 @@ def load_topology(path: str) -> Topology:
         notes=d.get("notes", []),
         match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
         front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
+        rear_anchored=list(d.get("rear_anchored", []) or []),
     )
 
 
