@@ -32,14 +32,17 @@ class StubLLM:
     def __init__(self):
         # the order matters: more specific rules first
         self._rules = [
-            (["split", "private wing", "separation", "noise"], ["clustered", "wet core", "share plumbing"],
-             "squarish_two_bedroom_split_clustered_baths.json"),
+            # split + open-plan / modern / casual signal → openplan variant
+            (["split", "private wing", "separation", "noise"],
+             ["open plan", "openplan", "modern", "casual"],
+             "squarish_two_bedroom_split_openplan.json"),
+            # plain split → traditional stacked LDK variant
             (["split", "private wing", "separation", "noise"], [],
-             "squarish_two_bedroom_split.json"),
+             "squarish_two_bedroom_split_stacked.json"),
             (["clustered", "wet core", "share plumbing", "plumbing wall"], [],
              "squarish_two_bedroom_clustered_baths.json"),
             ([], [],   # fallback
-             "squarish_two_bedroom.json"),
+             "squarish_two_bedroom_distributed_baths.json"),
         ]
 
     def generate(self, brief, error_feedback: Optional[str] = None) -> Tuple[Dict, str]:
@@ -56,7 +59,7 @@ class StubLLM:
                 reason = self._reason(brief, fname, ["(fallback)"], [])
                 return topo, reason
         # shouldn't reach here, but safety net
-        return _load_topology_json("squarish_two_bedroom.json"), "fallback"
+        return _load_topology_json("squarish_two_bedroom_distributed_baths.json"), "fallback"
 
     @staticmethod
     def _reason(brief, fname, primary, secondary) -> str:

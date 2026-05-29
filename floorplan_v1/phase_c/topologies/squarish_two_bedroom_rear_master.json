@@ -1,0 +1,49 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "squarish_two_bedroom_rear_master",
+  "label": "Squarish 2BR — rear-master with wet strip, standard at front near living",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
+    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
+    { "id": "living",   "type": "living_room",      "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "dining",   "type": "dining_room",      "zone": "public",  "size_priority": "public_LDK" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "ensuite", "min_shared_wall_m": 0.70, "kind": "ensuite_door", "note": "ensuite_bath opens ONLY to master_bedroom" },
+    { "a": "ensuite",  "b": "kitchen", "min_shared_wall_m": 1.00, "kind": "wet_core",     "note": "ensuite and kitchen share a rear plumbing wall — keeps the wet runs on the rear elevation" },
+    { "a": "master",   "b": "dining",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public", "note": "master at rear, accessed via dining since it doesn't touch the front living room" },
+    { "a": "standard", "b": "living",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public", "note": "standard at front-side, accessed directly off living — uncommon but useful when the second bedroom doubles as a guest/study near the LDK" },
+    { "a": "common",   "b": "dining",  "min_shared_wall_m": 0.70, "kind": "bath_door",        "note": "common bath publicly accessible off dining" },
+    { "a": "living",   "b": "dining",  "min_shared_wall_m": 1.50, "kind": "open_plan" },
+    { "a": "dining",   "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan" }
+  ],
+
+  "soft_proximities": [
+    { "a": "common", "b": "standard", "weight": 30, "note": "common conveniently close to standard — guests visiting the front bedroom don't traverse the master wing" }
+  ],
+
+  "entry_point": "living",
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" },
+    { "type": "service_area",  "location": "rear_setback", "covered": false, "behind": "kitchen" }
+  ],
+
+  "notes": [
+    "Distinct from squarish_two_bedroom (#1) in two ways: the wet core wall is",
+    "ensuite-kitchen (not common-kitchen), and the standard bedroom hangs off",
+    "the living room rather than off dining.",
+    "Combined effect: master is pulled to the rear (sharing its bath wall with",
+    "kitchen plumbing) while standard sits at the front near the LDK action.",
+    "Useful for households where one occupant needs the quietest rear position",
+    "and the other wants easy LDK access (study-bedroom, home-office, kids'",
+    "room near common spaces, etc.)."
+  ]
+}

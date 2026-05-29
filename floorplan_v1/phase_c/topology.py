@@ -75,6 +75,16 @@ class Topology:
     # if the block spans the full shared width).
     match_bedroom_widths: bool = False
 
+    # Optional ordering hints. Each entry is a list of room ids that must
+    # stack front-to-rear (room[0] in front, room[-1] at rear). The solver
+    # adds hard constraints: room[i].y_end <= room[i+1].y for each pair.
+    # Use this when an open_plan adjacency between two rooms could be
+    # satisfied side-by-side (vertical shared wall) but the design intent is
+    # specifically a vertical stack (horizontal shared wall). Example: an
+    # LDK column where living must be in front of dining must be in front
+    # of kitchen.
+    front_to_rear_stacks: List[List[str]] = field(default_factory=list)
+
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
             if r.id == room_id:
@@ -109,6 +119,7 @@ def load_topology(path: str) -> Topology:
         setback_elements=elems, soft_proximities=sprox, zone_split=zs,
         notes=d.get("notes", []),
         match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
+        front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
     )
 
 

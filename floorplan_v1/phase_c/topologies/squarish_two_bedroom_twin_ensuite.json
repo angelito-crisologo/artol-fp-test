@@ -1,0 +1,48 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "squarish_two_bedroom_twin_ensuite",
+  "label": "Squarish 2BR — twin ensuites (each bedroom has its own bath), no common",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",          "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
+    { "id": "master_ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
+    { "id": "standard",        "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
+    { "id": "standard_ensuite","type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
+    { "id": "living",          "type": "living_room",      "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "dining",          "type": "dining_room",      "zone": "public",  "size_priority": "public_LDK" },
+    { "id": "kitchen",         "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "master_ensuite",   "min_shared_wall_m": 0.70, "kind": "ensuite_door",  "note": "master's private bath — door opens only to master" },
+    { "a": "standard", "b": "standard_ensuite", "min_shared_wall_m": 0.70, "kind": "ensuite_door",  "note": "standard's private bath — door opens only to standard" },
+    { "a": "master_ensuite", "b": "standard_ensuite", "min_shared_wall_m": 1.20, "kind": "wet_core", "note": "shared plumbing wall between the two ensuites — single wet stack serves both baths" },
+    { "a": "master",   "b": "living",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public", "note": "master accessible from living" },
+    { "a": "standard", "b": "dining",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public", "note": "standard accessible from dining" },
+    { "a": "living",   "b": "dining",  "min_shared_wall_m": 1.50, "kind": "open_plan" },
+    { "a": "dining",   "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan" }
+  ],
+
+  "soft_proximities": [],
+
+  "entry_point": "living",
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" },
+    { "type": "service_area",  "location": "rear_setback", "covered": false, "behind": "kitchen" }
+  ],
+
+  "notes": [
+    "Each bedroom has its own private ensuite — no shared common bath.",
+    "The two ensuites share a hard wet-core wall (>=1.2 m), so the plumbing",
+    "still concentrates on a single wall rather than running to two separate",
+    "stacks. Bath block between bedrooms also acts as an acoustic buffer.",
+    "Use cases: rental properties where each bedroom is independently let,",
+    "two-couple shares (each gets a private bath), primary + Jr suite layouts,",
+    "or households that simply prefer no common bath (no guest powder room).",
+    "Trade-off: more plumbing fixtures than a 1-ensuite + 1-common setup;",
+    "no public bath means guests use whichever ensuite they're offered."
+  ]
+}

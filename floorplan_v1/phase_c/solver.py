@@ -413,6 +413,19 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         if topology.match_bedroom_widths:
             model.Add(rw[master_id] == rw[standard_id])
 
+    # ---------- front-to-rear stack ordering hints ----------
+    # Each list is a chain of rooms that must stack front-to-rear: rooms[i] in
+    # front of rooms[i+1]. Implemented as y_end[i] <= y[i+1], which forces a
+    # horizontal shared wall (or a gap) between consecutive rooms rather than
+    # allowing them to sit side-by-side. Used by topologies whose design
+    # intent calls for a specific vertical column ordering (e.g., an LDK
+    # column with living-dining-kitchen front-to-rear, or a private column
+    # with standard-baths-master front-to-rear).
+    for stack in topology.front_to_rear_stacks:
+        for a, b in zip(stack, stack[1:]):
+            if a in ry_end and b in ry:
+                model.Add(ry_end[a] <= ry[b])
+
     # ---------- canonical orientation (symmetry break) ----------
     # Anchor the kitchen on the RIGHT half of the envelope. With an x-symmetric
     # topology, the layout and its left-right mirror score identically; without
@@ -544,7 +557,19 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     kitchen_rect = next((r.rect for r in rooms if r.type == "kitchen"), env)
     service_xspan = (env.x0, kitchen_rect.x0) if kitchen_rect.x0 > env.x0 \
                     else (kitchen_rect.x1, env.x1)
-    elements = _setback_elements(lot, carport_side, kitchen_rect, service_xspan)
+
+    # Read topology hint for dirty-kitchen placement. Defaults to "rear" when
+    # the topology doesn't say otherwise; a topology can opt into "side"
+    # placement by setting setback_elements[type=dirty_kitchen].location to
+    # "side_setback".
+    dk_at = "rear"
+    for sb in topology.setback_elements:
+        if sb.type == "dirty_kitchen" and sb.location == "side_setback":
+            dk_at = "side"
+            break
+
+    elements = _setback_elements(lot, carport_side, kitchen_rect, service_xspan,
+                                 dirty_kitchen_at=dk_at)
 
     layout = Layout(lot=lot, rooms=rooms, elements=elements,
                     carport_side=carport_side, genome={"template": "phase_c_solver"})

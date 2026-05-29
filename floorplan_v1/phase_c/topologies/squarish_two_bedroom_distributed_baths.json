@@ -1,7 +1,7 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "squarish_two_bedroom_v1",
-  "label": "Squarish 2BR — bedrooms left stacked, common T&B rear-center, L-D-K right",
+  "id": "squarish_two_bedroom_distributed_baths",
+  "label": "Squarish 2BR — distributed baths (ensuite near master, common near LDK)",
   "target_shell": "squarish",
 
   "rooms": [

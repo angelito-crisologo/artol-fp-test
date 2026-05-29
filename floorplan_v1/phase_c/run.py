@@ -40,10 +40,12 @@ def make_lots(width: float, depth: float):
 
 
 TOPOLOGIES = [
-    "squarish_two_bedroom.json",
+    "squarish_two_bedroom_distributed_baths.json",
     "squarish_two_bedroom_clustered_baths.json",
-    "squarish_two_bedroom_split.json",
-    "squarish_two_bedroom_split_clustered_baths.json",
+    "squarish_two_bedroom_split_stacked.json",
+    "squarish_two_bedroom_split_openplan.json",
+    "squarish_two_bedroom_rear_master.json",
+    "squarish_two_bedroom_twin_ensuite.json",
 ]
 
 

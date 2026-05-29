@@ -1,0 +1,73 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "squarish_two_bedroom_split_openplan",
+  "label": "Squarish 2BR — public/private split, open-plan LDK (dining and kitchen side-by-side at rear)",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
+    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
+    { "id": "living",   "type": "living_room",      "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "dining",   "type": "dining_room",      "zone": "public",  "size_priority": "public_LDK" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "standard", "b": "ensuite", "min_shared_wall_m": 0.70, "kind": "bath_to_bedroom_wall", "note": "ensuite's south wall is standard's north wall — solid (no door, ensuite is private to master)" },
+    { "a": "standard", "b": "common",  "min_shared_wall_m": 0.70, "kind": "bath_to_bedroom_wall", "note": "common's south wall is standard's north wall — solid (door faces dining across the dividing wall)" },
+    { "a": "ensuite",  "b": "common",  "min_shared_wall_m": 1.20, "kind": "wet_core",            "note": "shared plumbing wall between the two baths — single wet stack on the bath bar" },
+    { "a": "master",   "b": "ensuite", "min_shared_wall_m": 0.70, "kind": "ensuite_door",        "note": "ensuite's north wall is master's south wall — this is the ensuite door (only access to ensuite)" },
+    { "a": "master",   "b": "common",  "min_shared_wall_m": 0.70, "kind": "bath_to_bedroom_wall", "note": "common's north wall is master's south wall — solid (no door, common is publicly accessed)" },
+
+    { "a": "standard", "b": "living",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public",   "note": "standard accessed across the dividing wall from living (both at front)" },
+    { "a": "master",   "b": "dining",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public",   "note": "master accessed across the dividing wall from dining (both toward rear)" },
+    { "a": "common",   "b": "dining",  "min_shared_wall_m": 0.70, "kind": "bath_door",           "note": "common bath's door faces dining across the dividing wall — public access" },
+
+    { "a": "living",   "b": "dining",  "min_shared_wall_m": 1.50, "kind": "open_plan",           "note": "open-plan LDK: living flows into dining (orientation chosen by solver)" },
+    { "a": "dining",   "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan",           "note": "open-plan LDK: dining flows into kitchen (orientation chosen by solver)" }
+  ],
+
+  "soft_proximities": [],
+
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["master", "ensuite", "standard", "common"],
+    "public_rooms":  ["living", "dining", "kitchen"]
+  },
+
+  "entry_point": "living",
+
+  "match_bedroom_widths": true,
+
+  "front_to_rear_stacks": [
+    ["standard", "ensuite", "master"],
+    ["standard", "common", "master"]
+  ],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false },
+    { "type": "dirty_kitchen", "location": "side_setback", "covered": false, "next_to": "kitchen", "note": "side placement — keeps the rear elevation behind the kitchen open for windows/lanai instead of occupied by the dirty kitchen" },
+    { "type": "service_area",  "location": "rear_setback", "covered": false, "behind": "left_zone" }
+  ],
+
+  "notes": [
+    "Open-plan variant of the split topology. Same public/private wall and same",
+    "private sleeping column (standard → bath bar → master), but the LDK is NOT",
+    "stacked front-to-rear. Living still touches the front exterior (solver hard",
+    "rule) and kitchen still touches the rear (solver hard rule), but dining is",
+    "free to land beside one of them rather than between them. In practice the",
+    "solver typically lands on:",
+    "  - Living spans the front of the public column.",
+    "  - Dining and kitchen sit side-by-side at the rear of the public column.",
+    "",
+    "Use this when the brief calls for a casual / modern feel — the cook is",
+    "integrated with the dining/living area rather than tucked at the back.",
+    "Use the stacked variant for traditional sala-comedor-kusina layouts.",
+    "",
+    "Differs from squarish_two_bedroom_split_stacked.json only in the absence of",
+    "the [living, dining, kitchen] entry in front_to_rear_stacks."
+  ]
+}

@@ -6,5 +6,5 @@
   "must_haves": [],
   "avoid": [],
   "carport_preference": null,
-  "topology": "squarish_two_bedroom.json"
+  "topology": "squarish_two_bedroom_distributed_baths.json"
 }

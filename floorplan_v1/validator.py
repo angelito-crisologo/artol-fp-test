@@ -66,10 +66,23 @@ def validate(layout: Layout, rules: Rules) -> Tuple[List[Issue], float]:
 
     # ---------- HARD: ensuite must touch master; kitchen adjacent to dirty kitchen ----------
     rmap = {r.type: r for r in layout.rooms}
-    if "ensuite_bath" in rmap and "master_bedroom" in rmap:
-        if not rmap["ensuite_bath"].adjacent_room(rmap["master_bedroom"]):
+    # ---------- ensuite_bath rules (supports >1 ensuite for twin-ensuite topologies) ----------
+    # Every ensuite must be adjacent to a bedroom (the "private" relationship);
+    # at least one ensuite must be adjacent to the master. The first rule keeps
+    # each ensuite genuinely private; the second preserves PH convention that
+    # the master always has its own bath.
+    ensuites = [r for r in layout.rooms if r.type == "ensuite_bath"]
+    bedrooms = [r for r in layout.rooms
+                if r.type in ("master_bedroom", "bedroom_standard")]
+    master = next((r for r in layout.rooms if r.type == "master_bedroom"), None)
+    for e in ensuites:
+        if bedrooms and not any(e.adjacent_room(b) for b in bedrooms):
             issues.append(Issue("error", "ensuite_access",
-                "ensuite_bath is not adjacent to master_bedroom"))
+                f"ensuite_bath '{e.id}' is not adjacent to any bedroom "
+                f"(ensuites must be private to a bedroom)"))
+    if ensuites and master and not any(e.adjacent_room(master) for e in ensuites):
+        issues.append(Issue("error", "ensuite_access",
+            "no ensuite_bath is adjacent to master_bedroom"))
     # ---------- HARD: bedrooms must be reachable from a hallway or public room ----------
     ACCESS_FROM = {"living_room", "dining_room", "great_room", "hallway"}
     for r in layout.rooms:
