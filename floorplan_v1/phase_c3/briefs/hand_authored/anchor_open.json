@@ -1,0 +1,10 @@
+{
+  "intent": "A standard mid-market 2-bedroom open-plan home for a young couple. Nothing fancy — comfortable living/dining, bathrooms convenient to the bedrooms.",
+  "lot_width": 13.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "carport_preference": null,
+  "topology": "squarish_two_bedroom.json"
+}

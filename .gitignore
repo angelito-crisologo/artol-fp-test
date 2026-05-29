@@ -1,0 +1,31 @@
+# Python bytecode / caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS / OS metadata
+.DS_Store
+Thumbs.db
+
+# Generated layout outputs (regenerated on every run of phase_c*/run.py)
+floorplan_v1/output/
+floorplan_v1/phase_c/output/
+floorplan_v1/phase_c2/output/
+floorplan_v1/phase_c3/output/
+
+# LLM topology cache — brief-hash keyed, machine-local, not portable
+floorplan_v1/phase_c3/cache/
+
+# Local env / secrets
+.env
+.env.local
+.anthropic_key
+.anthropic_key.txt
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

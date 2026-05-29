@@ -1,0 +1,21 @@
+{
+  "intent": "2-bedroom for a couple who both work from home. The second bedroom will double as a shared home office and needs to be quiet \u2014 away from kitchen noise and the LDK chatter. Open plan LDK is fine.",
+  "lot_width": 13.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "quiet second bedroom for home office",
+    "open plan LDK",
+    "maid's room (legal minimum 6 sqm) in the buildable shell, adjacent to the kitchen"
+  ],
+  "avoid": [
+    "second bedroom next to kitchen"
+  ],
+  "carport_preference": null,
+  "use_cache": false,
+  "adjustments": {
+    "master_bedroom": {
+      "min_area_sqm": 30
+    }
+  }
+}

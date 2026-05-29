@@ -1,0 +1,146 @@
+"""Topology data model + loader for Phase C.1.
+
+A topology is an adjacency graph specifying the room program, the required
+adjacencies between rooms, the entry point, and the setback elements. It does
+NOT contain geometry -- the CP-SAT solver places rectangles to realize it.
+"""
+import json
+from dataclasses import dataclass, field, asdict
+from typing import List, Dict, Optional
+
+
+@dataclass
+class RoomSpec:
+    id: str                # unique instance id (e.g. "master")
+    type: str              # rules room_catalog id (e.g. "master_bedroom")
+    zone: str = "private"
+    size_priority: str = "service_and_baths"
+    hosts_entry: bool = False
+
+
+@dataclass
+class Adjacency:
+    a: str                 # room id
+    b: str                 # room id
+    min_shared_wall_m: float  # minimum continuous shared-wall length (door-able)
+    kind: str = "door"
+    note: str = ""
+
+
+@dataclass
+class ZoneSplit:
+    """Optional hard partition of the buildable envelope into two halves —
+    one for private (bedrooms+baths), one for public (LDK). axis='vertical'
+    splits left/right; axis='horizontal' splits front/rear. private_side names
+    which side the private zone goes on. The room id lists make the binding
+    explicit so service rooms (kitchen vs common bath) can be steered to
+    whichever side they belong to."""
+    axis: str                          # "vertical" or "horizontal"
+    private_side: str                  # "left", "right", "front", "rear"
+    private_rooms: List[str] = field(default_factory=list)
+    public_rooms: List[str] = field(default_factory=list)
+
+
+@dataclass
+class SoftProximity:
+    a: str                 # room id
+    b: str                 # room id
+    weight: float = 30.0   # higher = solver pulls the two rooms closer
+    note: str = ""
+
+
+@dataclass
+class SetbackElement:
+    type: str              # carport | dirty_kitchen | service_area
+    location: str          # side_setback | rear_setback | front_setback
+    covered: bool = False
+    behind: Optional[str] = None  # room id this element sits behind (for dirty kitchen)
+
+
+@dataclass
+class Topology:
+    id: str
+    label: str
+    target_shell: str
+    rooms: List[RoomSpec]
+    adjacencies: List[Adjacency]
+    entry_point: str
+    setback_elements: List[SetbackElement] = field(default_factory=list)
+    soft_proximities: List[SoftProximity] = field(default_factory=list)
+    zone_split: Optional[ZoneSplit] = None
+    notes: List[str] = field(default_factory=list)
+    # When True the solver constrains master.width == standard.width. Use this
+    # on topologies where the design intent calls for the two bedrooms to
+    # visually align (e.g., bath-block-between-bedrooms looks intentional only
+    # if the block spans the full shared width).
+    match_bedroom_widths: bool = False
+
+    def room(self, room_id: str) -> RoomSpec:
+        for r in self.rooms:
+            if r.id == room_id:
+                return r
+        raise KeyError(f"unknown room id: {room_id}")
+
+    def neighbours(self, room_id: str) -> List[str]:
+        out = []
+        for e in self.adjacencies:
+            if e.a == room_id:
+                out.append(e.b)
+            elif e.b == room_id:
+                out.append(e.a)
+        return out
+
+
+def load_topology(path: str) -> Topology:
+    with open(path, "r", encoding="utf-8") as f:
+        d = json.load(f)
+    rooms = [RoomSpec(**{k: r[k] for k in r if k in RoomSpec.__annotations__}) for r in d["rooms"]]
+    adjs = [Adjacency(**{k: e[k] for k in e if k in Adjacency.__annotations__}) for e in d["adjacencies"]]
+    elems = [SetbackElement(**{k: x[k] for k in x if k in SetbackElement.__annotations__})
+             for x in d.get("setback_elements", [])]
+    sprox = [SoftProximity(**{k: x[k] for k in x if k in SoftProximity.__annotations__})
+             for x in d.get("soft_proximities", [])]
+    zs_raw = d.get("zone_split")
+    zs = ZoneSplit(**{k: zs_raw[k] for k in zs_raw if k in ZoneSplit.__annotations__}) \
+         if zs_raw else None
+    return Topology(
+        id=d["id"], label=d["label"], target_shell=d["target_shell"],
+        rooms=rooms, adjacencies=adjs, entry_point=d["entry_point"],
+        setback_elements=elems, soft_proximities=sprox, zone_split=zs,
+        notes=d.get("notes", []),
+        match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
+    )
+
+
+def validate_topology(t: Topology) -> List[str]:
+    """Basic structural checks BEFORE the geometric solver runs. Returns a list
+    of error messages (empty -> ok)."""
+    errs = []
+    ids = {r.id for r in t.rooms}
+    if len(ids) != len(t.rooms):
+        errs.append("duplicate room ids")
+    for e in t.adjacencies:
+        if e.a not in ids or e.b not in ids:
+            errs.append(f"adjacency references unknown room: {e.a} <-> {e.b}")
+        if e.a == e.b:
+            errs.append(f"self-adjacency: {e.a}")
+    if t.entry_point not in ids:
+        errs.append(f"entry_point references unknown room: {t.entry_point}")
+    # every habitable room should be reachable from the entry through the adjacency graph
+    from collections import deque
+    visited = set()
+    q = deque([t.entry_point])
+    while q:
+        cur = q.popleft()
+        if cur in visited:
+            continue
+        visited.add(cur)
+        for nb in t.neighbours(cur):
+            if nb not in visited:
+                q.append(nb)
+    HABITABLE = {"bedroom_standard", "master_bedroom", "living_room",
+                 "dining_room", "great_room"}
+    for r in t.rooms:
+        if r.id not in visited and r.type in HABITABLE:
+            errs.append(f"habitable room '{r.id}' is unreachable from entry")
+    return errs
