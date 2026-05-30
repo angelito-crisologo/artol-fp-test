@@ -1,0 +1,96 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "wide_great_room_front_no_hall",
+  "label": "Wide 2BR — no hall. Great room across the front (with standard tucked front-right), master/common/kitchen across the rear, single T&B opening into the great room.",
+  "target_shell": "wide",
+
+  "rooms": [
+    { "id": "great",    "type": "great_room",       "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "master",   "type": "master_bedroom",   "zone": "private",     "size_priority": "master_bedroom" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK" },
+    { "id": "common",   "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" }
+  ],
+
+  "adjacencies": [
+    { "a": "great",    "b": "master",  "min_shared_wall_m": 0.90, "kind": "bedroom_door", "note": "bedroom door: 0.8-0.9 m + frame, so 0.9 m shared wall (horizontal: great's north edge meets master's south edge)" },
+    { "a": "great",    "b": "standard","min_shared_wall_m": 0.90, "kind": "bedroom_door", "note": "bedroom door: 0.8-0.9 m + frame, so 0.9 m shared wall (vertical: great's east edge meets standard's west edge)" },
+    { "a": "great",    "b": "common",  "min_shared_wall_m": 0.85, "kind": "bath_door",    "note": "bathroom door: 700 mm clear + 75 mm frames = 850 mm shared wall (horizontal: great's north edge meets common's south edge in the rear-center)" },
+    { "a": "great",    "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan",    "note": "kitchen flows directly into the great room (could be horizontal or vertical depending on geometry — solver picks)" },
+    { "a": "common",   "b": "kitchen", "min_shared_wall_m": 1.00, "kind": "wet_core",     "note": "common bath and kitchen share a plumbing wall (vertical: common's east edge meets kitchen's west edge)" }
+  ],
+
+  "soft_proximities": [],
+
+  "entry_point": "great",
+
+  "rear_anchored": ["master", "common", "kitchen"],
+
+  "left_anchored": ["master", "great"],
+
+  "right_anchored": ["standard", "kitchen"],
+
+  "front_to_rear_stacks": [
+    ["great",    "master"],
+    ["great",    "common"],
+    ["standard", "kitchen"]
+  ],
+
+  "lot_adjustment_profiles": [
+    {
+      "name": "moderate wide (e.g., 16x10)",
+      "when": { "buildable_depth_lt_m": 7.0 },
+      "auto_apply": {
+        "great_room":       { "min_area_sqm": 22.0 },
+        "master_bedroom":   { "min_area_sqm": 12.0 },
+        "bedroom_standard": { "min_area_sqm":  8.0 },
+        "kitchen":          { "min_area_sqm":  6.0 },
+        "common_bath":      { "min_area_sqm":  3.0 }
+      }
+    },
+    {
+      "name": "ample wide (e.g., 16x11+)",
+      "when": { "buildable_depth_gte_m": 7.0 },
+      "auto_apply": {
+        "great_room":       { "min_area_sqm": 26.0 },
+        "master_bedroom":   { "min_area_sqm": 14.0 },
+        "bedroom_standard": { "min_area_sqm":  9.0 },
+        "kitchen":          { "min_area_sqm":  6.5 },
+        "common_bath":      { "min_area_sqm":  3.5 }
+      }
+    }
+  ],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback",  "covered": false },
+    { "type": "dirty_kitchen", "location": "rear_setback",  "covered": false, "behind": "kitchen" },
+    { "type": "service_area",  "location": "rear_setback",  "covered": false }
+  ],
+
+  "notes": [
+    "Compact 5-room wide 2BR with NO hallway. The great room is the public/",
+    "circulation spine on its own — every room opens directly onto it.",
+    "",
+    "  REAR BAND (left to right):",
+    "    master (flush left, rear-anchored)",
+    "    common T&B (rear-center, sandwiched between master and kitchen)",
+    "    kitchen (flush right, rear-anchored)",
+    "",
+    "  FRONT BAND:",
+    "    great room (left + center, full front, runs from front to the rear",
+    "                band's south edge so it can host doors into master,",
+    "                common, and kitchen)",
+    "    standard bedroom (flush right, tucked under the kitchen)",
+    "",
+    "Access flows:",
+    "  Front door -> great room (entry)",
+    "  Great room -> master (bedroom door, horizontal wall at the rear-left)",
+    "  Great room -> standard (bedroom door, vertical wall on great's east edge)",
+    "  Great room -> common T&B (bath door, horizontal wall in rear-center)",
+    "  Great room -> kitchen (open plan, horizontal or vertical)",
+    "  Common <-> kitchen (wet-core plumbing wall at the rear)",
+    "",
+    "Lot intent: wide shell. Profiles tune room min-areas for moderate (16x10,",
+    "~6 m buildable depth) and ample (16x11+, ~7 m depth)."
+  ]
+}

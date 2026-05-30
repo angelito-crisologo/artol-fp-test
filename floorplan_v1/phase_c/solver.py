@@ -74,6 +74,27 @@ ASPECT_CAPS = {
 }
 DEFAULT_ASPECT = (5, 2)           # 2.5:1 fallback for any unknown type
 
+# Per-type RELAXED aspect cap that kicks in when BOTH sides of the room are
+# already "wide enough" (short side >= threshold_m). The corridor feeling
+# comes from a narrow short side, not from a long long side: a 4.2 x 8 m
+# great room reads as an open LDK, not a corridor, because 4.2 m clears the
+# room-vs-corridor threshold. So when both w and h are >= threshold, we let
+# the ratio go to the relaxed cap; otherwise the strict ASPECT_CAPS value
+# above still binds. Room types not listed here use ASPECT_CAPS unchanged.
+# Encoded as (threshold_m, relaxed_num, relaxed_den).
+ASPECT_RELAX = {
+    "great_room":       (3.0, 5, 2),    # strict 1.8 -> 2.5 when both sides >= 3 m
+    "living_room":      (3.0, 5, 2),
+    "dining_room":      (3.0, 5, 2),
+    "master_bedroom":   (3.0, 11, 5),   # strict 1.8 -> 2.2 when both sides >= 3 m
+    "bedroom_standard": (3.0, 11, 5),
+    "common_bath":      (2.0, 5, 2),    # strict 2.0 -> 2.5 when both sides >= 2 m
+    "ensuite_bath":     (2.0, 5, 2),
+    "bath_toilet":      (2.0, 5, 2),
+    "powder_room":      (2.0, 5, 2),
+    # kitchen (already 2.5:1) and hallway (4:1) intentionally not relaxed.
+}
+
 # Bath types that prefer a window over a vent shaft. Soft pull only — interior
 # placement is still legal under PD 1096 Sec. 809 (vent shaft), but exterior
 # placement is cheaper and more common in PH mid-market practice. The solver
@@ -262,9 +283,37 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         model.Add(ry_end[r.id] == ry[r.id] + rh[r.id])
 
         # aspect ratio cap (per-type — bedrooms 1.8, kitchen 2.5, hallway 4, etc.)
+        # If the type is in ASPECT_RELAX, we apply the cap CONDITIONALLY:
+        # when both sides are >= threshold_m the relaxed cap binds; otherwise
+        # the strict ASPECT_CAPS value binds. Rationale: a corridor feeling
+        # comes from a narrow short side, not from a long long side.
         ar_num, ar_den = ASPECT_CAPS.get(r.type, DEFAULT_ASPECT)
-        model.Add(rw[r.id] * ar_den <= rh[r.id] * ar_num)
-        model.Add(rh[r.id] * ar_den <= rw[r.id] * ar_num)
+        relax = ASPECT_RELAX.get(r.type)
+        if relax is None:
+            # Unconditional: just the strict cap on both orientations.
+            model.Add(rw[r.id] * ar_den <= rh[r.id] * ar_num)
+            model.Add(rh[r.id] * ar_den <= rw[r.id] * ar_num)
+        else:
+            threshold_m, rel_num, rel_den = relax
+            t_u = max(_u(threshold_m), 1)
+            # w_wide_a / h_wide_a track whether each side clears the threshold.
+            # chunky_a = both sides clear it (so the short side, whichever it
+            # is, is at least threshold_m).
+            w_wide = model.NewBoolVar(f"wwa_{r.id}")
+            h_wide = model.NewBoolVar(f"hwa_{r.id}")
+            chunky_a = model.NewBoolVar(f"chunkya_{r.id}")
+            model.Add(rw[r.id] >= t_u).OnlyEnforceIf(w_wide)
+            model.Add(rw[r.id] <  t_u).OnlyEnforceIf(w_wide.Not())
+            model.Add(rh[r.id] >= t_u).OnlyEnforceIf(h_wide)
+            model.Add(rh[r.id] <  t_u).OnlyEnforceIf(h_wide.Not())
+            model.AddBoolAnd([w_wide, h_wide]).OnlyEnforceIf(chunky_a)
+            model.AddBoolOr([w_wide.Not(), h_wide.Not()]).OnlyEnforceIf(chunky_a.Not())
+            # When chunky_a -> relaxed cap binds (both orientations).
+            model.Add(rw[r.id] * rel_den <= rh[r.id] * rel_num).OnlyEnforceIf(chunky_a)
+            model.Add(rh[r.id] * rel_den <= rw[r.id] * rel_num).OnlyEnforceIf(chunky_a)
+            # When NOT chunky_a -> strict cap binds (both orientations).
+            model.Add(rw[r.id] * ar_den <= rh[r.id] * ar_num).OnlyEnforceIf(chunky_a.Not())
+            model.Add(rh[r.id] * ar_den <= rw[r.id] * ar_num).OnlyEnforceIf(chunky_a.Not())
 
         xiv[r.id] = model.NewIntervalVar(rx[r.id], rw[r.id], rx_end[r.id], f"xiv_{r.id}")
         yiv[r.id] = model.NewIntervalVar(ry[r.id], rh[r.id], ry_end[r.id], f"yiv_{r.id}")
