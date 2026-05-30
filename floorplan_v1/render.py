@@ -265,11 +265,11 @@ def _door_svg(door, layout) -> str:
     sweep = 1 if cross > 0 else 0
 
     radius = cw * SCALE
-    # Erase the wall stroke under the door opening with a slightly thicker
-    # white line (3 px > the 1.5 px room stroke).
+    # Erase the wall AND room stroke under the door opening with a wide white
+    # line (10 px > the 8.4 px exterior wall, so the opening is clean).
     parts = [
         f'<line x1="{hxs:.1f}" y1="{hys:.1f}" x2="{lxs:.1f}" y2="{lys:.1f}" '
-        f'stroke="white" stroke-width="3"/>',
+        f'stroke="white" stroke-width="10"/>',
         # Door panel (perpendicular line from hinge to tip)
         f'<line x1="{hxs:.1f}" y1="{hys:.1f}" x2="{txs:.1f}" y2="{tys:.1f}" '
         f'stroke="#444" stroke-width="1.4"/>',
@@ -307,14 +307,165 @@ def _window_svg(window, layout) -> str:
     lot = layout.lot
     axs, ays = _to_svg_xy(lot, *a)
     bxs, bys = _to_svg_xy(lot, *b)
-    # White erase line (covers the room stroke)
-    # Blue glass strip — slightly inset from full erase width
+    # Wide white erase (10 px > exterior wall thickness so the wall is cut
+    # cleanly), then a blue glass strip on top.
     return (
         f'<line x1="{axs:.1f}" y1="{ays:.1f}" x2="{bxs:.1f}" y2="{bys:.1f}" '
-        f'stroke="white" stroke-width="3.5"/>'
+        f'stroke="white" stroke-width="10"/>'
         f'<line x1="{axs:.1f}" y1="{ays:.1f}" x2="{bxs:.1f}" y2="{bys:.1f}" '
-        f'stroke="#7aaad1" stroke-width="1.8"/>'
+        f'stroke="#7aaad1" stroke-width="2.5"/>'
     )
+
+
+# ---------------------------------------------------------------------------
+# Wall thickness (Phase D.2)
+# ---------------------------------------------------------------------------
+
+WALL_THICKNESS_INTERIOR = 0.10   # m — interior partition (drywall or thin CHB)
+WALL_THICKNESS_EXTERIOR = 0.20   # m — exterior CHB + finish
+WALL_FILL = "#555"               # gray fill for walls
+EPS = 1e-3
+
+
+def _compute_walls(plan):
+    """Walk the layout and emit wall geometry (axis-aligned rectangles).
+
+    Strategy:
+      Pass A — interior walls: for every PAIR of rooms that shares a non-zero
+               edge, emit one wall rectangle centred on that edge. Skip pairs
+               flagged as open_plan (no wall between L/D/K rooms etc.).
+      Pass B — exterior walls: for every room edge, subtract all the segments
+               covered by other rooms — what's left is exterior. Emit one
+               wall rectangle per exterior segment, centred on the edge.
+
+    Walls are CENTRED on the room boundary, so each wall extends half its
+    thickness into the room interior AND half into the adjacent space
+    (another room for interior walls, the buildable envelope void / setback
+    for exterior walls)."""
+    rooms = plan.layout.rooms
+    open_set = {frozenset((e.room_a, e.room_b)) for e in plan.open_plan_edges}
+    walls = []
+
+    # Pass A — interior walls, one per non-open-plan pair
+    for i, r1 in enumerate(rooms):
+        for r2 in rooms[i + 1:]:
+            if frozenset((r1.id, r2.id)) in open_set:
+                continue
+            edge = _wall_shared_edge(r1.rect, r2.rect)
+            if edge is None:
+                continue
+            side, coord, start, end = edge
+            walls.append(_wall_rect(side, coord, start, end,
+                                    WALL_THICKNESS_INTERIOR))
+
+    # Pass B — exterior walls, uncovered portions of each side per room
+    for r in rooms:
+        for side in ("N", "S", "E", "W"):
+            uncovered = _uncovered_segments(r, side, rooms)
+            if side == "N":   coord = r.rect.y1
+            elif side == "S": coord = r.rect.y0
+            elif side == "E": coord = r.rect.x1
+            else:             coord = r.rect.x0
+            for s_, e_ in uncovered:
+                walls.append(_wall_rect(side, coord, s_, e_,
+                                        WALL_THICKNESS_EXTERIOR))
+
+    return walls
+
+
+def _wall_shared_edge(a, b):
+    """If a and b share a wall, return (side_of_a, coord, start, end) where
+    side_of_a is 'N'/'S'/'E'/'W'. coord is the constant axis value; start /
+    end are the perpendicular range of the SHARED segment. Returns None if
+    a and b don't share a wall."""
+    if abs(a.x1 - b.x0) <= EPS:                     # a is west of b
+        s, e = max(a.y0, b.y0), min(a.y1, b.y1)
+        return ("E", a.x1, s, e) if e - s > EPS else None
+    if abs(a.x0 - b.x1) <= EPS:                     # a is east of b
+        s, e = max(a.y0, b.y0), min(a.y1, b.y1)
+        return ("W", a.x0, s, e) if e - s > EPS else None
+    if abs(a.y1 - b.y0) <= EPS:                     # a is south (front of) b
+        s, e = max(a.x0, b.x0), min(a.x1, b.x1)
+        return ("N", a.y1, s, e) if e - s > EPS else None
+    if abs(a.y0 - b.y1) <= EPS:                     # a is north (rear of) b
+        s, e = max(a.x0, b.x0), min(a.x1, b.x1)
+        return ("S", a.y0, s, e) if e - s > EPS else None
+    return None
+
+
+def _uncovered_segments(room, side, all_rooms):
+    """Return the segments along `room`'s `side` edge that are NOT shared
+    with any other room — these face the buildable envelope void or the
+    setback / exterior."""
+    if side == "N":
+        edge_start, edge_end = room.rect.x0, room.rect.x1
+        match_coord = room.rect.y1
+        is_neighbor = lambda o: abs(o.rect.y0 - match_coord) <= EPS
+        proj = lambda o: (o.rect.x0, o.rect.x1)
+    elif side == "S":
+        edge_start, edge_end = room.rect.x0, room.rect.x1
+        match_coord = room.rect.y0
+        is_neighbor = lambda o: abs(o.rect.y1 - match_coord) <= EPS
+        proj = lambda o: (o.rect.x0, o.rect.x1)
+    elif side == "E":
+        edge_start, edge_end = room.rect.y0, room.rect.y1
+        match_coord = room.rect.x1
+        is_neighbor = lambda o: abs(o.rect.x0 - match_coord) <= EPS
+        proj = lambda o: (o.rect.y0, o.rect.y1)
+    else:  # W
+        edge_start, edge_end = room.rect.y0, room.rect.y1
+        match_coord = room.rect.x0
+        is_neighbor = lambda o: abs(o.rect.x1 - match_coord) <= EPS
+        proj = lambda o: (o.rect.y0, o.rect.y1)
+
+    covered = []
+    for o in all_rooms:
+        if o is room:
+            continue
+        if not is_neighbor(o):
+            continue
+        a, b = proj(o)
+        s, e = max(a, edge_start), min(b, edge_end)
+        if e - s > EPS:
+            covered.append((s, e))
+
+    return _subtract_segments(edge_start, edge_end, covered)
+
+
+def _subtract_segments(start, end, covered):
+    """Subtract a list of covered (s, e) intervals from [start, end].
+    Returns the uncovered intervals as a list of (s, e) tuples."""
+    if not covered:
+        return [(start, end)]
+    covered = sorted(covered)
+    out = []
+    cursor = start
+    for s, e in covered:
+        if s > cursor + EPS:
+            out.append((cursor, s))
+        cursor = max(cursor, e)
+    if end > cursor + EPS:
+        out.append((cursor, end))
+    return out
+
+
+def _wall_rect(side, coord, start, end, thickness):
+    """Build a Rect representing a wall sitting on a room edge, centred on
+    `coord` (so half the thickness sits on either side of the edge)."""
+    from model import Rect as _Rect
+    half = thickness / 2
+    if side in ("N", "S"):
+        return _Rect(start, coord - half, end, coord + half)
+    return _Rect(coord - half, start, coord + half, end)
+
+
+def _wall_svg(wall, layout) -> str:
+    """Render a wall as a filled gray rect."""
+    lot = layout.lot
+    x0, y0 = _to_svg_xy(lot, wall.x0, wall.y1)   # svg y is flipped, top edge = larger model y
+    return (f'<rect x="{x0:.2f}" y="{y0:.2f}" '
+            f'width="{wall.w * SCALE:.2f}" height="{wall.h * SCALE:.2f}" '
+            f'fill="{WALL_FILL}" stroke="none"/>')
 
 
 def _open_plan_svg(edge, layout) -> str:
@@ -357,15 +508,28 @@ def _open_plan_svg(edge, layout) -> str:
 
 
 def archplan_to_svg(plan) -> str:
-    """Render layout + architectural overlay (doors + windows + open-plan
-    wall removal). All overlays are painted AFTER the room rectangles so they
-    erase / overlay the room strokes at the right positions."""
+    """Render the full architectural plan: room fills, walls of finite
+    thickness (exterior 0.20 m, interior 0.10 m), open-plan transitions
+    (where the wall has been suppressed), and doors / windows as openings
+    through walls.
+
+    SVG layer order (back to front):
+      1. lot fill, ruler, envelope outline, setback elements   (layout_to_svg)
+      2. room fills with labels                                (layout_to_svg)
+      3. walls (gray bars on top of room boundaries)           NEW
+      4. open-plan erases (clear room strokes where no wall)
+      5. door erases + door panels + swing arcs
+      6. window erases + window glass strips
+    """
     base = layout_to_svg(plan.layout)
     overlays = []
-    # Open-plan walls erased first so doors/windows on adjacent walls still
-    # paint cleanly afterwards (they overdraw any of our white we put down).
+    # Walls first — they cover room strokes for every non-open-plan boundary.
+    for wall in _compute_walls(plan):
+        overlays.append(_wall_svg(wall, plan.layout))
+    # Open-plan: erase room strokes where there's no wall.
     for ope in plan.open_plan_edges:
         overlays.append(_open_plan_svg(ope, plan.layout))
+    # Doors and windows punch openings through walls.
     for d in plan.doors:
         overlays.append(_door_svg(d, plan.layout))
     for w in plan.windows:

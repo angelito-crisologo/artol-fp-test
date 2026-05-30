@@ -292,6 +292,43 @@ def _windows_for_room(room: Room, env: Rect, bath: bool, exclude_walls: set) -> 
     return out
 
 
+def _dirty_kitchen_door(topology: Topology, layout: Layout,
+                        env: Rect) -> Optional[Door]:
+    """If the topology declares a dirty_kitchen setback element, emit a door
+    from the room it sits behind (typically the kitchen) to the exterior on
+    that room's rear wall. PH practice always has a kitchen-to-dirty-kitchen
+    pass-through; this generates it automatically rather than requiring every
+    topology to declare it as an adjacency."""
+    dk = next((sb for sb in topology.setback_elements
+               if sb.type == "dirty_kitchen"), None)
+    if dk is None:
+        return None
+    # Which room sits in front of the dirty kitchen? Default to 'kitchen'
+    # since that's the only room a dirty kitchen ever sits behind in PH
+    # practice.
+    behind_id = dk.behind or "kitchen"
+    room = next((r for r in layout.rooms if r.id == behind_id), None)
+    if room is None:
+        return None
+    # The dirty kitchen sits at the REAR setback (per the topology field
+    # location='rear_setback'), so the door is on the room's NORTH wall —
+    # which is also the wall that touches the buildable envelope rear edge.
+    if not _touches_exterior(room.rect, env, "N"):
+        return None
+    wall_len = _wall_length(room.rect, "N")
+    clear = 0.80   # standard service door clear opening
+    if wall_len < clear + 0.20:
+        clear = max(0.60, wall_len - 0.20)
+    pos = (wall_len - clear) / 2.0
+    return Door(
+        room_a="exterior", room_b=behind_id, wall="N",
+        position_m=round(pos, 3),
+        clear_width_m=round(clear, 3),
+        swing_into=behind_id,
+        kind="service_door",
+    )
+
+
 def _front_door(topology: Topology, layout: Layout, env: Rect) -> Optional[Door]:
     """The entry-host room gets a front door on whichever exterior wall faces
     the street (south by convention, falling back to any exterior wall)."""
@@ -365,6 +402,13 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
         plan.doors.append(fd)
         # The entry room's exterior wall is now consumed by the front door.
         door_walls_by_room.setdefault(fd.room_b, set()).add(fd.wall)
+
+    # Pass 2b: kitchen-to-dirty-kitchen back door. PH practice always has
+    # this pass-through when a dirty kitchen setback element is declared.
+    dk_door = _dirty_kitchen_door(topology, layout, env)
+    if dk_door:
+        plan.doors.append(dk_door)
+        door_walls_by_room.setdefault(dk_door.room_b, set()).add(dk_door.wall)
 
     # Pass 3: windows for habitable + bath rooms on remaining exterior walls
     for r in layout.rooms:
