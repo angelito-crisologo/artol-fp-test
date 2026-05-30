@@ -41,11 +41,12 @@ except (ImportError, OSError) as _e:
 from model import shell_category                                 # noqa: E402
 from rules import Rules                                          # noqa: E402
 from validator import validate                                   # noqa: E402
-from render import layout_to_svg                                 # noqa: E402
+from render import layout_to_svg, archplan_to_svg                # noqa: E402
 
 from topology import load_topology, validate_topology            # noqa: E402  (phase_c)
 from solver import solve, AdjustmentError                        # noqa: E402  (phase_c)
 from snap_gaps import snap_gaps                                  # noqa: E402  (phase_c)
+from architectural_plan import architecturalize                  # noqa: E402  (phase_c)
 
 from brief import Brief                                          # noqa: E402  (phase_c2)
 from llm import ClaudeLLM, StubLLM                               # noqa: E402  (phase_c2)
@@ -503,9 +504,10 @@ def _write(name, layout, topo, reason, no_version=False):
         if archived:
             print(f"  archived previous as versions/{name}_v{archived}.svg")
 
+    plan = architecturalize(layout, topo)
     svg_path = os.path.join(OUT, f"{name}.svg")
     with open(svg_path, "w", encoding="utf-8") as f:
-        f.write(layout_to_svg(layout))
+        f.write(archplan_to_svg(plan))
     print(f"  wrote {svg_path}")
     if _HAS_CAIROSVG:
         png_path = os.path.join(OUT, f"{name}.png")
