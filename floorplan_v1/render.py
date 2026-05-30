@@ -68,6 +68,69 @@ def _rect_svg(lot, rect: Rect, fill, dashed=False, label="", sub=""):
     return "".join(parts)
 
 
+def _ruler_svg(lot) -> str:
+    """Tick marks at 0.5 m intervals on all four sides of the lot, with metre
+    labels at every 1 m. Minor (half-metre) ticks are short, major (metre)
+    ticks are longer and carry the number. Ticks sit OUTSIDE the lot rectangle
+    so they don't visually overlap rooms."""
+    parts = []
+    TICK_MINOR = 4      # px — half-metre ticks
+    TICK_MAJOR = 8      # px — metre ticks
+    LABEL_OFF  = 10     # px — label distance from lot edge
+    STROKE = "#888"
+    LABEL_FILL = "#666"
+    FONT = 'font-family="Arial" font-size="9"'
+
+    # Compute lot edges in svg coordinates
+    L = MARGIN                                  # left edge x
+    R = MARGIN + lot.width  * SCALE             # right edge x
+    T = MARGIN                                  # top edge y (rear of lot)
+    B = MARGIN + lot.depth * SCALE              # bottom edge y (front of lot)
+
+    # Number of 0.5 m steps along each axis (round to handle float lots).
+    n_x = int(round(lot.width  * 2))            # half-metre steps wide
+    n_y = int(round(lot.depth * 2))             # half-metre steps deep
+
+    for i in range(n_x + 1):
+        x = L + (i * 0.5) * SCALE
+        major = (i % 2 == 0)
+        tlen = TICK_MAJOR if major else TICK_MINOR
+        # top edge ticks (pointing up)
+        parts.append(f'<line x1="{x:.1f}" y1="{T:.1f}" x2="{x:.1f}" y2="{T-tlen:.1f}" '
+                     f'stroke="{STROKE}" stroke-width="1"/>')
+        # bottom edge ticks (pointing down)
+        parts.append(f'<line x1="{x:.1f}" y1="{B:.1f}" x2="{x:.1f}" y2="{B+tlen:.1f}" '
+                     f'stroke="{STROKE}" stroke-width="1"/>')
+        if major:
+            label = str(i // 2)
+            # top label
+            parts.append(f'<text x="{x:.1f}" y="{T - LABEL_OFF:.1f}" text-anchor="middle" '
+                         f'{FONT} fill="{LABEL_FILL}">{label}</text>')
+            # bottom label
+            parts.append(f'<text x="{x:.1f}" y="{B + LABEL_OFF + 6:.1f}" text-anchor="middle" '
+                         f'{FONT} fill="{LABEL_FILL}">{label}</text>')
+
+    for j in range(n_y + 1):
+        y = B - (j * 0.5) * SCALE               # j=0 is the FRONT (bottom of svg)
+        major = (j % 2 == 0)
+        tlen = TICK_MAJOR if major else TICK_MINOR
+        # left edge ticks (pointing left)
+        parts.append(f'<line x1="{L:.1f}" y1="{y:.1f}" x2="{L-tlen:.1f}" y2="{y:.1f}" '
+                     f'stroke="{STROKE}" stroke-width="1"/>')
+        # right edge ticks (pointing right)
+        parts.append(f'<line x1="{R:.1f}" y1="{y:.1f}" x2="{R+tlen:.1f}" y2="{y:.1f}" '
+                     f'stroke="{STROKE}" stroke-width="1"/>')
+        if major:
+            label = str(j // 2)
+            # left label
+            parts.append(f'<text x="{L - LABEL_OFF:.1f}" y="{y+3:.1f}" text-anchor="end" '
+                         f'{FONT} fill="{LABEL_FILL}">{label}</text>')
+            # right label
+            parts.append(f'<text x="{R + LABEL_OFF:.1f}" y="{y+3:.1f}" text-anchor="start" '
+                         f'{FONT} fill="{LABEL_FILL}">{label}</text>')
+    return "".join(parts)
+
+
 def layout_to_svg(layout: Layout) -> str:
     lot = layout.lot
     W = lot.width * SCALE + 2 * MARGIN
@@ -78,6 +141,8 @@ def layout_to_svg(layout: Layout) -> str:
 
     # lot boundary
     s.append(_rect_svg(lot, Rect(0, 0, lot.width, lot.depth), "#fbfbf7"))
+    # metre ruler on all sides (0.5 m ticks, labels every 1 m)
+    s.append(_ruler_svg(lot))
     # buildable envelope (dotted)
     env = lot.envelope()
     ex = MARGIN + env.x0 * SCALE

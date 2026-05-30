@@ -45,6 +45,7 @@ from render import layout_to_svg                                 # noqa: E402
 
 from topology import load_topology, validate_topology            # noqa: E402  (phase_c)
 from solver import solve, AdjustmentError                        # noqa: E402  (phase_c)
+from snap_gaps import snap_gaps                                  # noqa: E402  (phase_c)
 
 from brief import Brief                                          # noqa: E402  (phase_c2)
 from llm import ClaudeLLM, StubLLM                               # noqa: E402  (phase_c2)
@@ -312,10 +313,19 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         raise RuntimeError(
             f"hand-authored topology {topology_filename} failed validation: "
             + "; ".join(str(e) for e in errs[:3]))
+    # Post-solve, post-validate gap snapper: extend room walls into any unused
+    # envelope strips. May exceed the solver's aspect cap (the validator
+    # doesn't check aspect, so this stays compliant). Only runs once the raw
+    # layout has passed validation cleanly.
+    layout, n_snaps = snap_gaps(layout, verbose=verbose)
+    if n_snaps:
+        # Re-validate to refresh the score with the now-larger room areas.
+        issues, score = validate(layout, rules)
     if verbose:
         warns = [i for i in issues if i.severity == "warning"]
         sugg = [i for i in issues if i.severity == "suggestion"]
-        print(f"  COMPLIANT  score={score:.2f}  {len(warns)} warn  {len(sugg)} sugg")
+        snap_note = f" ({n_snaps} snap(s))" if n_snaps else ""
+        print(f"  COMPLIANT  score={score:.2f}  {len(warns)} warn  {len(sugg)} sugg{snap_note}")
     reason = f"[hand-authored] using {topology_filename} (no API call)"
     return layout, topo, reason
 
@@ -338,6 +348,11 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     if hard:
         raise RuntimeError("validator caught hard violation(s): "
                            + "; ".join(str(i) for i in hard[:3]))
+    # Snap unused envelope strips after the AI-realized layout has cleared
+    # the validator. Re-validate so the score reflects the polished layout.
+    layout, n_snaps = snap_gaps(layout, verbose=False)
+    if n_snaps:
+        issues, score = validate(layout, rules)
     return layout, topo, score, issues
 
 
