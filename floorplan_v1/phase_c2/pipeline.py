@@ -52,12 +52,22 @@ def _topology_from_dict(d: dict) -> Topology:
 
 def _make_default_lot(brief: Brief) -> Lot:
     """Lot built from the brief's dims with default 2 m setbacks and a 3 m
-    carport setback on the right (the simplest configuration). The multi-shot
-    over carport positions can be revisited later — for the C.2 first pass
-    we just want a single end-to-end run."""
+    carport setback on the side named by brief.carport_preference. Defaults
+    to RIGHT when the brief doesn't specify (the historical default). The
+    solver reads which side is widest (>= 2.8 m) to decide where to place
+    the carport element — so widening one side here steers the carport
+    there."""
+    front, rear, left, right = 2.0, 2.0, 2.0, 2.0
+    pref = (brief.carport_preference or "right").lower()
+    if pref == "left":
+        left = 3.0
+    elif pref == "front":
+        front = 3.0
+    else:                       # "right" or unknown -> historical default
+        right = 3.0
     return Lot(
         width=brief.lot_width, depth=brief.lot_depth,
-        front=2.0, rear=2.0, left=2.0, right=3.0,
+        front=front, rear=rear, left=left, right=right,
         street_side="front",
     )
 

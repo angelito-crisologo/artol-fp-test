@@ -21,6 +21,8 @@ LABELS = {
     "master_bedroom": "MASTER BR",
     "ensuite_bath": "ENSUITE",
     "common_bath": "COMMON T&B",
+    "bath_toilet": "WC",
+    "powder_room": "WC",
     "living_room": "LIVING",
     "dining_room": "DINING",
     "kitchen": "KITCHEN",
@@ -33,7 +35,7 @@ LABELS = {
 
 
 def _fill(room) -> str:
-    if room.type in ("common_bath", "ensuite_bath"):
+    if room.type in ("common_bath", "ensuite_bath", "bath_toilet", "powder_room"):
         return "#ead1dc"
     if room.zone == "circulation":
         return ZONE_FILL["circulation"]
