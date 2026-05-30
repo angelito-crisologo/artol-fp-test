@@ -92,6 +92,22 @@ class Topology:
     # side-by-side open-plan LDK layout.
     rear_anchored: List[str] = field(default_factory=list)
 
+    # Optional lists of room ids that must touch the LEFT or RIGHT
+    # exterior walls (envelope's x_start / x_end). Use these to eliminate
+    # "wasted space" gaps on a side when a wing is shorter than the
+    # envelope: anchoring the wing's rooms to the corresponding exterior
+    # forces the solver to fill that edge cleanly.
+    left_anchored: List[str] = field(default_factory=list)
+    right_anchored: List[str] = field(default_factory=list)
+
+    # Optional lot-conditional adjustment profiles. Each profile is a dict
+    # with `when` (predicate on the lot's buildable dims) and `auto_apply`
+    # (adjustments dict in the same shape as the brief's adjustments). The
+    # FIRST matching profile is applied; its adjustments are merged with the
+    # brief's own (the brief always wins on conflicting room+key pairs).
+    # See phase_c3/run.py::_apply_lot_profile for the matching logic.
+    lot_adjustment_profiles: list = field(default_factory=list)
+
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
             if r.id == room_id:
@@ -128,6 +144,9 @@ def load_topology(path: str) -> Topology:
         match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
         front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
         rear_anchored=list(d.get("rear_anchored", []) or []),
+        left_anchored=list(d.get("left_anchored", []) or []),
+        right_anchored=list(d.get("right_anchored", []) or []),
+        lot_adjustment_profiles=list(d.get("lot_adjustment_profiles", []) or []),
     )
 
 

@@ -436,6 +436,19 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         if rid in ry_end:
             model.Add(ry_end[rid] == ey1)
 
+    # ---------- left-anchored / right-anchored rooms ----------
+    # Force specific rooms to touch the LEFT or RIGHT exterior wall. Used to
+    # eliminate wasted-space gaps when a wing's rooms don't fill the envelope
+    # width and the solver has freedom to pick where the gap goes. Pinning
+    # the wing's east-most or west-most room to its exterior wall closes the
+    # gap on that side.
+    for rid in topology.left_anchored:
+        if rid in rx:
+            model.Add(rx[rid] == ex0)
+    for rid in topology.right_anchored:
+        if rid in rx_end:
+            model.Add(rx_end[rid] == ex1)
+
     # ---------- canonical orientation (symmetry break) ----------
     # Anchor the kitchen on the RIGHT half of the envelope. With an x-symmetric
     # topology, the layout and its left-right mirror score identically; without

@@ -242,6 +242,53 @@ def _make_ai_client():
 
 # ---------- runners ----------
 
+def _match_lot_profile(profiles, env_w: float, env_h: float):
+    """Return the first matching profile's (name, auto_apply_dict), or
+    (None, {}). Predicate keys understood:
+      buildable_depth_lt_m / buildable_depth_gte_m
+      buildable_width_lt_m / buildable_width_gte_m
+      buildable_area_lt_sqm / buildable_area_gte_sqm
+    """
+    area = env_w * env_h
+    for prof in profiles or []:
+        when = prof.get("when") or {}
+        ok = True
+        for k, v in when.items():
+            v = float(v)
+            if   k == "buildable_depth_lt_m":   ok = ok and env_h <  v
+            elif k == "buildable_depth_gte_m":  ok = ok and env_h >= v
+            elif k == "buildable_width_lt_m":   ok = ok and env_w <  v
+            elif k == "buildable_width_gte_m":  ok = ok and env_w >= v
+            elif k == "buildable_area_lt_sqm":  ok = ok and area  <  v
+            elif k == "buildable_area_gte_sqm": ok = ok and area  >= v
+            else:
+                ok = False  # unknown predicate -> profile doesn't match
+                break
+        if ok:
+            return prof.get("name", "(unnamed)"), prof.get("auto_apply") or {}
+    return None, {}
+
+
+def _merge_lot_profile(topo, env_w: float, env_h: float, brief_adj: dict,
+                       verbose: bool):
+    """If the topology defines lot_adjustment_profiles, find the first match
+    based on the envelope dims and merge its auto_apply into brief_adj.
+    Brief always wins on conflicting (room_type, knob) pairs.
+    Returns the merged dict."""
+    profiles = getattr(topo, "lot_adjustment_profiles", None) or []
+    if not profiles:
+        return brief_adj or {}
+    name, auto = _match_lot_profile(profiles, env_w, env_h)
+    if not auto:
+        return brief_adj or {}
+    merged = {rt: dict(knobs) for rt, knobs in auto.items()}
+    for rt, knobs in (brief_adj or {}).items():
+        merged.setdefault(rt, {}).update(knobs)
+    if verbose:
+        print(f"  lot profile auto-applied: '{name}' -> {auto}")
+    return merged
+
+
 def _run_hand_authored(brief: Brief, topology_filename: str,
                        adjustments: dict = None, verbose: bool = True):
     """Load named topology, solve, validate. No API call."""
@@ -254,10 +301,11 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         print(f"shell category: {shell}  |  buildable {env.w:.1f}x{env.h:.1f} m")
         print(f"\n[hand-authored]  topology: {topology_filename}")
         if adjustments:
-            print(f"  adjustments: {adjustments}")
+            print(f"  adjustments (brief): {adjustments}")
     topo = load_topology(os.path.join(_TOPOLOGIES_DIR, topology_filename))
+    merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=adjustments)
+                   adjustments=merged_adj)
     issues, score = validate(layout, rules)
     errs = [i for i in issues if i.severity == "error"]
     if errs:
@@ -281,8 +329,10 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     if errs:
         raise RuntimeError("structural topology errors: " + "; ".join(errs))
     lot = _make_default_lot(brief)
+    env = lot.envelope()
+    merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose=False)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=adjustments)
+                   adjustments=merged_adj)
     issues, score = validate(layout, rules)
     hard = [i for i in issues if i.severity == "error"]
     if hard:

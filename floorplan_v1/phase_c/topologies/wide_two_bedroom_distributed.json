@@ -1,43 +1,70 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
   "id": "wide_two_bedroom_distributed",
-  "label": "Wide 2BR — horizontal split: front band (ensuite|standard|living), rear band (master|hall+common|stacked dining+kitchen)",
+  "label": "Wide 2BR + great room — compact 6-room layout for 16x9 lots (no hallway, great room shares right column with kitchen)",
   "target_shell": "wide",
 
   "rooms": [
-    { "id": "master",   "type": "master_bedroom",   "zone": "private",     "size_priority": "master_bedroom" },
-    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private",     "size_priority": "service_and_baths" },
-    { "id": "standard", "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
-    { "id": "common",   "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" },
-    { "id": "hall",     "type": "hallway",          "zone": "circulation", "size_priority": "service_and_baths" },
-    { "id": "living",   "type": "living_room",      "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true },
-    { "id": "dining",   "type": "dining_room",      "zone": "public",      "size_priority": "public_LDK" },
-    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK" }
+    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
+    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
+    { "id": "great",    "type": "great_room",       "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
   ],
 
   "adjacencies": [
-    { "a": "master",   "b": "ensuite", "min_shared_wall_m": 0.70, "kind": "ensuite_door",      "note": "ensuite at far-left of FRONT band, master at left of REAR band — share the front/rear-band boundary wall directly above ensuite" },
-    { "a": "master",   "b": "hall",    "min_shared_wall_m": 0.70, "kind": "bedroom_to_hall",   "note": "master's east face is hall's west — master accessed via hall" },
-    { "a": "standard", "b": "living",  "min_shared_wall_m": 0.80, "kind": "bedroom_to_public", "note": "standard accessed via living (both in FRONT band, side by side)" },
-    { "a": "hall",     "b": "common",  "min_shared_wall_m": 0.70, "kind": "bath_door",         "note": "common bath's west face is hall's east — bath door faces the hall" },
-    { "a": "hall",     "b": "dining",  "min_shared_wall_m": 0.70, "kind": "private_to_public", "note": "hall ends at dining — single bridge from the private notch to the public LDK" },
-    { "a": "common",   "b": "kitchen", "min_shared_wall_m": 1.00, "kind": "wet_core",          "note": "shared plumbing wall between common bath and kitchen — concentrates wet stack in the rear band" },
-    { "a": "common",   "b": "dining",  "min_shared_wall_m": 0.50, "kind": "bath_to_public_wall","note": "common's south face touches dining's portion that wraps around — shared wall, no door (door faces hall)" },
-    { "a": "living",   "b": "dining",  "min_shared_wall_m": 1.50, "kind": "open_plan",         "note": "living and dining share the front/rear-band boundary wall (cross-band open plan flow)" },
-    { "a": "dining",   "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan",         "note": "dining stacks above kitchen — kitchen at rear edge, dining in front of it within the rear band" }
+    { "a": "master",   "b": "ensuite", "min_shared_wall_m": 0.75, "kind": "ensuite_door",      "note": "bathroom door: 0.6-0.75 m + frame, so 0.75 m shared wall" },
+    { "a": "master",   "b": "great",   "min_shared_wall_m": 0.90, "kind": "bedroom_to_public", "note": "bedroom door: 0.8-0.9 m + frame, so 0.9 m shared wall (master's east face on the left-wing/right-column dividing line)" },
+    { "a": "standard", "b": "great",   "min_shared_wall_m": 0.90, "kind": "bedroom_to_public", "note": "bedroom door: 0.8-0.9 m + frame, so 0.9 m shared wall (standard accessed from the great room)" },
+    { "a": "common",   "b": "great",   "min_shared_wall_m": 0.75, "kind": "bath_door",         "note": "bathroom door: 0.6-0.75 m + frame, so 0.75 m shared wall (common bath publicly accessible from the great room)" },
+    { "a": "common",   "b": "kitchen", "min_shared_wall_m": 1.00, "kind": "wet_core",          "note": "common bath shares plumbing wall with kitchen — both at rear, single wet stack" },
+    { "a": "great",    "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan",         "note": "great room and kitchen stacked — kitchen at rear edge, great room in front of it, dividing the right column's 5 m depth between them" }
   ],
 
   "soft_proximities": [],
 
-  "entry_point": "living",
+  "entry_point": "great",
+
+  "rear_anchored": ["common", "kitchen"],
+
+  "left_anchored": ["master"],
+
+  "lot_adjustment_profiles": [
+    {
+      "name": "tight (e.g., 16x9)",
+      "when": { "buildable_depth_lt_m": 6.0 },
+      "auto_apply": {
+        "great_room":       { "min_area_sqm": 18.0 },
+        "ensuite_bath":     { "min_area_sqm":  3.0 }
+      }
+    },
+    {
+      "name": "moderate (e.g., 16x10)",
+      "when": { "buildable_depth_lt_m": 7.0 },
+      "auto_apply": {
+        "great_room":       { "min_area_sqm": 22.0 },
+        "ensuite_bath":     { "min_area_sqm":  4.0 },
+        "bedroom_standard": { "min_area_sqm":  8.5 }
+      }
+    },
+    {
+      "name": "ample (e.g., 16x11+)",
+      "when": { "buildable_depth_gte_m": 7.0 },
+      "auto_apply": {
+        "great_room":       { "min_area_sqm": 26.0 },
+        "ensuite_bath":     { "min_area_sqm":  4.0 },
+        "bedroom_standard": { "min_area_sqm":  9.0 },
+        "master_bedroom":   { "min_area_sqm": 14.0 }
+      }
+    }
+  ],
 
   "front_to_rear_stacks": [
     ["ensuite", "master"],
-    ["standard", "hall"],
+    ["standard", "master"],
     ["standard", "common"],
-    ["living", "dining"],
-    ["living", "kitchen"],
-    ["dining", "kitchen"]
+    ["great", "kitchen"]
   ],
 
   "setback_elements": [
@@ -47,30 +74,28 @@
   ],
 
   "notes": [
-    "Authored from the user's layout spec for wide shell:",
-    "  - Buildable shell split horizontally into two bands (front + rear).",
-    "  - FRONT band (street side): ensuite at the far-left end, then standard",
-    "    bedroom, then living room (left to right).",
-    "  - REAR band: master bedroom (left), then a small hall, then common T&B,",
-    "    then dining + kitchen STACKED inside the right end of the rear band",
-    "    (dining in front of kitchen, kitchen against rear wall).",
+    "Compact 6-room design for the wide 16x9 lot (11x5 buildable = 55 sqm).",
+    "Drops the hallway and combines living + dining into a single great room",
+    "to free enough area for the LDK on the shallow envelope.",
     "",
-    "Access flows:",
-    "  - Master accessed via the hall (master ↔ hall direct).",
-    "  - Standard accessed via living (cross-band shared wall).",
-    "  - Common bath has its door on the hall side (private circulation); its",
-    "    other wall touches the kitchen for the wet-core plumbing.",
-    "  - Single hall-mouth bridge from hall to dining (private → public).",
+    "Layout:",
+    "  LEFT WING (~6 m wide, full depth split into two bands):",
+    "    Front band (street side): ensuite (small, far-left) | standard",
+    "    Rear band:                master (spanning the wing's full width)",
     "",
-    "Front_to_rear_stacks chain enforces the band partition: each FRONT-band",
-    "room is constrained to be in front of its REAR-band counterpart, and",
-    "within the rear band, dining is in front of kitchen (so they stack).",
+    "  RIGHT COLUMN (~5 m wide, full depth split between great room and kitchen):",
+    "    Front portion:  GREAT ROOM (living/dining combined, hosts entry)",
+    "    Rear portion:   KITCHEN (against the rear exterior wall)",
+    "    Plus common bath wedged at the rear of the wing, sharing its",
+    "    plumbing wall with the kitchen.",
     "",
-    "Lot-depth note: 11x5 (16x9 lot) is extremely tight for this 8-room",
-    "program — dining + kitchen stacked within a 2.5 m rear-band depth runs",
-    "into the hard min area + aspect cap for dining_room. Test results:",
-    "    16x9  (5 m depth) → infeasible or marginal",
-    "    16x10 (6 m depth) → solves, dining and kitchen compact",
-    "    16x11 (7 m depth) → comfortable"
+    "Access flows (no hallway):",
+    "  - Master ↔ great room (master's east face is the dividing wall)",
+    "  - Standard ↔ great room (front-band cross-wing wall)",
+    "  - Common bath off the great room",
+    "  - Common ↔ kitchen wet-core wall",
+    "",
+    "Great room hosts the entry directly (the front door opens into the",
+    "combined L+D), since there's no separate living room as the entry."
   ]
 }
