@@ -1,0 +1,96 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "firewall_compact",
+  "label": "Single-storey 2BR with right firewall — 8x10 lot, L-shaped footprint with front-left carport cut",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private",     "size_priority": "master_bedroom" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" },
+    { "id": "hall",     "type": "hallway",          "zone": "circulation", "size_priority": "service_and_baths" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK" },
+    { "id": "great",    "type": "great_room",       "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "hall",    "min_shared_wall_m": 0.90, "kind": "bedroom_door", "note": "bedroom door 0.8 m + frame, 0.9 m shared wall" },
+    { "a": "standard", "b": "hall",    "min_shared_wall_m": 0.90, "kind": "bedroom_door", "note": "bedroom door 0.8 m + frame" },
+    { "a": "common",   "b": "hall",    "min_shared_wall_m": 0.85, "kind": "bath_door",    "note": "comfortable bath door (700 mm clear + frames)" },
+    { "a": "hall",     "b": "great",   "min_shared_wall_m": 1.00, "kind": "main_door",    "note": "private spine into the LDK" },
+    { "a": "great",    "b": "kitchen", "min_shared_wall_m": 1.50, "kind": "open_plan",    "note": "LDK is open plan — kitchen flows into great room" },
+    { "a": "common",   "b": "kitchen", "min_shared_wall_m": 1.00, "kind": "wet_core",     "note": "common bath shares plumbing wall with kitchen" }
+  ],
+
+  "soft_proximities": [],
+
+  "entry_point": "great",
+
+  "rear_anchored": ["master", "common", "kitchen"],
+
+  "left_anchored": ["master"],
+
+  "right_anchored": ["kitchen", "great"],
+
+  "front_to_rear_stacks": [
+    ["hall",     "master"],
+    ["hall",     "common"],
+    ["standard", "common"],
+    ["great",    "kitchen"]
+  ],
+
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact (8x10)",
+      "when": { "buildable_depth_lt_m": 7.0 },
+      "auto_apply": {
+        "master_bedroom":   { "min_area_sqm":  6.0, "max_area_sqm": 8.0 },
+        "bedroom_standard": { "min_area_sqm":  6.0, "max_area_sqm": 8.0 },
+        "common_bath":      { "min_area_sqm":  2.4, "max_area_sqm": 4.0 },
+        "kitchen":          { "min_area_sqm":  3.5, "max_area_sqm": 7.0 },
+        "great_room":       { "min_area_sqm":  8.0, "max_area_sqm": 14.0 }
+      }
+    }
+  ],
+
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_left",
+      "width_m": 1.0,
+      "depth_m": 3.5,
+      "consumed_by": "carport"
+    }
+  ],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback",  "covered": false },
+    { "type": "dirty_kitchen", "location": "rear_setback",  "covered": false, "behind": "kitchen" },
+    { "type": "service_area",  "location": "rear_setback",  "covered": false }
+  ],
+
+  "notes": [
+    "Single-storey 2BR row house with a firewall on the right (right setback = 0).",
+    "Built for compact 8x10 lots. The buildable envelope is 6x6 m (32 sqm) but",
+    "1 m wide x 3.5 m deep is reserved at the front-left for the carport cut,",
+    "giving an L-shaped building footprint of ~32.5 sqm.",
+    "",
+    "Layout:",
+    "  REAR BAND (~2.5 m deep):",
+    "    master (left)  |  common T&B (centre)  |  kitchen (right, rear-anchored)",
+    "",
+    "  MIDDLE / FRONT:",
+    "    hall (small vestibule)  |  standard bedroom",
+    "    great room (living + dining) on the right, open to kitchen above",
+    "    front-left corner is the carport cut (no room here)",
+    "",
+    "Access:",
+    "  Front door -> great room (entry)",
+    "  Great -> hall -> master / standard / common bath",
+    "  Common <-> kitchen wet-core wall",
+    "",
+    "The carport setback element extends from the side setback strip into",
+    "the building's front-left void (the 1 x 3.5 m cut), giving 16+ sqm of",
+    "covered carport. No interior door to the carport is generated."
+  ]
+}

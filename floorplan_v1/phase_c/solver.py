@@ -350,8 +350,40 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             model.AddBoolOr([w_ok.Not(), h_ok.Not()]).OnlyEnforceIf(chunky.Not())
             chunky_bonus[r.id] = chunky
 
-    # ---------- no overlap among rooms ----------
-    model.AddNoOverlap2D(list(xiv.values()), list(yiv.values()))
+    # ---------- building voids ----------
+    # Each void is a fixed-position rectangle inside the envelope that rooms
+    # can't overlap. Anchored to one of the four envelope corners by the
+    # void's `location` field. The solver treats them as constant-position
+    # IntervalVars that join the NoOverlap2D constraint.
+    void_xiv = []
+    void_yiv = []
+    for v in (topology.building_voids or []):
+        vw = _u(v.width_m)
+        vh = _u(v.depth_m)
+        loc = (v.location or "").lower()
+        if loc == "front_left":
+            vx0, vy0 = ex0, ey0
+        elif loc == "front_right":
+            vx0, vy0 = ex1 - vw, ey0
+        elif loc == "rear_left":
+            vx0, vy0 = ex0, ey1 - vh
+        elif loc == "rear_right":
+            vx0, vy0 = ex1 - vw, ey1 - vh
+        else:
+            # Unknown location: skip (warn at validation level if needed).
+            continue
+        vx_const = model.NewConstant(vx0)
+        vy_const = model.NewConstant(vy0)
+        vx_end = model.NewConstant(vx0 + vw)
+        vy_end = model.NewConstant(vy0 + vh)
+        vxi = model.NewIntervalVar(vx_const, vw, vx_end, f"void_xiv_{v.id}")
+        vyi = model.NewIntervalVar(vy_const, vh, vy_end, f"void_yiv_{v.id}")
+        void_xiv.append(vxi)
+        void_yiv.append(vyi)
+
+    # ---------- no overlap among rooms (+ building voids) ----------
+    model.AddNoOverlap2D(list(xiv.values()) + void_xiv,
+                         list(yiv.values()) + void_yiv)
 
     # ---------- window access: each habitable room touches the envelope boundary ----------
     for r in topology.rooms:
@@ -613,16 +645,28 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         y1 = _m(solver.Value(ry_end[r.id]))
         rooms.append(Room(r.id, r.type, Rect(x0, y0, x1, y1), r.zone))
 
-    # ---------- carport placement (driven by the lot's widened setback) ----------
-    # The runner sets up the lot with the 3 m carport setback on one side; we
-    # just read whichever side it ended up on. The "which side is strategic"
-    # decision happens at the runner level via multi-shot.
-    if lot.front >= 2.8:
-        carport_side = "front"
-    elif lot.left >= 2.8:
-        carport_side = "left"
-    else:
-        carport_side = "right"
+    # ---------- carport placement ----------
+    # If the topology declares a building_void with consumed_by="carport",
+    # that void's location is authoritative: the carport sits along the
+    # matching side of the lot.
+    # Otherwise fall back to the historical heuristic — whichever side has
+    # the widest setback (>= 2.8 m) gets the carport.
+    carport_side = None
+    for v in (topology.building_voids or []):
+        if (v.consumed_by or "").lower() == "carport":
+            loc = (v.location or "").lower()
+            if loc in ("front_left", "rear_left"):
+                carport_side = "left"
+            elif loc in ("front_right", "rear_right"):
+                carport_side = "right"
+            break
+    if carport_side is None:
+        if lot.front >= 2.8:
+            carport_side = "front"
+        elif lot.left >= 2.8:
+            carport_side = "left"
+        else:
+            carport_side = "right"
 
     # dirty kitchen sits behind the solver-placed kitchen; service area spans
     # the rest of the rear-setback width.

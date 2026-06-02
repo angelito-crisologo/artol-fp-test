@@ -1,6 +1,6 @@
 """User brief — structured input the pipeline turns into a topology."""
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -17,6 +17,10 @@ class Brief:
     must_haves: List[str] = field(default_factory=list)   # e.g. ["dirty kitchen", "open plan"]
     avoid: List[str] = field(default_factory=list)
     carport_preference: Optional[str] = None       # "right" | "left" | "front" | None
+    # Optional explicit setbacks (m) — keys: front, rear, left, right.
+    # When given, overrides the carport_preference default geometry; useful
+    # for firewall configs (right=0) or any non-symmetric setback need.
+    setbacks: Optional[Dict[str, float]] = None
 
     @property
     def lot_area(self) -> float:

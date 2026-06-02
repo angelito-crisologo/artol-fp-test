@@ -33,10 +33,16 @@ THRESHOLD_M = 0.05   # ignore sub-5 cm gaps as float / grid noise
 
 
 def snap_gaps(layout: Layout, max_iter: int = 50,
-              verbose: bool = False) -> Tuple[Layout, int]:
+              verbose: bool = False,
+              void_rects: Optional[List[Rect]] = None) -> Tuple[Layout, int]:
     """Iteratively snap rooms to fill rectangular gaps. Modifies layout's room
-    rects in place; returns (layout, snap_count) for inspection."""
+    rects in place; returns (layout, snap_count) for inspection.
+
+    `void_rects` are extra obstacles (e.g., topology building voids) that
+    rooms must not extend INTO. They behave like other room cells for gap-
+    computation purposes."""
     env = layout.lot.envelope()
+    voids = void_rects or []
     snap_count = 0
     for _ in range(max_iter):
         best_dist = 0.0
@@ -44,10 +50,11 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
         for room in layout.rooms:
             other_rects = [c for o in layout.rooms if o is not room
                            for c in o.cells]
+            obstacles = other_rects + voids
             cells = room.cells
             for cell_idx, cell in enumerate(cells):
                 for side in ("west", "east", "south", "north"):
-                    d = _gap_distance(cell, side, env, other_rects)
+                    d = _gap_distance(cell, side, env, obstacles)
                     if d > best_dist:
                         best_dist = d
                         best_target = (room, cell_idx, side)

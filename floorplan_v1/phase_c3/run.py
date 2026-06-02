@@ -84,7 +84,7 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 # Add, edit, or remove briefs by editing the JSON — no Python changes.
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
-                 "must_haves", "avoid", "carport_preference")
+                 "must_haves", "avoid", "carport_preference", "setbacks")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -282,6 +282,29 @@ def _match_lot_profile(profiles, env_w: float, env_h: float):
     return None, {}
 
 
+def _topology_void_rects(topo, lot):
+    """Convert each topology BuildingVoid (anchored at an envelope corner)
+    into a Rect in model coordinates for downstream consumers (snap_gaps,
+    renderer)."""
+    from model import Rect as _Rect
+    env = lot.envelope()
+    out = []
+    for v in (getattr(topo, "building_voids", None) or []):
+        loc = (v.location or "").lower()
+        if loc == "front_left":
+            r = _Rect(env.x0, env.y0, env.x0 + v.width_m, env.y0 + v.depth_m)
+        elif loc == "front_right":
+            r = _Rect(env.x1 - v.width_m, env.y0, env.x1, env.y0 + v.depth_m)
+        elif loc == "rear_left":
+            r = _Rect(env.x0, env.y1 - v.depth_m, env.x0 + v.width_m, env.y1)
+        elif loc == "rear_right":
+            r = _Rect(env.x1 - v.width_m, env.y1 - v.depth_m, env.x1, env.y1)
+        else:
+            continue
+        out.append(r)
+    return out
+
+
 def _merge_lot_profile(topo, env_w: float, env_h: float, brief_adj: dict,
                        verbose: bool):
     """If the topology defines lot_adjustment_profiles, find the first match
@@ -319,6 +342,11 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
                    adjustments=merged_adj)
+    # Attach the topology's building voids to the layout so the validator
+    # can see them and suppress the "element in envelope" false positive
+    # (a setback element overlapping a void is intentional).
+    void_rects = _topology_void_rects(topo, lot)
+    layout.building_void_rects = void_rects
     issues, score = validate(layout, rules)
     errs = [i for i in issues if i.severity == "error"]
     if errs:
@@ -326,10 +354,9 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
             f"hand-authored topology {topology_filename} failed validation: "
             + "; ".join(str(e) for e in errs[:3]))
     # Post-solve, post-validate gap snapper: extend room walls into any unused
-    # envelope strips. May exceed the solver's aspect cap (the validator
-    # doesn't check aspect, so this stays compliant). Only runs once the raw
-    # layout has passed validation cleanly.
-    layout, n_snaps = snap_gaps(layout, verbose=verbose)
+    # envelope strips. Building voids are treated as obstacles so rooms don't
+    # snap into them.
+    layout, n_snaps = snap_gaps(layout, verbose=verbose, void_rects=void_rects)
     if n_snaps:
         # Re-validate to refresh the score with the now-larger room areas.
         issues, score = validate(layout, rules)
@@ -355,6 +382,8 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose=False)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
                    adjustments=merged_adj)
+    void_rects = _topology_void_rects(topo, lot)
+    layout.building_void_rects = void_rects
     issues, score = validate(layout, rules)
     hard = [i for i in issues if i.severity == "error"]
     if hard:
@@ -362,7 +391,7 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
                            + "; ".join(str(i) for i in hard[:3]))
     # Snap unused envelope strips after the AI-realized layout has cleared
     # the validator. Re-validate so the score reflects the polished layout.
-    layout, n_snaps = snap_gaps(layout, verbose=False)
+    layout, n_snaps = snap_gaps(layout, verbose=False, void_rects=void_rects)
     if n_snaps:
         issues, score = validate(layout, rules)
     return layout, topo, score, issues

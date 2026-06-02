@@ -25,7 +25,7 @@ LABELS = {
     "bedroom_standard": "BEDROOM",
     "master_bedroom": "MASTER BR",
     "ensuite_bath": "ENSUITE",
-    "common_bath": "COMMON T&B",
+    "common_bath": "T&B",
     "bath_toilet": "WC",
     "powder_room": "WC",
     "living_room": "LIVING",
@@ -37,6 +37,127 @@ LABELS = {
     "dirty_kitchen": "DIRTY KITCHEN",
     "service_area": "SERVICE",
 }
+
+# Compact fallbacks for room types whose preferred label may not fit a small
+# room. The full label is tried first; the fallback is used only if the
+# label can't be made to fit even at the minimum font size, with wrapping.
+LABEL_FALLBACKS = {
+    "ensuite_bath": "T&B",
+}
+
+# Adaptive labeling thresholds. Labels are scaled and / or wrapped to fit
+# the cell they're drawn in; rooms below the area threshold drop the
+# dimensions sub-text entirely (the rule of thumb being that <3 sqm rooms
+# are typically baths or closets where the exact dimensions are recoverable
+# from the lot ruler and aren't load-bearing on the plan).
+LABEL_FONT_MAX = 12
+LABEL_FONT_MIN = 8
+SUB_FONT_FIXED = 10          # consistent dimensions size across all rooms
+SMALL_ROOM_THRESHOLD_SQM = 3.0
+LABEL_USE_RATIO = 0.85       # fraction of cell width usable for the text
+
+
+def _estimate_text_width_px(text: str, font_size: float, bold: bool) -> float:
+    """Rough Arial text width estimate (good enough for fit decisions)."""
+    avg_char = font_size * (0.62 if bold else 0.56)
+    return len(text) * avg_char
+
+
+def _fit_label_lines(text, max_w_px, max_font, min_font, *,
+                      fallback=None, bold=True):
+    """Try to fit `text` inside `max_w_px`. Strategy:
+      1. Single line at decreasing font sizes (max → min).
+      2. If still too wide and there's a space, split into two lines at
+         the most-balanced word boundary, retry single → min font.
+      3. If a fallback shorter label is supplied, try it single-line.
+      4. Last resort: return the text at min font (slight overflow ok)."""
+    # Strategy 1
+    for f in range(max_font, min_font - 1, -1):
+        if _estimate_text_width_px(text, f, bold) <= max_w_px:
+            return [text], f
+    # Strategy 2a — split on a "·" separator if present (used in the
+    # dimensions sub like "1.5×2.0 m · 3.0 sqm"). The bullet is purely a
+    # visual separator on the single-line form, so drop it when wrapping.
+    if " · " in text:
+        l1, l2 = text.split(" · ", 1)
+        for f in range(max_font, min_font - 1, -1):
+            if (_estimate_text_width_px(l1, f, bold) <= max_w_px and
+                    _estimate_text_width_px(l2, f, bold) <= max_w_px):
+                return [l1, l2], f
+    # Strategy 2b — generic space split (most-balanced word boundary)
+    if " " in text:
+        words = text.split()
+        best = None
+        best_max_len = float("inf")
+        for i in range(1, len(words)):
+            l1 = " ".join(words[:i])
+            l2 = " ".join(words[i:])
+            m = max(len(l1), len(l2))
+            if m < best_max_len:
+                best_max_len = m
+                best = (l1, l2)
+        if best:
+            l1, l2 = best
+            for f in range(max_font, min_font - 1, -1):
+                if (_estimate_text_width_px(l1, f, bold) <= max_w_px and
+                        _estimate_text_width_px(l2, f, bold) <= max_w_px):
+                    return [l1, l2], f
+    # Strategy 3
+    if fallback is not None:
+        for f in range(max_font, min_font - 1, -1):
+            if _estimate_text_width_px(fallback, f, bold) <= max_w_px:
+                return [fallback], f
+    # Strategy 4
+    return [fallback if fallback else text], min_font
+
+
+def _fit_sub_fixed(text, max_w_px, font_size, bold=False):
+    """Fit a dimensions sub at a FIXED font size. Returns a list of lines
+    (1 line if it fits as-is, 2 lines if a " · " split fits, otherwise [])
+    — dimensions are dropped entirely if they don't fit at the fixed size,
+    so the font stays consistent across the whole plan."""
+    if _estimate_text_width_px(text, font_size, bold) <= max_w_px:
+        return [text]
+    if " · " in text:
+        l1, l2 = text.split(" · ", 1)
+        if (_estimate_text_width_px(l1, font_size, bold) <= max_w_px and
+                _estimate_text_width_px(l2, font_size, bold) <= max_w_px):
+            return [l1, l2]
+    return []
+
+
+def _emit_centered_text_block(cx, cy, label_lines, label_font,
+                              sub_lines, sub_font):
+    """Emit SVG <text> elements for a label block (bold, dark) and an
+    optional dimensions sub block (smaller, gray) stacked vertically and
+    centered on (cx, cy)."""
+    n_label = len(label_lines)
+    n_sub = len(sub_lines) if sub_lines else 0
+    label_lh = label_font * 1.15
+    sub_lh = sub_font * 1.15 if n_sub else 0
+    gap = 4 if n_sub else 0
+    total_h = n_label * label_lh + gap + n_sub * sub_lh
+    # Top edge of the whole text block in SVG coords
+    top = cy - total_h / 2
+    parts = []
+    # Label lines (baseline ~ font_size below the line's top)
+    y = top + label_font
+    for line in label_lines:
+        parts.append(
+            f'<text x="{cx:.1f}" y="{y:.1f}" text-anchor="middle" '
+            f'font-family="Arial" font-size="{label_font}" '
+            f'font-weight="bold" fill="#222">{html.escape(line)}</text>')
+        y += label_lh
+    # Sub lines (no bold, gray)
+    if n_sub:
+        y = top + n_label * label_lh + gap + sub_font
+        for line in sub_lines:
+            parts.append(
+                f'<text x="{cx:.1f}" y="{y:.1f}" text-anchor="middle" '
+                f'font-family="Arial" font-size="{sub_font}" '
+                f'fill="#555">{html.escape(line)}</text>')
+            y += sub_lh
+    return "".join(parts)
 
 
 def _fill(room) -> str:
@@ -64,12 +185,19 @@ def _rect_svg(lot, rect: Rect, fill, dashed=False, label="", sub=""):
              f'fill="{fill}" stroke="#333" stroke-width="1.5"{dash}/>']
     cx = px + w / 2
     cy = py + h / 2
-    if label:
-        parts.append(f'<text x="{cx:.1f}" y="{cy-6:.1f}" text-anchor="middle" '
-                     f'font-family="Arial" font-size="12" font-weight="bold" fill="#222">{html.escape(label)}</text>')
-    if sub:
-        parts.append(f'<text x="{cx:.1f}" y="{cy+10:.1f}" text-anchor="middle" '
-                     f'font-family="Arial" font-size="10" fill="#555">{html.escape(sub)}</text>')
+    if label or sub:
+        max_w = w * LABEL_USE_RATIO
+        label_lines, label_font = ([], 0)
+        sub_lines = []
+        if label:
+            label_lines, label_font = _fit_label_lines(
+                label, max_w, LABEL_FONT_MAX, LABEL_FONT_MIN, bold=True)
+        if sub:
+            # Fixed-size dimensions for consistency across the plan; wraps
+            # to 2 lines on " · " when needed, drops otherwise.
+            sub_lines = _fit_sub_fixed(sub, max_w, SUB_FONT_FIXED, bold=False)
+        parts.append(_emit_centered_text_block(
+            cx, cy, label_lines, label_font, sub_lines, SUB_FONT_FIXED))
     return "".join(parts)
 
 
@@ -170,15 +298,29 @@ def layout_to_svg(layout: Layout) -> str:
         big = max(cells, key=lambda c: c.area)  # label on the largest cell
         cx = MARGIN + (big.x0 + big.w / 2) * SCALE
         cy = _y(lot, big.y0 + big.h / 2)
-        label = LABELS.get(r.type, r.type)
+        label_raw = LABELS.get(r.type, r.type)
+        fallback = LABEL_FALLBACKS.get(r.type)
         if len(cells) > 1:
-            sub = f"{r.area:.1f} sqm (L-shaped)"
+            sub_raw = f"{r.area:.1f} sqm (L-shaped)"
         else:
-            sub = f"{r.rect.w:.1f}×{r.rect.h:.1f} m · {r.rect.area:.1f} sqm"
-        s.append(f'<text x="{cx:.1f}" y="{cy-6:.1f}" text-anchor="middle" '
-                 f'font-family="Arial" font-size="12" font-weight="bold" fill="#222">{html.escape(label)}</text>')
-        s.append(f'<text x="{cx:.1f}" y="{cy+10:.1f}" text-anchor="middle" '
-                 f'font-family="Arial" font-size="10" fill="#555">{html.escape(sub)}</text>')
+            sub_raw = f"{r.rect.w:.1f}×{r.rect.h:.1f} m · {r.rect.area:.1f} sqm"
+        # Available text width = label cell width × usable ratio.
+        max_w = big.w * SCALE * LABEL_USE_RATIO
+        label_lines, label_font = _fit_label_lines(
+            label_raw, max_w, LABEL_FONT_MAX, LABEL_FONT_MIN,
+            fallback=fallback, bold=True)
+        # Tiny rooms drop the dimensions sub — the floor ruler still shows
+        # the exact rect, and on a small cell the dimensions just don't fit.
+        # All other rooms use the SAME dimension font size (wraps on " · "
+        # if needed) so the dimensions read at a consistent visual weight
+        # across the whole plan.
+        if r.area >= SMALL_ROOM_THRESHOLD_SQM:
+            sub_lines = _fit_sub_fixed(
+                sub_raw, max_w, SUB_FONT_FIXED, bold=False)
+        else:
+            sub_lines = []
+        s.append(_emit_centered_text_block(
+            cx, cy, label_lines, label_font, sub_lines, SUB_FONT_FIXED))
 
     # FRONT marker
     s.append(f'<text x="{MARGIN + lot.width*SCALE/2:.1f}" y="{H-12:.1f}" text-anchor="middle" '
@@ -199,6 +341,16 @@ def _opp_side(side: str) -> str:
     return {"N": "S", "S": "N", "E": "W", "W": "E"}[side]
 
 
+# Lot/exterior fill — matches the lot rectangle drawn by layout_to_svg, used
+# whenever an opening's "other side" is outside the building.
+LOT_FILL = "#fbfbf7"
+
+# Half-thickness of the colored erase strip used to clear the wall + room
+# strokes at an opening. 5 svg-px covers the worst-case 0.20 m exterior wall
+# (8.4 px) and the room stroke (1.5 px) when applied on each side of the wall.
+ERASE_HALF_PX = 5
+
+
 def _door_svg(door, layout) -> str:
     """Render a door symbol: an opening erased into the wall, a perpendicular
     door panel line, and a quarter-arc swing. The wall side stored on the
@@ -206,9 +358,15 @@ def _door_svg(door, layout) -> str:
     if door.room_a == "exterior":
         owner = next((r for r in layout.rooms if r.id == door.room_b), None)
         owner_is_a = False
+        other = None
+    elif door.room_b == "exterior":
+        owner = next((r for r in layout.rooms if r.id == door.room_a), None)
+        owner_is_a = True
+        other = None
     else:
         owner = next((r for r in layout.rooms if r.id == door.room_a), None)
         owner_is_a = True
+        other = next((r for r in layout.rooms if r.id == door.room_b), None)
     if owner is None:
         return ""
     rect, wall, pos, cw = owner.rect, door.wall, door.position_m, door.clear_width_m
@@ -239,20 +397,32 @@ def _door_svg(door, layout) -> str:
                   else (door.swing_into == door.room_b)
     perp = perp_into_owner if swing_owner else _opp_side(perp_into_owner)
 
-    # Hinge defaults to the "near" endpoint; latch is the "far" endpoint.
-    # Door panel extends from hinge perpendicular by `cw` into the swing side.
-    hx, hy = near
-    lx, ly = far
+    # Hinge selection: door.hinge_at picks which end of the opening is the
+    # hinge. The other end becomes the latch. With "low" (default), the
+    # hinge is at the position_m end; with "high", at the far end. This
+    # lets the door swing open against the nearest perpendicular wall.
+    if getattr(door, "hinge_at", "low") == "high":
+        hinge_m = far
+        latch_m = near
+    else:
+        hinge_m = near
+        latch_m = far
+    hx, hy = hinge_m
     if perp == "N":   tip = (hx, hy + cw)
     elif perp == "S": tip = (hx, hy - cw)
     elif perp == "E": tip = (hx + cw, hy)
     else:             tip = (hx - cw, hy)  # W
 
-    # SVG-space conversions
+    # SVG-space conversions. The wall-erase needs the OPENING endpoints
+    # (near & far). The door PANEL is drawn from the hinge perpendicular
+    # into the room (so it hugs the perpendicular wall). The swing ARC
+    # sweeps from the tip back to the latch end of the opening.
     lot = layout.lot
-    hxs, hys = _to_svg_xy(lot, *near)
-    lxs, lys = _to_svg_xy(lot, *far)
+    hxs, hys = _to_svg_xy(lot, *hinge_m)   # hinge end of opening
+    lxs, lys = _to_svg_xy(lot, *latch_m)   # latch end of opening
     txs, tys = _to_svg_xy(lot, *tip)
+    nxs, nys = _to_svg_xy(lot, *near)      # opening start (for wall erase)
+    fxs, fys = _to_svg_xy(lot, *far)       # opening end   (for wall erase)
 
     # SVG arc sweep flag. The arc must bulge OUTWARD — away from the hinge
     # (the centre of the swing) — toward the chord-midpoint side. With the
@@ -265,20 +435,76 @@ def _door_svg(door, layout) -> str:
     sweep = 1 if cross > 0 else 0
 
     radius = cw * SCALE
-    # Erase the wall AND room stroke under the door opening with a wide white
-    # line (10 px > the 8.4 px exterior wall, so the opening is clean).
+    # Erase the wall + room strokes at the opening using the ACTUAL room
+    # fill on each side of the wall (not white) — keeps the colour blocks
+    # continuous so the opening doesn't read as a hole in the floor plan.
+    owner_fill = _fill(owner)
+    other_fill = _fill(other) if other is not None else LOT_FILL
+    erase = _two_color_opening_erase(
+        nxs, nys, fxs, fys, wall, owner_fill, other_fill)
     parts = [
-        f'<line x1="{hxs:.1f}" y1="{hys:.1f}" x2="{lxs:.1f}" y2="{lys:.1f}" '
-        f'stroke="white" stroke-width="10"/>',
-        # Door panel (perpendicular line from hinge to tip)
+        erase,
+        # Door panel (perpendicular line from hinge to tip) — hugs the
+        # perpendicular wall the door rests against when fully open.
         f'<line x1="{hxs:.1f}" y1="{hys:.1f}" x2="{txs:.1f}" y2="{tys:.1f}" '
         f'stroke="#444" stroke-width="1.4"/>',
-        # Swing arc (quarter circle from tip to latch)
+        # Swing arc (quarter circle from tip to latch) — the far end of the
+        # swing, bulging away from the perpendicular wall.
         f'<path d="M {txs:.1f} {tys:.1f} A {radius:.1f} {radius:.1f} 0 0 '
         f'{sweep} {lxs:.1f} {lys:.1f}" fill="none" stroke="#999" '
         f'stroke-width="0.7" stroke-dasharray="2 2"/>',
     ]
     return "".join(parts)
+
+
+def _two_color_opening_erase(nxs, nys, fxs, fys, wall, owner_fill, other_fill):
+    """Emit two filled rects covering the wall at an opening, one per side
+    of the wall, each painted with the room fill on that side. `wall` is the
+    Door/Window's `wall` attribute (N/S/E/W) relative to the owner room.
+
+    For wall = N: owner is SOUTH of the wall (larger svg y), other is NORTH.
+    For wall = S: owner is NORTH (smaller svg y),                 other is SOUTH.
+    For wall = E: owner is WEST  (smaller svg x), other is EAST.
+    For wall = W: owner is EAST                    , other is WEST."""
+    h = ERASE_HALF_PX
+    if wall in ("N", "S"):
+        # horizontal wall — nys == fys (same svg y). Strip extends ±h in svg y.
+        x_min = min(nxs, fxs)
+        x_max = max(nxs, fxs)
+        y_wall = nys
+        if wall == "N":
+            owner_y0, owner_y1 = y_wall, y_wall + h   # south (down)
+            other_y0, other_y1 = y_wall - h, y_wall   # north (up)
+        else:  # wall == "S"
+            owner_y0, owner_y1 = y_wall - h, y_wall   # north of S wall
+            other_y0, other_y1 = y_wall, y_wall + h   # south of S wall
+        return (
+            f'<rect x="{x_min:.1f}" y="{owner_y0:.1f}" '
+            f'width="{x_max - x_min:.1f}" height="{owner_y1 - owner_y0:.1f}" '
+            f'fill="{owner_fill}" stroke="none"/>'
+            f'<rect x="{x_min:.1f}" y="{other_y0:.1f}" '
+            f'width="{x_max - x_min:.1f}" height="{other_y1 - other_y0:.1f}" '
+            f'fill="{other_fill}" stroke="none"/>'
+        )
+    else:
+        # vertical wall — nxs == fxs (same svg x). Strip extends ±h in svg x.
+        y_min = min(nys, fys)
+        y_max = max(nys, fys)
+        x_wall = nxs
+        if wall == "E":
+            owner_x0, owner_x1 = x_wall - h, x_wall   # west of E wall
+            other_x0, other_x1 = x_wall, x_wall + h   # east of E wall
+        else:  # wall == "W"
+            owner_x0, owner_x1 = x_wall, x_wall + h   # east of W wall
+            other_x0, other_x1 = x_wall - h, x_wall   # west of W wall
+        return (
+            f'<rect x="{owner_x0:.1f}" y="{y_min:.1f}" '
+            f'width="{owner_x1 - owner_x0:.1f}" height="{y_max - y_min:.1f}" '
+            f'fill="{owner_fill}" stroke="none"/>'
+            f'<rect x="{other_x0:.1f}" y="{y_min:.1f}" '
+            f'width="{other_x1 - other_x0:.1f}" height="{y_max - y_min:.1f}" '
+            f'fill="{other_fill}" stroke="none"/>'
+        )
 
 
 def _window_svg(window, layout) -> str:
@@ -307,14 +533,38 @@ def _window_svg(window, layout) -> str:
     lot = layout.lot
     axs, ays = _to_svg_xy(lot, *a)
     bxs, bys = _to_svg_xy(lot, *b)
-    # Wide white erase (10 px > exterior wall thickness so the wall is cut
-    # cleanly), then a blue glass strip on top.
-    return (
-        f'<line x1="{axs:.1f}" y1="{ays:.1f}" x2="{bxs:.1f}" y2="{bys:.1f}" '
-        f'stroke="white" stroke-width="10"/>'
-        f'<line x1="{axs:.1f}" y1="{ays:.1f}" x2="{bxs:.1f}" y2="{bys:.1f}" '
-        f'stroke="#7aaad1" stroke-width="2.5"/>'
-    )
+    # Erase the wall on each side of the opening using the room's fill on
+    # the interior side and the lot fill on the exterior side, then draw
+    # three parallel black lines (architectural convention: outer frame /
+    # glass centerline / inner frame).
+    erase = _two_color_opening_erase(
+        axs, ays, bxs, bys, wall, _fill(room), LOT_FILL)
+    win_offset = 3                 # px — perpendicular spread of the 3 lines
+    win_color = "#222"             # near-black; matches wall darks
+    win_stroke = 1.0
+    if wall in ("N", "S"):
+        # horizontal wall — three lines stacked vertically along the opening
+        x1, x2 = axs, bxs
+        y_c = ays                  # ays == bys
+        offsets = (-win_offset, 0, win_offset)
+        lines = [
+            f'<line x1="{x1:.1f}" y1="{y_c + dy:.1f}" '
+            f'x2="{x2:.1f}" y2="{y_c + dy:.1f}" '
+            f'stroke="{win_color}" stroke-width="{win_stroke}"/>'
+            for dy in offsets
+        ]
+    else:
+        # vertical wall — three lines side by side along the opening
+        y1, y2 = ays, bys
+        x_c = axs                  # axs == bxs
+        offsets = (-win_offset, 0, win_offset)
+        lines = [
+            f'<line x1="{x_c + dx:.1f}" y1="{y1:.1f}" '
+            f'x2="{x_c + dx:.1f}" y2="{y2:.1f}" '
+            f'stroke="{win_color}" stroke-width="{win_stroke}"/>'
+            for dx in offsets
+        ]
+    return erase + "".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -327,6 +577,31 @@ WALL_FILL = "#555"               # gray fill for walls
 EPS = 1e-3
 
 
+def _void_rects(plan):
+    """Build a list of (id, rect, consumed_by) tuples for the topology's
+    building voids in lot/model coordinates. Voids participate in the wall
+    graph like phantom rooms: walls between a real room and a void are
+    treated as EXTERIOR walls (building's outer face), but the void's
+    OTHER edges (where they meet the buildable envelope edge) get no
+    walls — those faces are open to the outside (e.g., to the carport)."""
+    out = []
+    env = plan.layout.lot.envelope()
+    for v in (plan.topology.building_voids or []):
+        loc = (v.location or "").lower()
+        if loc == "front_left":
+            r = Rect(env.x0, env.y0, env.x0 + v.width_m, env.y0 + v.depth_m)
+        elif loc == "front_right":
+            r = Rect(env.x1 - v.width_m, env.y0, env.x1, env.y0 + v.depth_m)
+        elif loc == "rear_left":
+            r = Rect(env.x0, env.y1 - v.depth_m, env.x0 + v.width_m, env.y1)
+        elif loc == "rear_right":
+            r = Rect(env.x1 - v.width_m, env.y1 - v.depth_m, env.x1, env.y1)
+        else:
+            continue
+        out.append((v.id, r, v.consumed_by))
+    return out
+
+
 def _compute_walls(plan):
     """Walk the layout and emit wall geometry (axis-aligned rectangles).
 
@@ -335,18 +610,22 @@ def _compute_walls(plan):
                edge, emit one wall rectangle centred on that edge. Skip pairs
                flagged as open_plan (no wall between L/D/K rooms etc.).
       Pass B — exterior walls: for every room edge, subtract all the segments
-               covered by other rooms — what's left is exterior. Emit one
-               wall rectangle per exterior segment, centred on the edge.
+               covered by other rooms AND any building voids — what's left
+               faces the lot exterior. Emit one wall rectangle per exterior
+               segment, centred on the edge.
+      Pass C — room↔void walls: walls between a real room and a building
+               void are EXTERIOR-grade (the building's outer face meeting
+               the void). The void itself contributes NO walls along its
+               lot-edge sides (those are open).
 
     Walls are CENTRED on the room boundary, so each wall extends half its
-    thickness into the room interior AND half into the adjacent space
-    (another room for interior walls, the buildable envelope void / setback
-    for exterior walls)."""
+    thickness into the room interior AND half into the adjacent space."""
     rooms = plan.layout.rooms
     open_set = {frozenset((e.room_a, e.room_b)) for e in plan.open_plan_edges}
+    voids = _void_rects(plan)               # list of (id, Rect, consumed_by)
     walls = []
 
-    # Pass A — interior walls, one per non-open-plan pair
+    # Pass A — interior walls, one per non-open-plan room pair
     for i, r1 in enumerate(rooms):
         for r2 in rooms[i + 1:]:
             if frozenset((r1.id, r2.id)) in open_set:
@@ -358,10 +637,26 @@ def _compute_walls(plan):
             walls.append(_wall_rect(side, coord, start, end,
                                     WALL_THICKNESS_INTERIOR))
 
+    # Pass C — room ↔ void walls (the building's exterior face meeting the
+    # void). Use EXTERIOR thickness because this IS the outer wall on that
+    # side of the building.
+    for r in rooms:
+        for _vid, vrect, _consumed in voids:
+            edge = _wall_shared_edge(r.rect, vrect)
+            if edge is None:
+                continue
+            side, coord, start, end = edge
+            walls.append(_wall_rect(side, coord, start, end,
+                                    WALL_THICKNESS_EXTERIOR))
+
     # Pass B — exterior walls, uncovered portions of each side per room
+    # Treat voids as "covering" the relevant segment so we don't double-up
+    # with the Pass C walls.
+    void_rects_only = [vr for _vid, vr, _c in voids]
     for r in rooms:
         for side in ("N", "S", "E", "W"):
-            uncovered = _uncovered_segments(r, side, rooms)
+            uncovered = _uncovered_segments_excluding_voids(
+                r, side, rooms, void_rects_only)
             if side == "N":   coord = r.rect.y1
             elif side == "S": coord = r.rect.y0
             elif side == "E": coord = r.rect.x1
@@ -371,6 +666,44 @@ def _compute_walls(plan):
                                         WALL_THICKNESS_EXTERIOR))
 
     return walls
+
+
+def _uncovered_segments_excluding_voids(room, side, all_rooms, void_rects):
+    """Like _uncovered_segments, but also subtracts the segments covered by
+    building voids. We don't want to emit a Pass B (exterior) wall on a
+    side where a void abuts, because Pass C already emitted that wall."""
+    base = _uncovered_segments(room, side, all_rooms)
+    if not void_rects:
+        return base
+    # For each void touching this room's edge, mark its perpendicular range
+    # as "covered" and subtract from the base segments.
+    if side == "N":
+        match_coord = room.rect.y1
+        is_neighbor = lambda v: abs(v.y0 - match_coord) <= EPS
+        proj = lambda v: (v.x0, v.x1)
+    elif side == "S":
+        match_coord = room.rect.y0
+        is_neighbor = lambda v: abs(v.y1 - match_coord) <= EPS
+        proj = lambda v: (v.x0, v.x1)
+    elif side == "E":
+        match_coord = room.rect.x1
+        is_neighbor = lambda v: abs(v.x0 - match_coord) <= EPS
+        proj = lambda v: (v.y0, v.y1)
+    else:  # W
+        match_coord = room.rect.x0
+        is_neighbor = lambda v: abs(v.x1 - match_coord) <= EPS
+        proj = lambda v: (v.y0, v.y1)
+    covered = []
+    for v in void_rects:
+        if not is_neighbor(v):
+            continue
+        a, b = proj(v)
+        covered.append((a, b))
+    # Subtract void-covered intervals from each base segment.
+    out = []
+    for seg_s, seg_e in base:
+        out.extend(_subtract_segments(seg_s, seg_e, covered))
+    return out
 
 
 def _wall_shared_edge(a, b):
@@ -468,9 +801,50 @@ def _wall_svg(wall, layout) -> str:
             f'fill="{WALL_FILL}" stroke="none"/>')
 
 
+def _corner_caps(walls):
+    """Emit a small filled square at each wall endpoint (the short ends along
+    the wall's length). The cap covers the small notch that appears where
+    two perpendicular walls meet — without this, the thinner wall's outer
+    face leaves a triangular gap at the corner with the thicker wall.
+
+    Cap size = max wall thickness (so the cap matches the largest exterior
+    wall and fully fills any L-corner). Multiple walls meeting at the same
+    corner just stack caps at the same coordinate — fine (same fill)."""
+    if not walls:
+        return []
+    # Find the thickest wall in the set; cap size = that thickness.
+    thick = max(min(w.w, w.h) for w in walls)
+    half = thick / 2.0
+    caps = []
+    from model import Rect as _Rect
+    for w in walls:
+        if w.w >= w.h:                          # horizontal-oriented wall
+            cy_mid = (w.y0 + w.y1) / 2.0
+            # Two short ends at x = w.x0 and x = w.x1
+            for cx in (w.x0, w.x1):
+                caps.append(_Rect(cx - half, cy_mid - half,
+                                  cx + half, cy_mid + half))
+        else:                                    # vertical-oriented wall
+            cx_mid = (w.x0 + w.x1) / 2.0
+            for cy in (w.y0, w.y1):
+                caps.append(_Rect(cx_mid - half, cy - half,
+                                  cx_mid + half, cy + half))
+    return caps
+
+
 def _open_plan_svg(edge, layout) -> str:
     """Erase the shared wall stroke between two open-plan rooms — the entire
-    shared segment is overdrawn in white."""
+    shared segment is overdrawn in white.
+
+    The erase is INSET at each end by half the exterior wall thickness so it
+    stops at the inner face of whatever perpendicular wall meets the shared
+    edge, instead of cutting into that wall's geometry. (Walls are centred
+    on the room boundary, so a perpendicular wall extends thickness/2 past
+    the shared-edge endpoint into the open-plan span; without the inset, the
+    white erase line would chop a notch out of that wall.) The room stroke
+    in the small un-erased segment at each corner is hidden under the
+    perpendicular wall's fill, so the visible result is a clean opening
+    between the rooms."""
     rooms_by_id = {r.id: r for r in layout.rooms}
     a = rooms_by_id.get(edge.room_a)
     b = rooms_by_id.get(edge.room_b)
@@ -478,33 +852,46 @@ def _open_plan_svg(edge, layout) -> str:
         return ""
     ra, rb = a.rect, b.rect
     eps = 1e-3
+    inset = WALL_THICKNESS_EXTERIOR / 2.0       # 0.10 m — covers worst case
     if abs(ra.x1 - rb.x0) <= eps:           # vertical wall (a west of b)
         x = ra.x1
-        y0 = max(ra.y0, rb.y0); y1 = min(ra.y1, rb.y1)
+        y0 = max(ra.y0, rb.y0) + inset
+        y1 = min(ra.y1, rb.y1) - inset
+        if y1 - y0 <= eps:
+            return ""
         p1, p2 = (x, y0), (x, y1)
     elif abs(ra.x0 - rb.x1) <= eps:         # vertical wall (a east of b)
         x = ra.x0
-        y0 = max(ra.y0, rb.y0); y1 = min(ra.y1, rb.y1)
+        y0 = max(ra.y0, rb.y0) + inset
+        y1 = min(ra.y1, rb.y1) - inset
+        if y1 - y0 <= eps:
+            return ""
         p1, p2 = (x, y0), (x, y1)
     elif abs(ra.y1 - rb.y0) <= eps:         # horizontal wall (a south of b)
         y = ra.y1
-        x0 = max(ra.x0, rb.x0); x1 = min(ra.x1, rb.x1)
+        x0 = max(ra.x0, rb.x0) + inset
+        x1 = min(ra.x1, rb.x1) - inset
+        if x1 - x0 <= eps:
+            return ""
         p1, p2 = (x0, y), (x1, y)
     elif abs(ra.y0 - rb.y1) <= eps:         # horizontal wall (a north of b)
         y = ra.y0
-        x0 = max(ra.x0, rb.x0); x1 = min(ra.x1, rb.x1)
+        x0 = max(ra.x0, rb.x0) + inset
+        x1 = min(ra.x1, rb.x1) - inset
+        if x1 - x0 <= eps:
+            return ""
         p1, p2 = (x0, y), (x1, y)
     else:
         return ""
     lot = layout.lot
     p1s = _to_svg_xy(lot, *p1)
     p2s = _to_svg_xy(lot, *p2)
-    # Use a SLIGHTLY wider erase than the rendered stroke so two overlapping
-    # 1.5 px room strokes are fully covered. 5 px gives ~1.75 px clearance
-    # each side which is enough at the typical 42 px/m scale.
-    return (f'<line x1="{p1s[0]:.1f}" y1="{p1s[1]:.1f}" '
-            f'x2="{p2s[0]:.1f}" y2="{p2s[1]:.1f}" '
-            f'stroke="white" stroke-width="5"/>')
+    # Cover the overlapping 1.5 px room strokes at the boundary using each
+    # ROOM's fill on its own side, so the open-plan transition reads as a
+    # continuation of colour rather than a white slot. `_open_plan_svg`'s
+    # `edge.wall` is relative to room_a, same convention as for doors.
+    return _two_color_opening_erase(
+        p1s[0], p1s[1], p2s[0], p2s[1], edge.wall, _fill(a), _fill(b))
 
 
 def archplan_to_svg(plan) -> str:
@@ -524,8 +911,13 @@ def archplan_to_svg(plan) -> str:
     base = layout_to_svg(plan.layout)
     overlays = []
     # Walls first — they cover room strokes for every non-open-plan boundary.
-    for wall in _compute_walls(plan):
+    walls = _compute_walls(plan)
+    for wall in walls:
         overlays.append(_wall_svg(wall, plan.layout))
+    # Corner caps: small filled squares at every wall endpoint to close the
+    # notch where two perpendicular walls of different thicknesses meet.
+    for cap in _corner_caps(walls):
+        overlays.append(_wall_svg(cap, plan.layout))
     # Open-plan: erase room strokes where there's no wall.
     for ope in plan.open_plan_edges:
         overlays.append(_open_plan_svg(ope, plan.layout))

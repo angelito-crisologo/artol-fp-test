@@ -74,6 +74,13 @@ _OPEN_PLAN_TYPE_PAIRS = {
     frozenset({"living_room", "dining_room"}),
     frozenset({"dining_room", "great_room"}),
     frozenset({"living_room", "great_room"}),
+    # Hallway is always open to the public LDK area — there's no door
+    # between a hall and a great_room / living / dining / kitchen. The
+    # hall connects bedrooms and baths to the LDK through an open mouth.
+    frozenset({"hallway", "great_room"}),
+    frozenset({"hallway", "living_room"}),
+    frozenset({"hallway", "dining_room"}),
+    frozenset({"hallway", "kitchen"}),
 }
 
 
@@ -96,6 +103,17 @@ _ZONE_PRIVACY = {
 HABITABLE = {"bedroom_standard", "master_bedroom", "living_room",
              "dining_room", "great_room", "maids_room"}
 BATH_TYPES = {"common_bath", "ensuite_bath", "bath_toilet", "powder_room"}
+
+# Rooms that get an exterior window. Habitable rooms NEED a window for
+# Sec. 808 compliance; baths and kitchens get one for ventilation per PH
+# practice (kitchen window typically over the sink). Hallways, dirty
+# kitchens, carports, etc. don't qualify.
+WINDOWED_TYPES = HABITABLE | BATH_TYPES | {"kitchen"}
+
+# Rooms whose window should use the small vent-style sizing (vs. the
+# larger habitable-style window). Kitchens take the habitable style — the
+# window over the sink is typically larger than a bath vent.
+BATH_STYLE_WINDOW = set(BATH_TYPES)
 
 
 # Side names use compass directions. N = rear, S = front (street), E = right,
@@ -122,6 +140,10 @@ class Door:
     clear_width_m: float
     swing_into: str         # room_a or room_b — which room the door swings into
     kind: str               # main_door / bedroom_door / bath_door / etc.
+    hinge_at: str = "low"   # "low" = hinge at the position_m end (W/S);
+                            # "high" = hinge at the far end (E/N).
+                            # Picked so the door swings open against the
+                            # nearest perpendicular wall.
 
 
 @dataclass
@@ -217,6 +239,47 @@ def _opposite(side: str) -> str:
     return {"N": "S", "S": "N", "E": "W", "W": "E"}[side]
 
 
+def _perpendicular_walls_real(room: Room, wall: str, env: Rect,
+                              all_rooms) -> Tuple[bool, bool]:
+    """For `room`'s `wall`, classify each end of the wall by whether the
+    perpendicular wall at that corner is ACTUALLY DRAWN.
+
+    Returns (low_real, high_real) where:
+      * "low"  end of the wall = west endpoint (N/S walls) or south endpoint
+              (E/W walls). The perpendicular wall is the room's W or S side.
+      * "high" end = east / north endpoint. The perpendicular wall is the
+              room's E or N side.
+
+    A perpendicular wall is "real" if it's either exterior (touches the
+    buildable envelope edge) OR shared with a neighbor whose room-type pair
+    with `room` is NOT in _OPEN_PLAN_TYPE_PAIRS. Open-plan boundaries get
+    erased at render time, so a door hinged there has nothing to swing
+    against — the corner is invisible."""
+    if wall in ("N", "S"):
+        low_perp_side, high_perp_side = "W", "E"
+    else:
+        low_perp_side, high_perp_side = "S", "N"
+
+    def _real(perp_side: str) -> bool:
+        if _touches_exterior(room.rect, env, perp_side):
+            return True
+        for other in all_rooms:
+            if other.id == room.id:
+                continue
+            edge = _shared_edge(room.rect, other.rect)
+            if edge is None or edge[0] != perp_side:
+                continue
+            if frozenset({room.type, other.type}) in _OPEN_PLAN_TYPE_PAIRS:
+                return False
+            return True
+        # No neighbor on that perpendicular side and not exterior — could be a
+        # building-void boundary. Treat as not-real so we avoid pinning a door
+        # to a corner that has no perpendicular wall to swing against.
+        return False
+
+    return (_real(low_perp_side), _real(high_perp_side))
+
+
 # ----------------------------------------------------------------------------
 # Door / window logic
 # ----------------------------------------------------------------------------
@@ -269,29 +332,49 @@ def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
     if shared_len < clear + 0.10:
         # Best we can do: shrink the door to fit, but never below the min spec.
         clear = max(0.60, shared_len - 0.10)
-    # Door position: PH corner-offset rule. Prefer hinging on whichever end
-    # of the shared edge is closer to a perpendicular wall corner of room A,
-    # 150 mm in from that corner. Falls back to centered only when neither
-    # end aligns with a room corner.
+    # Door position & hinge orientation: PH "swing-against-nearest-wall" rule.
+    # We pick whichever end of the SHARED EDGE has a REAL perpendicular wall
+    # (exterior or non-open-plan neighbor) — open-plan boundaries get erased
+    # at render time, so hinging against them is wrong. The hinge sits at
+    # that corner so the panel swings open against that perpendicular wall
+    # at 180°. If both corners are real (or both fake), fall back to the
+    # nearer-corner rule; ties go LOW for consistency.
+    env = layout.lot.envelope()
     wall_origin = _wall_origin(room_a.rect, side_a)
     wall_end = wall_origin + _wall_length(room_a.rect, side_a)
-    low_at_corner  = abs(start - wall_origin) < 0.01
-    high_at_corner = abs(end - wall_end)      < 0.01
-    if low_at_corner and not high_at_corner:
-        # Anchor near the LOW corner, 150 mm in.
-        position_m = (wall_origin - wall_origin) + CORNER_OFFSET_M  # = 0.15
-    elif high_at_corner and not low_at_corner:
-        # Anchor near the HIGH corner, 150 mm in. The door spans
-        # [end - 0.15 - clear, end - 0.15].
-        position_m = (end - wall_origin) - CORNER_OFFSET_M - clear
-    elif low_at_corner and high_at_corner:
-        # Shared edge spans the full wall — both ends are corners. Pick the
-        # LOW end by convention so all bedroom doors orient consistently.
-        position_m = CORNER_OFFSET_M
+    dist_low_to_corner  = start - wall_origin       # how far the shared edge's
+    dist_high_to_corner = wall_end - end            # ends are from room_a's
+                                                    # perpendicular walls
+    low_real, high_real = _perpendicular_walls_real(
+        room_a, side_a, env, layout.rooms)
+    # Hinge selection priority:
+    #   1. Exactly one corner has a real perpendicular wall — use that one.
+    #   2. Both real (or both fake) — fall back to nearer corner; ties LOW.
+    if low_real and not high_real:
+        prefer = "low"
+    elif high_real and not low_real:
+        prefer = "high"
     else:
-        # Mid-wall shared edge; the shared edge endpoints aren't perpendicular
-        # walls. Hinge at the LOW end of the shared edge (no offset).
-        position_m = start - wall_origin
+        prefer = "low" if dist_low_to_corner <= dist_high_to_corner else "high"
+    if prefer == "low":
+        hinge_at = "low"
+        if dist_low_to_corner < 0.01:
+            # Shared edge starts AT room_a's wall corner: push the door
+            # 150 mm in from that corner.
+            position_m = CORNER_OFFSET_M
+        else:
+            # Shared edge starts mid-wall — hinge at the LOW end of the edge.
+            position_m = start - wall_origin
+    else:
+        hinge_at = "high"
+        if dist_high_to_corner < 0.01:
+            # Shared edge ends AT room_a's wall corner: push door 150 mm
+            # back from that corner.
+            position_m = (end - wall_origin) - CORNER_OFFSET_M - clear
+        else:
+            # Shared edge ends mid-wall — anchor the door's HIGH end at the
+            # edge end.
+            position_m = (end - wall_origin) - clear
     # Clamp: the door must fit inside the shared edge.
     min_pos = start - wall_origin
     max_pos = (end - wall_origin) - clear
@@ -303,6 +386,7 @@ def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
         clear_width_m=round(clear, 3),
         swing_into=_swing_into(room_a, room_b, adj.kind),
         kind=adj.kind,
+        hinge_at=hinge_at,
     )
 
 
@@ -319,12 +403,17 @@ def _open_plan_edge_for_adjacency(adj, layout: Layout) -> Optional[OpenPlanEdge]
     return OpenPlanEdge(room_a=adj.a, room_b=adj.b, wall=edge[0])
 
 
-def _windows_for_room(room: Room, env: Rect, bath: bool, exclude_walls: set) -> List[Window]:
-    """One window on every exterior wall of `room` (skipping any side already
-    consumed by a door — that's `exclude_walls`)."""
+def _windows_for_room(room: Room, env: Rect, bath: bool, exclude_walls: set,
+                       firewall_sides: set) -> List[Window]:
+    """One window on every exterior wall of `room`, skipping:
+      - sides already consumed by a door (`exclude_walls`),
+      - sides that are a firewall (party wall against the neighbor; the lot
+        has setback=0 on that side, so no openings are allowed)."""
     out: List[Window] = []
     for side in SIDES:
         if side in exclude_walls:
+            continue
+        if side in firewall_sides:
             continue
         if not _touches_exterior(room.rect, env, side):
             continue
@@ -371,13 +460,32 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     clear = 0.80   # standard service door clear opening
     if wall_len < clear + 0.20:
         clear = max(0.60, wall_len - 0.20)
-    pos = (wall_len - clear) / 2.0
+    # PH practice: doors from the kitchen always sit at a CORNER, against a
+    # REAL perpendicular wall. The kitchen's west and east sides may include
+    # open-plan boundaries (e.g., kitchen↔great_room) that don't get drawn —
+    # hinging the door at such a "corner" leaves it swinging against nothing.
+    # Pick the side with a real perpendicular wall (exterior or non-open-plan
+    # neighbor). If both qualify, default to LOW (west).
+    low_real, high_real = _perpendicular_walls_real(
+        room, "N", env, layout.rooms)
+    if high_real and not low_real:
+        pos = wall_len - CORNER_OFFSET_M - clear
+        hinge_at = "high"
+    else:
+        pos = CORNER_OFFSET_M
+        hinge_at = "low"
+    if pos + clear + 0.10 > wall_len:
+        # Wall too short — fall back to whatever fits.
+        pos = max(0.0, wall_len - clear - 0.10)
+    if pos < 0.0:
+        pos = 0.0
     return Door(
         room_a="exterior", room_b=behind_id, wall="N",
         position_m=round(pos, 3),
         clear_width_m=round(clear, 3),
         swing_into=behind_id,
         kind="service_door",
+        hinge_at=hinge_at,
     )
 
 
@@ -462,13 +570,21 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
         plan.doors.append(dk_door)
         door_walls_by_room.setdefault(dk_door.room_b, set()).add(dk_door.wall)
 
-    # Pass 3: windows for habitable + bath rooms on remaining exterior walls
+    # Pass 3: windows for habitable + bath + kitchen on remaining exterior
+    # walls, skipping any firewall sides (lot setback = 0).
+    lot = layout.lot
+    firewall_sides = set()
+    if lot.left == 0:  firewall_sides.add("W")
+    if lot.right == 0: firewall_sides.add("E")
+    if lot.front == 0: firewall_sides.add("S")
+    if lot.rear == 0:  firewall_sides.add("N")
     for r in layout.rooms:
-        if r.type not in HABITABLE and r.type not in BATH_TYPES:
+        if r.type not in WINDOWED_TYPES:
             continue
-        bath = r.type in BATH_TYPES
+        bath_style = r.type in BATH_STYLE_WINDOW
         used = door_walls_by_room.get(r.id, set())
-        plan.windows.extend(_windows_for_room(r, env, bath, used))
+        plan.windows.extend(_windows_for_room(
+            r, env, bath_style, used, firewall_sides))
 
     return plan
 

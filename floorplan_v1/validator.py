@@ -14,6 +14,29 @@ HARD_PENALTY = 100000.0
 WARN_PENALTY = 500.0
 
 
+def _element_strays_outside_voids(element_rect, env, void_rects):
+    """Return True if `element_rect`'s overlap with the envelope `env` extends
+    into any envelope area NOT covered by `void_rects`. We compute the
+    intersection of element ∩ env and check if any sub-region of that
+    intersection lies outside the union of voids."""
+    # Compute the element-envelope intersection.
+    ix0 = max(element_rect.x0, env.x0)
+    iy0 = max(element_rect.y0, env.y0)
+    ix1 = min(element_rect.x1, env.x1)
+    iy1 = min(element_rect.y1, env.y1)
+    if ix1 <= ix0 or iy1 <= iy0:
+        return False  # no overlap with envelope at all
+    # For each void, subtract its area from the intersection. If anything
+    # remains, the element strays outside the voids. We approximate by
+    # asking: is there a single void that fully contains the intersection?
+    # For our use case (one carport void per topology) this is sufficient.
+    for v in void_rects:
+        if (v.x0 - 1e-6 <= ix0 and v.y0 - 1e-6 <= iy0 and
+                v.x1 + 1e-6 >= ix1 and v.y1 + 1e-6 >= iy1):
+            return False
+    return True
+
+
 class Issue:
     def __init__(self, severity, code, msg):
         self.severity = severity  # error | warning | suggestion
@@ -101,14 +124,26 @@ def validate(layout: Layout, rules: Rules) -> Tuple[List[Issue], float]:
                 "dirty kitchen is not adjacent to the kitchen's rear wall"))
 
     # ---------- HARD: setback elements must be uncovered & inside a setback ----------
+    # `building_void_rects` are intentional carve-outs from the envelope
+    # declared by a topology (e.g., a carport cut into the front-left). A
+    # setback element that overlaps a void is expected — the void exists
+    # precisely so that element can extend into the building footprint.
+    void_rects = getattr(layout, "building_void_rects", None) or []
     for e in layout.elements:
         if e.covered:
             issues.append(Issue("error", "covered_in_setback",
                 f"{e.type} is covered but sits in a setback (needs firewall or footprint)"))
-        # must NOT intrude into the buildable envelope
+        # must NOT intrude into the buildable envelope, EXCEPT into the
+        # portions reserved as building voids (which are explicitly there).
         if e.rect.overlaps(env):
-            issues.append(Issue("warning", "element_in_envelope",
-                f"{e.type} overlaps the buildable footprint"))
+            # Check whether the envelope-overlap is entirely contained in
+            # the union of voids. If so, no warning.
+            overlaps_voids_only = any(
+                e.rect.overlaps(v) for v in void_rects
+            ) and not _element_strays_outside_voids(e.rect, env, void_rects)
+            if not overlaps_voids_only:
+                issues.append(Issue("warning", "element_in_envelope",
+                    f"{e.type} overlaps the buildable footprint"))
 
     # ---------- SOFT: preferred sizes (also drives fitness) ----------
     soft_score = 0.0

@@ -58,6 +58,25 @@ class SetbackElement:
 
 
 @dataclass
+class BuildingVoid:
+    """A rectangular area INSIDE the buildable envelope that's reserved away
+    from rooms. The solver treats it like a fixed-position phantom room: no
+    other room can overlap it. The renderer treats its lot-facing edges as
+    'open' (no wall there) and its room-facing edges as exterior walls.
+    Visually merges with a setback element whose `consumed_by` matches.
+
+    Used for L-shaped buildings where a setback element (typically the
+    carport) extends through the envelope edge into the building footprint.
+    """
+    id: str
+    location: str         # 'front_left' | 'front_right' | 'rear_left' | 'rear_right'
+    width_m: float        # extent along the x-axis (parallel to front/rear)
+    depth_m: float        # extent along the y-axis (parallel to left/right)
+    consumed_by: Optional[str] = None  # setback element type that visually
+                                       # extends into this void (usually "carport")
+
+
+@dataclass
 class Topology:
     id: str
     label: str
@@ -108,6 +127,11 @@ class Topology:
     # See phase_c3/run.py::_apply_lot_profile for the matching logic.
     lot_adjustment_profiles: list = field(default_factory=list)
 
+    # Optional list of BuildingVoid — rectangles inside the buildable envelope
+    # reserved away from rooms (typically because a setback element like a
+    # carport "cuts" into the building from a side or front edge).
+    building_voids: List[BuildingVoid] = field(default_factory=list)
+
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
             if r.id == room_id:
@@ -131,6 +155,8 @@ def load_topology(path: str) -> Topology:
     adjs = [Adjacency(**{k: e[k] for k in e if k in Adjacency.__annotations__}) for e in d["adjacencies"]]
     elems = [SetbackElement(**{k: x[k] for k in x if k in SetbackElement.__annotations__})
              for x in d.get("setback_elements", [])]
+    voids = [BuildingVoid(**{k: x[k] for k in x if k in BuildingVoid.__annotations__})
+             for x in d.get("building_voids", [])]
     sprox = [SoftProximity(**{k: x[k] for k in x if k in SoftProximity.__annotations__})
              for x in d.get("soft_proximities", [])]
     zs_raw = d.get("zone_split")
@@ -147,6 +173,7 @@ def load_topology(path: str) -> Topology:
         left_anchored=list(d.get("left_anchored", []) or []),
         right_anchored=list(d.get("right_anchored", []) or []),
         lot_adjustment_profiles=list(d.get("lot_adjustment_profiles", []) or []),
+        building_voids=voids,
     )
 
 
