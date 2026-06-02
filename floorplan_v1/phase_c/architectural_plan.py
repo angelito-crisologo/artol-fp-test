@@ -25,20 +25,41 @@ from model import Layout, Rect, Room
 from topology import Topology
 
 
-# Door clear-width defaults by adjacency kind. Door panel width (not the wall
-# slot — wall slot has frame on each side, ~10 cm total).
+# Door clear-width defaults by adjacency kind. Defaults match PD 1096 minima
+# for the National Building Code of the Philippines:
+#   main entrance / habitable exit: 0.90 m
+#   bedroom / interior:             0.80 m
+#   toilet & bath:                  0.70 m
 DOOR_CLEAR_WIDTH_M = {
-    "main_door":          0.85,   # front door, 90 mm clear behind a 95 mm leaf
+    "main_door":          0.90,
     "bedroom_door":       0.80,
     "bedroom_to_public":  0.80,
     "bath_door":          0.70,
     "ensuite_door":       0.70,
+    "service_door":       0.80,    # kitchen-to-dirty-kitchen back door
 }
 
+# Corner-offset rule (PH practice): an interior door near a perpendicular
+# wall should have its near edge at least 100–150 mm from the room corner
+# (so there's space for the jamb, casing, and a light switch). Centered
+# doors are only used for the main entrance and formal double doors.
+CORNER_OFFSET_M = 0.15
+
 # Adjacency kinds that DON'T get a door:
-#   open_plan: emit an OpenPlanEdge (wall removed when rendered)
-#   wet_core:  solid plumbing wall, no door
-_NO_DOOR_KINDS = {"open_plan", "wet_core"}
+#   open_plan:           emit an OpenPlanEdge (wall removed when rendered)
+#   wet_core:            solid plumbing wall, no door
+#   bath_to_bedroom_wall: bath shares a wall with a bedroom but no door
+#                        (the bath is accessed from the LDK / hall, not
+#                        directly from the bedroom — common in PH practice
+#                        for shared common T&Bs that aren't ensuites)
+_NO_DOOR_KINDS = {"open_plan", "wet_core", "bath_to_bedroom_wall"}
+
+# Bedroom + common-bath pairs are ALWAYS wall-only regardless of the kind
+# declared in the topology. Common T&B is shared/public; access is from the
+# LDK or a hall, never directly from a private bedroom. (Ensuite baths are
+# different — they DO open directly into their bedroom.)
+_BEDROOM_TYPES = {"master_bedroom", "bedroom_standard", "maids_room"}
+_COMMON_BATH_TYPES = {"common_bath", "bath_toilet", "powder_room"}
 
 # Room-type pairs that are open-plan BY DEFAULT, regardless of the topology's
 # declared adjacency kind. Reflects PH practice: the kitchen flows into the
@@ -228,6 +249,14 @@ def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
     kind = _effective_kind(adj, room_a.type, room_b.type)
     if kind in _NO_DOOR_KINDS:
         return None
+    # Generic rule: bedroom <-> common bath / WC / powder room is always a
+    # wall, not a door. The common bath is shared and accessed from the LDK
+    # or a hall, never directly from a private bedroom. Topologies that
+    # declare such an adjacency (typically as a 'bath_to_bedroom_wall' kind,
+    # but we don't trust them to do that consistently) get filtered here.
+    types = {room_a.type, room_b.type}
+    if types & _BEDROOM_TYPES and types & _COMMON_BATH_TYPES:
+        return None
     # Find the shared edge between cell A of each room. (Composite cells
     # ignored for D.1 — they're not present in current topologies.)
     edge = _shared_edge(room_a.rect, room_b.rect)
@@ -240,11 +269,34 @@ def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
     if shared_len < clear + 0.10:
         # Best we can do: shrink the door to fit, but never below the min spec.
         clear = max(0.60, shared_len - 0.10)
-    # Center the door on the shared segment. position_m is from the wall's NW
-    # origin (room_a's x0 for N/S, y0 for E/W) to the near edge of the door.
-    mid = (start + end) / 2.0
-    near = mid - clear / 2.0
-    position_m = near - _wall_origin(room_a.rect, side_a)
+    # Door position: PH corner-offset rule. Prefer hinging on whichever end
+    # of the shared edge is closer to a perpendicular wall corner of room A,
+    # 150 mm in from that corner. Falls back to centered only when neither
+    # end aligns with a room corner.
+    wall_origin = _wall_origin(room_a.rect, side_a)
+    wall_end = wall_origin + _wall_length(room_a.rect, side_a)
+    low_at_corner  = abs(start - wall_origin) < 0.01
+    high_at_corner = abs(end - wall_end)      < 0.01
+    if low_at_corner and not high_at_corner:
+        # Anchor near the LOW corner, 150 mm in.
+        position_m = (wall_origin - wall_origin) + CORNER_OFFSET_M  # = 0.15
+    elif high_at_corner and not low_at_corner:
+        # Anchor near the HIGH corner, 150 mm in. The door spans
+        # [end - 0.15 - clear, end - 0.15].
+        position_m = (end - wall_origin) - CORNER_OFFSET_M - clear
+    elif low_at_corner and high_at_corner:
+        # Shared edge spans the full wall — both ends are corners. Pick the
+        # LOW end by convention so all bedroom doors orient consistently.
+        position_m = CORNER_OFFSET_M
+    else:
+        # Mid-wall shared edge; the shared edge endpoints aren't perpendicular
+        # walls. Hinge at the LOW end of the shared edge (no offset).
+        position_m = start - wall_origin
+    # Clamp: the door must fit inside the shared edge.
+    min_pos = start - wall_origin
+    max_pos = (end - wall_origin) - clear
+    if position_m < min_pos: position_m = min_pos
+    if position_m > max_pos: position_m = max_pos
     return Door(
         room_a=adj.a, room_b=adj.b, wall=side_a,
         position_m=round(position_m, 3),

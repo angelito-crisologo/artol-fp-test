@@ -14,6 +14,6 @@
   ],
   "avoid": [],
   "carport_preference": "left",
-  "topology": "wide_great_room_left_central_hall.json",
+  "topology": "1s/2br/wide/central_hall.json",
   "adjustments": {}
 }

@@ -133,10 +133,14 @@ def _brief_from_json(data: dict, source_path: str) -> Brief:
 
 
 def _load_briefs_from(subdir: str, expect_topology: bool):
-    """Scan a brief subdir, sort by filename, return a list of tuples.
+    """Recursively scan a brief subdir (now nested by storey / br / shell),
+    sort by relative path, return a list of tuples.
 
-    For hand_authored: (name, brief, topology_filename, adjustments).
-    For ai:           (name, brief, use_cache, adjustments).
+    For hand_authored: (name, brief, topology_filename, adjustments, rel_dir).
+    For ai:           (name, brief, use_cache, adjustments, rel_dir).
+
+    `rel_dir` is the brief's location relative to `subdir` (e.g., "1s/2br/wide")
+    used by the writer to mirror the same hierarchy in the output folder.
 
     `adjustments` is an optional per-room-type override dict from the brief JSON
     (key: room type name, value: {min_area_sqm, max_area_sqm, min_least_dim_m}).
@@ -146,13 +150,22 @@ def _load_briefs_from(subdir: str, expect_topology: bool):
     if not os.path.isdir(subdir):
         return []
     out = []
-    for fname in sorted(os.listdir(subdir)):
-        if not fname.endswith(".json"):
-            continue
-        p = os.path.join(subdir, fname)
+    # Walk recursively so nested 1s/2br/<shell>/anchor_*.json briefs are picked
+    # up. Sort by relative path for deterministic ordering.
+    matches = []
+    for root, _, files in os.walk(subdir):
+        for fname in files:
+            if not fname.endswith(".json"):
+                continue
+            full = os.path.join(root, fname)
+            rel = os.path.relpath(full, subdir)
+            matches.append((rel, full))
+    matches.sort()
+    for rel, p in matches:
         with open(p, "r", encoding="utf-8") as f:
             data = json.load(f)
         name = _name_from_path(p)
+        rel_dir = os.path.dirname(rel)         # "" for top-level briefs
         brief = _brief_from_json(data, p)
         adjustments = data.get("adjustments", {}) or {}
         _validate_adjustments(adjustments, p)
@@ -161,13 +174,11 @@ def _load_briefs_from(subdir: str, expect_topology: bool):
                 raise ValueError(f"{p}: hand-authored brief must include a "
                                  f"'topology' field naming a file in "
                                  f"phase_c/topologies/")
-            out.append((name, brief, data["topology"], adjustments))
+            out.append((name, brief, data["topology"], adjustments, rel_dir))
         else:
             # AI briefs accept an optional "use_cache" flag. Default true.
-            # Set false to force a fresh Claude call (cache read is skipped;
-            # the new result is still written so future cache-on runs pick it up).
             use_cache = bool(data.get("use_cache", True))
-            out.append((name, brief, use_cache, adjustments))
+            out.append((name, brief, use_cache, adjustments, rel_dir))
     return out
 
 
@@ -469,48 +480,56 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
 import re                                                       # noqa: E402
 
 
-def _next_version_for(name: str) -> int:
-    """Find the next available v<N> archive number for this brief."""
+def _next_version_for(name: str, versions_dir: str) -> int:
+    """Find the next available v<N> archive number for this brief in the
+    given versions directory."""
     pat = re.compile(rf"^{re.escape(name)}_v(\d+)\.svg$")
     highest = 0
-    if os.path.isdir(VERSIONS_DIR):
-        for fname in os.listdir(VERSIONS_DIR):
+    if os.path.isdir(versions_dir):
+        for fname in os.listdir(versions_dir):
             m = pat.match(fname)
             if m:
                 highest = max(highest, int(m.group(1)))
     return highest + 1
 
 
-def _archive_existing(name: str) -> int:
-    """If <name>.svg already exists in OUT, move it (and its .png companion)
-    into VERSIONS_DIR as <name>_v<N>.svg. Returns the N used, or 0 if nothing
-    was archived."""
-    svg_path = os.path.join(OUT, f"{name}.svg")
-    png_path = os.path.join(OUT, f"{name}.png")
+def _archive_existing(name: str, out_dir: str) -> int:
+    """If <name>.svg already exists in out_dir, move it (and its .png
+    companion) into out_dir/versions/<name>_v<N>.svg. Returns the N used,
+    or 0 if nothing was archived."""
+    svg_path = os.path.join(out_dir, f"{name}.svg")
+    png_path = os.path.join(out_dir, f"{name}.png")
     if not os.path.exists(svg_path):
         return 0
-    n = _next_version_for(name)
-    os.rename(svg_path, os.path.join(VERSIONS_DIR, f"{name}_v{n}.svg"))
+    versions_dir = os.path.join(out_dir, "versions")
+    os.makedirs(versions_dir, exist_ok=True)
+    n = _next_version_for(name, versions_dir)
+    os.rename(svg_path, os.path.join(versions_dir, f"{name}_v{n}.svg"))
     if os.path.exists(png_path):
-        os.rename(png_path, os.path.join(VERSIONS_DIR, f"{name}_v{n}.png"))
+        os.rename(png_path, os.path.join(versions_dir, f"{name}_v{n}.png"))
     return n
 
 
-def _write(name, layout, topo, reason, no_version=False):
-    # Preserve the previous latest (if any) under versions/<name>_v<N>.svg
-    # before overwriting. Skipped when --no-version is passed.
+def _write(name, layout, topo, reason, no_version=False, rel_dir=""):
+    """Write the architectural plan SVG + PNG. Mirrors the brief's relative
+    path under OUT (e.g. brief at 1s/2br/wide/anchor_no_hall.json lands at
+    OUT/1s/2br/wide/anchor_no_hall.svg). Versions per output directory."""
+    out_dir = os.path.join(OUT, rel_dir) if rel_dir else OUT
+    os.makedirs(out_dir, exist_ok=True)
     if not no_version:
-        archived = _archive_existing(name)
+        archived = _archive_existing(name, out_dir)
         if archived:
-            print(f"  archived previous as versions/{name}_v{archived}.svg")
+            rel_versions = os.path.relpath(
+                os.path.join(out_dir, "versions"), OUT)
+            print(f"  archived previous as {rel_versions}/{name}_v{archived}.svg")
 
     plan = architecturalize(layout, topo)
-    svg_path = os.path.join(OUT, f"{name}.svg")
+    svg_path = os.path.join(out_dir, f"{name}.svg")
     with open(svg_path, "w", encoding="utf-8") as f:
         f.write(archplan_to_svg(plan))
     print(f"  wrote {svg_path}")
     if _HAS_CAIROSVG:
-        png_path = os.path.join(OUT, f"{name}.png")
+        png_path = os.path.join(out_dir, f"{name}.png")
         try:
             cairosvg.svg2png(url=svg_path, write_to=png_path, output_width=560)
             print(f"  wrote {png_path}")
@@ -573,27 +592,27 @@ def main(argv=None):
           f"{os.path.relpath(AI_DIR, _HERE)}/")
 
     # Section 1 — hand-authored anchors.
-    for name, brief, topology_fname, adjustments in hand_authored:
-        print(f"\n{'=' * 70}\n=== {name}   (hand-authored)\n{'=' * 70}")
+    for name, brief, topology_fname, adjustments, rel_dir in hand_authored:
+        print(f"\n{'=' * 70}\n=== {os.path.join(rel_dir, name) if rel_dir else name}   (hand-authored)\n{'=' * 70}")
         try:
             layout, topo, reason = _run_hand_authored(
                 brief, topology_fname, adjustments=adjustments)
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
-        _write(name, layout, topo, reason, no_version=args.no_version)
+        _write(name, layout, topo, reason, no_version=args.no_version, rel_dir=rel_dir)
 
     # Section 2 — AI briefs (cache controlled per-brief by use_cache flag).
-    for name, brief, use_cache, adjustments in ai_briefs:
+    for name, brief, use_cache, adjustments, rel_dir in ai_briefs:
         tag = "AI-generated, cached" if use_cache else "AI-generated, FRESH (cache disabled)"
-        print(f"\n{'=' * 70}\n=== {name}   ({tag})\n{'=' * 70}")
+        print(f"\n{'=' * 70}\n=== {os.path.join(rel_dir, name) if rel_dir else name}   ({tag})\n{'=' * 70}")
         try:
             layout, topo, reason = _run_ai_with_cache(
                 brief, use_cache=use_cache, adjustments=adjustments, verbose=True)
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
-        _write(name, layout, topo, reason, no_version=args.no_version)
+        _write(name, layout, topo, reason, no_version=args.no_version, rel_dir=rel_dir)
 
 
 if __name__ == "__main__":
