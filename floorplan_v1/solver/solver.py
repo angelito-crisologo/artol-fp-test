@@ -536,16 +536,38 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             model.Add(rx_end[rid] == ex1)
 
     # ---------- canonical orientation (symmetry break) ----------
-    # Anchor the kitchen on the RIGHT half of the envelope. With an x-symmetric
-    # topology, the layout and its left-right mirror score identically; without
-    # this constraint, the multi-shot would produce two carport candidates that
-    # are pure mirrors. Pinning kitchen-on-right makes left-carport vs
-    # right-carport genuinely different design choices (carport opposite the
-    # kitchen vs carport next to the kitchen) rather than redundant flips.
+    # Anchor the kitchen on whichever half of the envelope contains the
+    # carport. With an x-symmetric topology the layout and its left-right
+    # mirror score identically; without a symmetry break the multi-shot
+    # would produce two carport candidates that are pure mirrors. Pinning
+    # kitchen on the carport side makes carport-on-left vs carport-on-right
+    # genuinely different design choices: the kitchen / public LDK presents
+    # the "showy face" to the driveway, and the private wing stays on the
+    # opposite side. A topology can override by setting kitchen_side to
+    # "left" or "right" explicitly; default tracks the carport side from
+    # the building_void. If neither is set, we fall back to right (the
+    # historical default).
     kitchen_id = next((r.id for r in topology.rooms if r.type == "kitchen"), None)
     if kitchen_id is not None:
-        # 2 * center_x(kitchen) >= 2 * center_x(envelope)
-        model.Add(rx[kitchen_id] + rx_end[kitchen_id] >= ex0 + ex1)
+        # Determine the canonical kitchen side from the building_voids
+        # (which also drive the carport placement downstream).
+        kitchen_side = None
+        for v in (topology.building_voids or []):
+            if (v.consumed_by or "").lower() == "carport":
+                loc = (v.location or "").lower()
+                if loc in ("front_left", "rear_left"):
+                    kitchen_side = "left"
+                elif loc in ("front_right", "rear_right"):
+                    kitchen_side = "right"
+                break
+        if kitchen_side is None:
+            kitchen_side = "right"
+        if kitchen_side == "right":
+            # 2 * center_x(kitchen) >= 2 * center_x(envelope)
+            model.Add(rx[kitchen_id] + rx_end[kitchen_id] >= ex0 + ex1)
+        else:
+            # 2 * center_x(kitchen) <= 2 * center_x(envelope)
+            model.Add(rx[kitchen_id] + rx_end[kitchen_id] <= ex0 + ex1)
 
     # ---------- adjacency: shared wall of length >= min_shared_wall_m ----------
     for adj in topology.adjacencies:
