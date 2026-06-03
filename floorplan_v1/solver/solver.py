@@ -145,7 +145,8 @@ def _add_min_max(model, name, kind, a, b, lo, hi):
 def solve(topology: Topology, lot: Lot, rules: Rules,
           time_limit_s: float = 30.0, verbose: bool = True,
           adjustments: Dict[str, Dict[str, float]] = None,
-          deterministic: bool = False) -> Layout:
+          deterministic: bool = False,
+          kitchen_side: str = "right") -> Layout:
     """Solve `topology` into a `Layout` on `lot`. `adjustments` is an optional
     per-room-type override of size constraints:
 
@@ -539,13 +540,12 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # Anchor the kitchen on one half of the envelope (default RIGHT). With
     # an x-symmetric topology the layout and its left-right mirror score
     # identically; without a symmetry break, multi-shot generation would
-    # produce two carport candidates that are pure mirrors. A topology can
-    # override the default by setting `kitchen_side` to "left" — useful for
-    # mirror-sibling topologies where the design intent is "public LDK on
-    # the carport side, private wing on the opposite side".
+    # produce two carport candidates that are pure mirrors. The caller
+    # passes `kitchen_side` derived from brief.carport_preference — "right"
+    # for the canonical case and "left" when the brief asks for a mirrored
+    # layout (carport on the left, public LDK alongside it).
     kitchen_id = next((r.id for r in topology.rooms if r.type == "kitchen"), None)
     if kitchen_id is not None:
-        kitchen_side = getattr(topology, "kitchen_side", None) or "right"
         if kitchen_side == "right":
             # 2 * center_x(kitchen) >= 2 * center_x(envelope)
             model.Add(rx[kitchen_id] + rx_end[kitchen_id] >= ex0 + ex1)

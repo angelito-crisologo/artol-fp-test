@@ -48,7 +48,7 @@ from rules import Rules                                          # noqa: E402  (
 from validator import validate                                   # noqa: E402  (core)
 from render import layout_to_svg, archplan_to_svg                # noqa: E402  (core)
 
-from topology import load_topology, validate_topology            # noqa: E402  (solver)
+from topology import load_topology, validate_topology, mirror_topology_x  # noqa: E402  (solver)
 from solver import solve, AdjustmentError                        # noqa: E402  (solver)
 from snap_gaps import snap_gaps                                  # noqa: E402  (solver)
 from architectural_plan import architecturalize                  # noqa: E402  (solver)
@@ -365,9 +365,22 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         if adjustments:
             print(f"  adjustments (brief): {adjustments}")
     topo = load_topology(os.path.join(_TOPOLOGIES_DIR, topology_filename))
+    # Carport-side mirroring: topology files are authored in the canonical
+    # "carport on the right" form. When the brief asks for the carport on
+    # the LEFT, mirror the topology's x-axis fields (anchored lists and
+    # building-void corner locations) and flip the solver's kitchen_side
+    # symmetry break so the kitchen tracks the carport on the same side
+    # rather than getting pinned opposite.
+    cps = (brief.carport_preference or "right").lower()
+    if cps == "left":
+        topo = mirror_topology_x(topo)
+        kitchen_side = "left"
+    else:
+        kitchen_side = "right"
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=merged_adj, deterministic=deterministic)
+                   adjustments=merged_adj, deterministic=deterministic,
+                   kitchen_side=kitchen_side)
     # Attach the topology's building voids to the layout so the validator
     # can see them and suppress the "element in envelope" false positive
     # (a setback element overlapping a void is intentional).
@@ -420,9 +433,16 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
         raise RuntimeError("structural topology errors: " + "; ".join(errs))
     lot = _make_default_lot(brief)
     env = lot.envelope()
+    # Same carport-side mirroring rule as _run_hand_authored — see note there.
+    cps = (brief.carport_preference or "right").lower()
+    if cps == "left":
+        topo = mirror_topology_x(topo)
+        kitchen_side = "left"
+    else:
+        kitchen_side = "right"
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose=False)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=merged_adj)
+                   adjustments=merged_adj, kitchen_side=kitchen_side)
     void_rects = _topology_void_rects(topo, lot)
     layout.building_void_rects = void_rects
     issues, score = validate(layout, rules)

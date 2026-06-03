@@ -106,13 +106,6 @@ class Topology:
     # if the block spans the full shared width).
     match_bedroom_widths: bool = False
 
-    # Canonical-orientation override for the symmetry-break constraint that
-    # pins the kitchen on one half of the envelope. Default "right" matches
-    # the historical behavior; mirror-sibling topologies (carport on the
-    # left, public LDK on the left next to the carport) should set "left"
-    # so the kitchen tracks the carport instead of being pinned opposite.
-    kitchen_side: Optional[str] = None
-
     # Optional ordering hints. Each entry is a list of room ids that must
     # stack front-to-rear (room[0] in front, room[-1] at rear). The solver
     # adds hard constraints: room[i].y_end <= room[i+1].y for each pair.
@@ -228,3 +221,55 @@ def validate_topology(t: Topology) -> List[str]:
         if r.id not in visited and r.type in HABITABLE:
             errs.append(f"habitable room '{r.id}' is unreachable from entry")
     return errs
+
+
+# Map for mirroring x-axis-specific location strings on BuildingVoid.
+# y-axis-only strings (front_only, rear_only) would be unchanged; only
+# the four corner strings used today are listed here.
+_X_MIRROR_LOCATION = {
+    "front_left":  "front_right",
+    "front_right": "front_left",
+    "rear_left":   "rear_right",
+    "rear_right":  "rear_left",
+}
+
+
+def mirror_topology_x(t: Topology) -> Topology:
+    """Return a copy of `t` with all x-axis (left/right) fields flipped.
+
+    Used to support carport-side as a brief-level input: topology files are
+    authored in the canonical "carport on the right" form, and when the brief
+    says carport_side='left' the runner mirrors the topology before passing it
+    to the solver. Mirrored fields:
+
+      - left_anchored ↔ right_anchored (list swap)
+      - building_voids[].location: front_left ↔ front_right, rear_left ↔ rear_right
+
+    y-axis fields (rear_anchored, front_to_rear_stacks) are NOT touched.
+    Identity-preserving on rooms, adjacencies, soft_proximities, setback_elements
+    (the renderer flips the carport's side from the SetbackElement separately).
+    """
+    mirrored_voids = []
+    for v in t.building_voids or []:
+        new_loc = _X_MIRROR_LOCATION.get((v.location or "").lower(), v.location)
+        mirrored_voids.append(BuildingVoid(
+            id=v.id, location=new_loc, width_m=v.width_m, depth_m=v.depth_m,
+            consumed_by=v.consumed_by,
+        ))
+    return Topology(
+        id=t.id, label=t.label, target_shell=t.target_shell,
+        rooms=list(t.rooms), adjacencies=list(t.adjacencies),
+        entry_point=t.entry_point,
+        setback_elements=list(t.setback_elements),
+        soft_proximities=list(t.soft_proximities),
+        zone_split=t.zone_split,
+        notes=list(t.notes),
+        match_bedroom_widths=t.match_bedroom_widths,
+        front_to_rear_stacks=list(t.front_to_rear_stacks),
+        rear_anchored=list(t.rear_anchored),
+        # x-axis fields swap:
+        left_anchored=list(t.right_anchored),
+        right_anchored=list(t.left_anchored),
+        lot_adjustment_profiles=list(t.lot_adjustment_profiles),
+        building_voids=mirrored_voids,
+    )
