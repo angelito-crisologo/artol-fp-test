@@ -753,13 +753,16 @@ def _print_plan(plan: ArchPlan) -> None:
 if __name__ == "__main__":
     # Interactive spot-check: take a topology + lot, solve, snap, archplan, print.
     import argparse, os, sys
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    _SOLVER_DIR = os.path.dirname(os.path.abspath(__file__))
+    _PROJECT_ROOT = os.path.dirname(_SOLVER_DIR)
+    sys.path.insert(0, os.path.join(_PROJECT_ROOT, "core"))
+    sys.path.insert(0, _SOLVER_DIR)
+    sys.path.insert(0, _PROJECT_ROOT)
     from model import Lot
     from rules import Rules
     from topology import load_topology
     from solver import solve
     from snap_gaps import snap_gaps
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "phase_c3"))
     from run import _merge_lot_profile
 
     p = argparse.ArgumentParser()

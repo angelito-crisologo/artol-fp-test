@@ -21,13 +21,17 @@ from typing import Dict, List
 from ortools.sat.python import cp_model
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(_HERE))  # let us import the shared modules
+# Add sibling packages (core/, solver/) to sys.path so bare imports resolve
+# whether this module is loaded by floorplan_v1/run.py or imported directly.
+_PROJECT_ROOT = os.path.dirname(_HERE)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "core"))
+sys.path.insert(0, _HERE)
 
-from model import Lot, Rect, Room, Layout         # noqa: E402
-from rules import Rules                           # noqa: E402
-from engine import _setback_elements              # noqa: E402  (helper reuse only)
+from model import Lot, Rect, Room, Layout         # noqa: E402  (core)
+from rules import Rules                           # noqa: E402  (core)
+from setback_elements import _setback_elements    # noqa: E402  (core)
 
-from topology import Topology                     # noqa: E402
+from topology import Topology                     # noqa: E402  (solver)
 
 GRID_CM = 5                                       # 5 cm grid resolution
 
@@ -689,5 +693,5 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
                                  dirty_kitchen_at=dk_at)
 
     layout = Layout(lot=lot, rooms=rooms, elements=elements,
-                    carport_side=carport_side, genome={"template": "phase_c_solver"})
+                    carport_side=carport_side, genome={"template": "cpsat_solver"})
     return layout

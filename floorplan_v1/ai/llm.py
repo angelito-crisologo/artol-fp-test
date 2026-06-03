@@ -14,7 +14,7 @@ import sys
 from typing import Dict, List, Optional, Tuple
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_TOPOLOGIES_DIR = os.path.join(os.path.dirname(_HERE), "phase_c", "topologies")
+_TOPOLOGIES_DIR = os.path.join(os.path.dirname(_HERE), "topologies")
 
 
 def _load_topology_json(filename: str) -> Dict:

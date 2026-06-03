@@ -129,7 +129,7 @@ class Topology:
     # (adjustments dict in the same shape as the brief's adjustments). The
     # FIRST matching profile is applied; its adjustments are merged with the
     # brief's own (the brief always wins on conflicting room+key pairs).
-    # See phase_c3/run.py::_apply_lot_profile for the matching logic.
+    # See floorplan_v1/run.py::_apply_lot_profile for the matching logic.
     lot_adjustment_profiles: list = field(default_factory=list)
 
     # Optional list of BuildingVoid — rectangles inside the buildable envelope

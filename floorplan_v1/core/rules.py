@@ -5,7 +5,9 @@ import json
 import os
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_RULES_PATH = os.path.normpath(os.path.join(_HERE, "..", "ph_floorplan_rules.json"))
+# core/ → floorplan_v1/ → repo root (artol-ai/)
+_RULES_PATH = os.path.normpath(
+    os.path.join(_HERE, "..", "..", "ph_floorplan_rules.json"))
 
 # Priority tier -> weight (from sizing_policy: public_LDK > master > other bedroom > service/baths)
 PRIORITY_WEIGHT = {

@@ -1,4 +1,4 @@
-"""C.3 entry point — hybrid pipeline with caching for the AI path.
+"""artol-ai entry point — hybrid pipeline with caching for the AI path.
 
 Two routes:
 
@@ -16,7 +16,7 @@ fresh Claude call is triggered automatically. Anything else (prompt updates,
 solver tweaks, exemplar changes) doesn't invalidate the cache — runs against
 the cached topology pick up those improvements without spending a token.
 
-Outputs land in phase_c3/output/; cached topologies in phase_c3/cache/.
+Outputs land in floorplan_v1/output/; cached topologies in floorplan_v1/cache/.
 """
 import argparse
 import hashlib
@@ -25,9 +25,14 @@ import os
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(_HERE))                               # shared modules
-sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "phase_c"))      # phase_c (solver, topology)
-sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "phase_c2"))     # phase_c2 (brief, llm, pipeline)
+# Project is laid out as three sibling sub-packages of bare-import modules:
+#   core/   — model, rules, render, validator, setback_elements
+#   solver/ — topology, solver, snap_gaps, architectural_plan, fixture_orientation
+#   ai/     — brief, prompt, llm, pipeline
+# Adding each subdir to sys.path lets us keep simple bare imports below.
+sys.path.insert(0, os.path.join(_HERE, "core"))
+sys.path.insert(0, os.path.join(_HERE, "solver"))
+sys.path.insert(0, os.path.join(_HERE, "ai"))
 
 try:
     import cairosvg                            # noqa: F401
@@ -38,24 +43,24 @@ except (ImportError, OSError) as _e:
           f"will write SVGs only. Install with `brew install cairo libffi pango` "
           f"then `pip3 install cairosvg --break-system-packages`.")
 
-from model import shell_category                                 # noqa: E402
-from rules import Rules                                          # noqa: E402
-from validator import validate                                   # noqa: E402
-from render import layout_to_svg, archplan_to_svg                # noqa: E402
+from model import shell_category                                 # noqa: E402  (core)
+from rules import Rules                                          # noqa: E402  (core)
+from validator import validate                                   # noqa: E402  (core)
+from render import layout_to_svg, archplan_to_svg                # noqa: E402  (core)
 
-from topology import load_topology, validate_topology            # noqa: E402  (phase_c)
-from solver import solve, AdjustmentError                        # noqa: E402  (phase_c)
-from snap_gaps import snap_gaps                                  # noqa: E402  (phase_c)
-from architectural_plan import architecturalize                  # noqa: E402  (phase_c)
+from topology import load_topology, validate_topology            # noqa: E402  (solver)
+from solver import solve, AdjustmentError                        # noqa: E402  (solver)
+from snap_gaps import snap_gaps                                  # noqa: E402  (solver)
+from architectural_plan import architecturalize                  # noqa: E402  (solver)
 
-from brief import Brief                                          # noqa: E402  (phase_c2)
-from llm import ClaudeLLM, StubLLM                               # noqa: E402  (phase_c2)
-from pipeline import (                                           # noqa: E402  (phase_c2)
+from brief import Brief                                          # noqa: E402  (ai)
+from llm import ClaudeLLM, StubLLM                               # noqa: E402  (ai)
+from pipeline import (                                           # noqa: E402  (ai)
     _topology_from_dict, _make_default_lot, MAX_REPAIR,
 )
 
 
-_TOPOLOGIES_DIR = os.path.join(os.path.dirname(_HERE), "phase_c", "topologies")
+_TOPOLOGIES_DIR = os.path.join(_HERE, "topologies")
 OUT = os.path.join(_HERE, "output")
 VERSIONS_DIR = os.path.join(OUT, "versions")
 CACHE_DIR = os.path.join(_HERE, "cache")
@@ -73,14 +78,14 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 
 # ---------- brief loading ----------
 #
-# Briefs live in phase_c3/briefs/ as one JSON file each:
+# Briefs live in floorplan_v1/briefs/ as one JSON file each:
 #   briefs/hand_authored/<name>.json  →  pinned to a topology file (no AI call)
 #   briefs/ai/<name>.json             →  Claude composes the topology
 #
 # Each file is a flat JSON object with the Brief fields (intent, lot_width,
 # lot_depth, bedroom_count, must_haves, avoid, carport_preference). Hand-
 # authored briefs additionally include a "topology" field naming a JSON in
-# phase_c/topologies/. The brief name comes from the filename (without .json).
+# floorplan_v1/topologies/. The brief name comes from the filename (without .json).
 # Add, edit, or remove briefs by editing the JSON — no Python changes.
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
@@ -174,7 +179,7 @@ def _load_briefs_from(subdir: str, expect_topology: bool):
             if "topology" not in data:
                 raise ValueError(f"{p}: hand-authored brief must include a "
                                  f"'topology' field naming a file in "
-                                 f"phase_c/topologies/")
+                                 f"floorplan_v1/topologies/")
             out.append((name, brief, data["topology"], adjustments, rel_dir))
         else:
             # AI briefs accept an optional "use_cache" flag. Default true.
@@ -594,9 +599,9 @@ def _write(name, layout, topo, reason, no_version=False, rel_dir=""):
 
 def _parse_args(argv=None):
     p = argparse.ArgumentParser(
-        prog="phase_c3/run.py",
+        prog="floorplan_v1/run.py",
         description="Hybrid hand-authored + AI floor-plan pipeline. "
-                    "By default runs every brief in phase_c3/briefs/.",
+                    "By default runs every brief in floorplan_v1/briefs/.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument("--brief", metavar="NAME",

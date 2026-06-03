@@ -16,7 +16,7 @@ import os
 from typing import Dict, List
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_TOPOLOGIES_DIR = os.path.join(os.path.dirname(_HERE), "phase_c", "topologies")
+_TOPOLOGIES_DIR = os.path.join(os.path.dirname(_HERE), "topologies")
 
 
 # ---------- the system prompt itself ----------

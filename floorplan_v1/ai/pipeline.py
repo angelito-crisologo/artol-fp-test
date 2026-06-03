@@ -11,21 +11,23 @@ import sys
 from typing import Optional, Tuple
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(_HERE))                 # for shared modules
-sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "phase_c"))  # for phase_c
+_PROJECT_ROOT = os.path.dirname(_HERE)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "core"))    # core modules
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "solver"))  # solver modules
+sys.path.insert(0, _HERE)                                  # ai siblings (brief, llm)
 
-from model import Lot, shell_category                        # noqa: E402
-from rules import Rules                                      # noqa: E402
-from validator import validate, is_compliant                 # noqa: E402
+from model import Lot, shell_category                        # noqa: E402  (core)
+from rules import Rules                                      # noqa: E402  (core)
+from validator import validate, is_compliant                 # noqa: E402  (core)
 
-from topology import (                                       # noqa: E402  (phase_c)
+from topology import (                                       # noqa: E402  (solver)
     Topology, RoomSpec, Adjacency, SetbackElement,
     SoftProximity, ZoneSplit, validate_topology,
 )
-from solver import solve                                     # noqa: E402  (phase_c)
+from solver import solve                                     # noqa: E402  (solver)
 
-from brief import Brief                                      # noqa: E402
-from llm import get_client                                   # noqa: E402
+from brief import Brief                                      # noqa: E402  (ai)
+from llm import get_client                                   # noqa: E402  (ai)
 
 MAX_REPAIR = 2          # repair rounds when the solver returns infeasible
 
