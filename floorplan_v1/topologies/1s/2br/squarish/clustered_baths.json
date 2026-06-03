@@ -39,6 +39,16 @@
     { "type": "service_area",  "location": "rear_setback", "covered": false, "behind": "left_zone" }
   ],
 
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+
   "notes": [
     "Clustered-baths variant where the wet core is the ensuite<->common plumbing wall,",
     "and the bath block sits BETWEEN the bedrooms (master on one side, standard on the other).",

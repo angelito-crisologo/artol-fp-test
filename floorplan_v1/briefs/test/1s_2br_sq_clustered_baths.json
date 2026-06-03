@@ -8,6 +8,12 @@
     "bath block between bedrooms"
   ],
   "avoid": [],
-  "carport_preference": null,
+  "carport_preference": "right",
+  "setbacks": {
+    "front": 2.0,
+    "rear":  2.0,
+    "left":  2.0,
+    "right": 2.0
+  },
   "topology": "1s/2br/squarish/clustered_baths.json"
 }
