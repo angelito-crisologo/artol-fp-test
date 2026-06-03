@@ -34,7 +34,7 @@
   "match_bedroom_widths": true,
 
   "setback_elements": [
-    { "type": "carport",       "location": "side_setback", "covered": false },
+    { "type": "carport",       "location": "side_setback", "covered": false, "depth_m": 5.2 },
     { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" },
     { "type": "service_area",  "location": "rear_setback", "covered": false, "behind": "left_zone" }
   ],
@@ -44,9 +44,16 @@
       "id": "carport_cut",
       "location": "front_right",
       "width_m": 1.0,
-      "depth_m": 4.0,
+      "depth_m": 3.5,
       "consumed_by": "carport"
     }
+  ],
+
+  "front_to_rear_stacks": [
+    ["master",  "common",   "standard"],
+    ["master",  "ensuite",  "standard"],
+    ["living",  "dining"],
+    ["living",  "kitchen"]
   ],
 
   "notes": [

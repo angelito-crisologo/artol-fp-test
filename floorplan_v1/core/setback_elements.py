@@ -9,7 +9,9 @@ from model import Lot, Rect, Room
 
 
 def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
-                      service_rect_xspan, dirty_kitchen_at: str = "rear"):
+                      service_rect_xspan, dirty_kitchen_at: str = "rear",
+                      carport_depth_m: float = 5.0,
+                      carport_width_m: float = 2.6):
     """Place the three uncovered setback elements (carport, dirty kitchen,
     service area) around the buildable footprint.
 
@@ -21,6 +23,12 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
                            preserve a connection to the rear yard/lanai through
                            the rear elevation rather than have it occupied by
                            the dirty kitchen.
+
+    `carport_depth_m` / `carport_width_m`:
+      Per-topology overrides — set when the topology's building_void was
+      sized for a non-default carport (e.g., a 5.5 m deep carport whose
+      rear edge meets a void of matching depth). Front-parallel carports
+      use a fixed 5.0 m width × 2.6 m depth and ignore these overrides.
     """
     elements = []
     if carport_side == "front":
@@ -40,16 +48,16 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
         # buffer for the property edge). The car enters directly from the
         # street rather than driving past the front setback to reach it.
         cx1 = lot.width - 0.4
-        cx0 = cx1 - 2.6
+        cx0 = cx1 - carport_width_m
         cy0 = 0.3
-        cy1 = cy0 + 5.0
+        cy1 = cy0 + carport_depth_m
         elements.append(Room("carport", "carport",
                              Rect(cx0, cy0, cx1, cy1), "service", covered=False))
     else:  # "left"
         cx0 = 0.4
-        cx1 = cx0 + 2.6
+        cx1 = cx0 + carport_width_m
         cy0 = 0.3
-        cy1 = cy0 + 5.0
+        cy1 = cy0 + carport_depth_m
         elements.append(Room("carport", "carport",
                              Rect(cx0, cy0, cx1, cy1), "service", covered=False))
     rear_y0 = lot.depth - lot.rear + 0.1

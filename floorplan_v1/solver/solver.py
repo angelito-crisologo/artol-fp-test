@@ -687,18 +687,28 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     service_xspan = (env.x0, kitchen_rect.x0) if kitchen_rect.x0 > env.x0 \
                     else (kitchen_rect.x1, env.x1)
 
-    # Read topology hint for dirty-kitchen placement. Defaults to "rear" when
-    # the topology doesn't say otherwise; a topology can opt into "side"
-    # placement by setting setback_elements[type=dirty_kitchen].location to
-    # "side_setback".
+    # Read topology hints for setback element placement. Dirty kitchen
+    # defaults to "rear" when not specified; a topology can opt into "side"
+    # by setting setback_elements[type=dirty_kitchen].location = "side_setback".
+    # The carport's dimensions can be overridden per topology via the
+    # SetbackElement's width_m / depth_m fields — used when a building_void
+    # was sized for a non-default carport.
     dk_at = "rear"
+    cp_depth_m = 5.0
+    cp_width_m = 2.6
     for sb in topology.setback_elements:
         if sb.type == "dirty_kitchen" and sb.location == "side_setback":
             dk_at = "side"
-            break
+        if sb.type == "carport":
+            if sb.depth_m is not None:
+                cp_depth_m = float(sb.depth_m)
+            if sb.width_m is not None:
+                cp_width_m = float(sb.width_m)
 
     elements = _setback_elements(lot, carport_side, kitchen_rect, service_xspan,
-                                 dirty_kitchen_at=dk_at)
+                                 dirty_kitchen_at=dk_at,
+                                 carport_depth_m=cp_depth_m,
+                                 carport_width_m=cp_width_m)
 
     layout = Layout(lot=lot, rooms=rooms, elements=elements,
                     carport_side=carport_side, genome={"template": "cpsat_solver"})

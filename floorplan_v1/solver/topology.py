@@ -60,6 +60,13 @@ class SetbackElement:
     location: str          # side_setback | rear_setback | front_setback
     covered: bool = False
     behind: Optional[str] = None  # room id this element sits behind (for dirty kitchen)
+    # Optional per-topology dimension overrides. When None, _setback_elements
+    # falls back to its built-in default (e.g., side carport 2.6 m wide x 5.0 m
+    # deep). Set these on a topology when its building_void was sized for a
+    # non-default carport, so the carport's rear edge aligns with the void's
+    # rear edge in the rendered floor plan.
+    width_m:  Optional[float] = None
+    depth_m:  Optional[float] = None
 
 
 @dataclass
