@@ -252,8 +252,8 @@
       "soft": {
         "min_dimensions_m": [3.5, 5.0],
         "preferred_dimensions_m": [4.5, 6.0],
-        "preferred_area_sqm": [16.0, 27.0],
-        "source": "PH residential practice"
+        "preferred_area_sqm": [16.0, 22.0],
+        "source": "PH residential practice; upper bound tightened 27→22 to rebalance against bedrooms (was producing LDK-heavy plans)."
       },
       "size_priority": "public_LDK",
       "adjacency": { "prefer_near": ["main_entry", "dining_room", "lanai"], "is_arrival_zone": true, "hosts_main_entry": true, "cluster": "public_living" }
@@ -266,8 +266,8 @@
       "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_natural_light_vent_or_artificial": true, "note": "Habitable room; treated under Sec. 806(1). Merges living + dining into one open-plan space; may be L-shaped (modeled as two cells).", "source": "PD 1096 Sec. 806(1), Sec. 808" },
       "soft": {
         "preferred_dimensions_m": [4.5, 6.0],
-        "preferred_area_sqm": [26.0, 43.0],
-        "rationale": "Combined living + dining; preferred area approximates the sum of separate living (16-27) and dining (10-16) targets.",
+        "preferred_area_sqm": [26.0, 36.0],
+        "rationale": "Combined living + dining; preferred area approximates the sum of separate living (16-22) and dining (10-14) targets. Upper bound tightened 43→36 alongside the living + dining rebalance.",
         "source": "PH residential practice"
       },
       "size_priority": "public_LDK",
@@ -281,8 +281,8 @@
       "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "source": "PD 1096 Sec. 806(1)" },
       "soft": {
         "preferred_dimensions_m": [3.0, 4.0],
-        "preferred_area_sqm": [10.0, 16.0],
-        "source": "PH residential practice"
+        "preferred_area_sqm": [10.0, 14.0],
+        "source": "PH residential practice; upper bound tightened 16→14 to rebalance against bedrooms."
       },
       "size_priority": "public_LDK",
       "adjacency": { "prefer_near": ["kitchen", "living_room"], "cluster": "public_living" }

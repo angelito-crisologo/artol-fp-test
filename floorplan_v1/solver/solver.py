@@ -47,9 +47,9 @@ class AdjustmentError(ValueError):
     pass
 
 PRIORITY_WEIGHTS = {
-    "public_LDK":        4,
-    "master_bedroom":    3,
-    "other_bedrooms":    2,
+    "public_LDK":        3,    # was 4 — see core/rules.py for the rebalance
+    "master_bedroom":    4,    # was 3 — strictly highest so LDK→master shifts
+    "other_bedrooms":    3,    # was 2 — bedrooms compete with LDK for slack
     "service_and_baths": 1,
 }
 

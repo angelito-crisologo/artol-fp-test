@@ -9,11 +9,16 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _RULES_PATH = os.path.normpath(
     os.path.join(_HERE, "..", "..", "ph_floorplan_rules.json"))
 
-# Priority tier -> weight (from sizing_policy: public_LDK > master > other bedroom > service/baths)
+# Priority tier -> weight. Was (4, 3, 2, 1) which produced LDK-heavy plans
+# (LDK:private ≈ 1.7:1). Master is now STRICTLY highest so the solver has
+# a positive incentive to shrink LDK rectangles in favour of the master
+# bedroom when geometry allows; standard bedrooms moved up to tie with
+# LDK so they also get pulled above the preferred-low when there's slack.
+# Targets the PH mid-market norm of ~1.4:1 LDK:private.
 PRIORITY_WEIGHT = {
-    "public_LDK": 4.0,
-    "master_bedroom": 3.0,
-    "other_bedrooms": 2.0,
+    "public_LDK": 3.0,
+    "master_bedroom": 4.0,
+    "other_bedrooms": 3.0,
     "service_and_baths": 1.0,
 }
 
