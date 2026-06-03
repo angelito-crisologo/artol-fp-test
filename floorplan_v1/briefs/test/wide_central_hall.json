@@ -1,0 +1,19 @@
+{
+  "intent": "Wide 2-bedroom with great room on the LEFT (combined living+dining), a central horizontal hallway band, master + kitchen stacked in the middle column (master front, kitchen rear), and standard bedroom + common T&B stacked in the right column (standard front, common rear). Single T&B. Targeted at 16x10 / 16x11 wide lots.",
+  "lot_width": 16.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "great room on the LEFT column, full depth",
+    "master bedroom in middle column at the FRONT",
+    "kitchen in middle column at the REAR (above master)",
+    "standard bedroom in right column at the FRONT",
+    "common T&B in right column at the REAR (above standard)",
+    "single horizontal hallway band across middle + right columns between bedrooms and kitchen/bath",
+    "single T&B (no ensuite)"
+  ],
+  "avoid": [],
+  "carport_preference": "left",
+  "topology": "1s/2br/wide/central_hall.json",
+  "adjustments": {}
+}

@@ -1,0 +1,14 @@
+{
+  "intent": "Test brief — exercises the split_stacked topology. Squarish 2BR with private wing (sleeping column) on one side, LDK stacked living → dining → kitchen front-to-rear on the other. Renderer regression input only — minimal content.",
+  "lot_width": 10.0,
+  "lot_depth": 15.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "split layout",
+    "stacked LDK column"
+  ],
+  "avoid": [],
+  "carport_preference": "right",
+  "topology": "1s/2br/squarish/split_stacked.json",
+  "adjustments": {}
+}

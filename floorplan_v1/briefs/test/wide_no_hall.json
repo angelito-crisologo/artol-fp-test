@@ -1,0 +1,17 @@
+{
+  "intent": "Wide 2-bedroom 5-room layout with NO hallway. Great room (combined living+dining) occupies the front + center, with the standard bedroom tucked at the front-right. Rear band runs left to right: master, common T&B, kitchen. Single T&B. All rooms open directly off the great room.",
+  "lot_width": 16.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "no hallway \u2014 every room opens directly off the great room",
+    "great room hosts the entry and combines living + dining",
+    "rear band: master (left), common T&B (center), kitchen (right)",
+    "standard bedroom at the front-right, under the kitchen",
+    "single T&B"
+  ],
+  "avoid": [],
+  "carport_preference": "left",
+  "topology": "1s/2br/wide/no_hall.json",
+  "adjustments": {}
+}

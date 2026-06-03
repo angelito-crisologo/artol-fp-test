@@ -1,0 +1,13 @@
+{
+  "intent": "2-bedroom with a clustered wet core \u2014 bath block sits between the bedrooms acting as the acoustic buffer.",
+  "lot_width": 13.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "clustered baths",
+    "bath block between bedrooms"
+  ],
+  "avoid": [],
+  "carport_preference": null,
+  "topology": "1s/2br/squarish/clustered_baths.json"
+}

@@ -1,0 +1,14 @@
+{
+  "intent": "Test brief — exercises the split_openplan topology. Squarish 2BR with private wing (sleeping column) on one side, dining + kitchen sitting side-by-side at the rear (modern, cook-with-guests). Renderer regression input only — minimal content.",
+  "lot_width": 10.0,
+  "lot_depth": 15.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "split layout",
+    "open plan kitchen and dining"
+  ],
+  "avoid": [],
+  "carport_preference": "right",
+  "topology": "1s/2br/squarish/split_openplan.json",
+  "adjustments": {}
+}

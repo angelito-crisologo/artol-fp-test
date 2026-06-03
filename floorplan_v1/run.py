@@ -66,10 +66,21 @@ CACHE_DIR = os.path.join(_HERE, "cache")
 BRIEFS_DIR = os.path.join(_HERE, "briefs")
 HAND_AUTHORED_DIR = os.path.join(BRIEFS_DIR, "hand_authored")
 AI_DIR = os.path.join(BRIEFS_DIR, "ai")
+# Topology regression test mode: each test brief in briefs/test/ exercises
+# one topology end-to-end. Outputs land in test_output/ (gitignored
+# scratch); test_baselines/ holds the checked-in "known-good" SVGs that
+# regressions are diffed against. Update baselines deliberately with
+# --update-baselines after an intentional renderer / solver change.
+TEST_BRIEFS_DIR    = os.path.join(BRIEFS_DIR, "test")
+TEST_OUT_DIR       = os.path.join(_HERE, "test_output")
+TEST_BASELINES_DIR = os.path.join(_HERE, "test_baselines")
 os.makedirs(OUT, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(HAND_AUTHORED_DIR, exist_ok=True)
 os.makedirs(AI_DIR, exist_ok=True)
+os.makedirs(TEST_BRIEFS_DIR, exist_ok=True)
+os.makedirs(TEST_OUT_DIR, exist_ok=True)
+os.makedirs(TEST_BASELINES_DIR, exist_ok=True)
 
 AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 
@@ -192,6 +203,14 @@ def load_hand_authored_anchors():
 
 def load_ai_briefs():
     return _load_briefs_from(AI_DIR, expect_topology=False)
+
+
+def load_test_briefs():
+    """Test briefs live FLAT in briefs/test/ (no shell-config nesting) —
+    one minimal brief per topology, used for end-to-end regression. Each
+    must reference an existing topology JSON via the `topology` field, same
+    schema as the hand-authored anchors."""
+    return _load_briefs_from(TEST_BRIEFS_DIR, expect_topology=True)
 
 
 # ---------- caching ----------
@@ -330,8 +349,11 @@ def _merge_lot_profile(topo, env_w: float, env_h: float, brief_adj: dict,
 
 
 def _run_hand_authored(brief: Brief, topology_filename: str,
-                       adjustments: dict = None, verbose: bool = True):
-    """Load named topology, solve, validate. No API call."""
+                       adjustments: dict = None, verbose: bool = True,
+                       deterministic: bool = False):
+    """Load named topology, solve, validate. No API call. `deterministic`
+    pins the solver to single-threaded + fixed random seed so test mode
+    can byte-diff the SVG against a baseline."""
     rules = Rules()
     lot = _make_default_lot(brief)
     shell = shell_category(lot)
@@ -345,7 +367,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     topo = load_topology(os.path.join(_TOPOLOGIES_DIR, topology_filename))
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose)
     layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=merged_adj)
+                   adjustments=merged_adj, deterministic=deterministic)
     # Attach the topology's building voids to the layout so the validator
     # can see them and suppress the "element in envelope" false positive
     # (a setback element overlapping a void is intentional).
@@ -531,11 +553,13 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
     )
 
 
-def _write(name, layout, topo, reason, rel_dir=""):
+def _write(name, layout, topo, reason, rel_dir="", out_root=None):
     """Write the architectural plan SVG + PNG. Mirrors the brief's relative
-    path under OUT (e.g. brief at 1s/2br/wide/anchor_no_hall.json lands at
-    OUT/1s/2br/wide/anchor_no_hall.svg). Overwrites any existing file."""
-    out_dir = os.path.join(OUT, rel_dir) if rel_dir else OUT
+    path under `out_root` (defaults to the canonical OUT dir). Test runs
+    point this at TEST_OUT_DIR or TEST_BASELINES_DIR instead. Overwrites
+    any existing file."""
+    base = out_root if out_root is not None else OUT
+    out_dir = os.path.join(base, rel_dir) if rel_dir else base
     os.makedirs(out_dir, exist_ok=True)
 
     # Reuse the plan that the run/realize step attached after snap_gaps;
@@ -556,6 +580,57 @@ def _write(name, layout, topo, reason, rel_dir=""):
     print(f"  topology id: {topo.id}")
 
 
+def _run_tests(update_baselines: bool = False, brief_filter: str = None) -> int:
+    """Run every brief in briefs/test/ through the hand-authored solver +
+    architectural-plan pipeline. Renders go to test_output/ (or
+    test_baselines/ when --update-baselines is set).
+
+    PASS / FAIL is based on validator compliance — a brief passes when the
+    solver returns a layout and the validator emits zero hard errors. The
+    CP-SAT solver is non-deterministic across runs even with a fixed seed
+    (the 10-second wallclock cutoff lands on different optima on different
+    runs), so we don't byte-diff SVGs. test_baselines/ remains a *visual*
+    reference folder — humans inspect it manually when a topology change
+    needs a sanity check that the rendering still reads correctly.
+
+    Returns the number of FAILing tests (0 = clean)."""
+    briefs = load_test_briefs()
+    if brief_filter:
+        briefs = [t for t in briefs if t[0] == brief_filter]
+        if not briefs:
+            print(f"no test brief matches --brief={brief_filter!r}")
+            return 1
+    out_root = TEST_BASELINES_DIR if update_baselines else TEST_OUT_DIR
+    mode = "updating baselines in" if update_baselines else "writing to"
+    print(f"running {len(briefs)} test brief(s); {mode} "
+          f"{os.path.relpath(out_root, _HERE)}/\n")
+
+    n_pass = n_fail = n_err = 0
+    for name, brief, topology_fname, adjustments, rel_dir in briefs:
+        print(f"--- {name}")
+        try:
+            layout, topo, reason = _run_hand_authored(
+                brief, topology_fname, adjustments=adjustments,
+                verbose=False, deterministic=True)
+        except RuntimeError as e:
+            print(f"  ERROR  (solver/validator): {e}")
+            n_err += 1
+            continue
+        # The layout already passed _run_hand_authored's validator gate
+        # (it raises on hard errors). Confirm explicitly and surface
+        # warning / suggestion counts for human inspection.
+        warns = sum(1 for i in layout.issues if i.severity == "warning")
+        sugg  = sum(1 for i in layout.issues if i.severity == "suggestion")
+        _write(name, layout, topo, reason, rel_dir=rel_dir, out_root=out_root)
+        print(f"  PASS  ({warns} warn, {sugg} sugg)")
+        n_pass += 1
+
+    print(f"\nsummary: {n_pass} pass, {n_fail} fail, {n_err} error")
+    if update_baselines:
+        print(f"baselines updated at {os.path.relpath(out_root, _HERE)}/")
+    return n_fail + n_err
+
+
 def _parse_args(argv=None):
     p = argparse.ArgumentParser(
         prog="floorplan_v1/run.py",
@@ -572,11 +647,28 @@ def _parse_args(argv=None):
                    default="all",
                    help="Restrict to one section. 'hand_authored' skips all "
                         "Claude calls; 'ai' skips deterministic anchors.")
+    p.add_argument("--test", action="store_true",
+                   help="Run topology regression: every brief in briefs/test/ "
+                        "is solved + validated + rendered to test_output/. "
+                        "A test PASSes when the validator emits zero hard "
+                        "errors. Skips the hand_authored/ + ai/ paths.")
+    p.add_argument("--update-baselines", action="store_true",
+                   help="With --test: write the just-rendered test SVGs/PNGs "
+                        "over test_baselines/ (the visual-reference folder "
+                        "checked into git) instead of test_output/. Use after "
+                        "an intentional renderer or topology change to refresh "
+                        "the human-eye baseline.")
     return p.parse_args(argv)
 
 
 def main(argv=None):
     args = _parse_args(argv)
+
+    if args.test:
+        sys.exit(_run_tests(update_baselines=args.update_baselines,
+                            brief_filter=args.brief))
+    if args.update_baselines:
+        print("note: --update-baselines only does anything with --test; ignoring.")
 
     hand_authored = load_hand_authored_anchors()
     ai_briefs = load_ai_briefs()

@@ -144,7 +144,8 @@ def _add_min_max(model, name, kind, a, b, lo, hi):
 
 def solve(topology: Topology, lot: Lot, rules: Rules,
           time_limit_s: float = 30.0, verbose: bool = True,
-          adjustments: Dict[str, Dict[str, float]] = None) -> Layout:
+          adjustments: Dict[str, Dict[str, float]] = None,
+          deterministic: bool = False) -> Layout:
     """Solve `topology` into a `Layout` on `lot`. `adjustments` is an optional
     per-room-type override of size constraints:
 
@@ -629,7 +630,14 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # ---------- solve ----------
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = float(time_limit_s)
-    solver.parameters.num_search_workers = 4
+    if deterministic:
+        # Single-threaded with a fixed random seed so the same input always
+        # yields the same output. Slower (no parallel search) but lets the
+        # baseline-diff regression in --test work byte-for-byte.
+        solver.parameters.num_search_workers = 1
+        solver.parameters.random_seed = 42
+    else:
+        solver.parameters.num_search_workers = 4
     status = solver.Solve(model)
 
     if verbose:
