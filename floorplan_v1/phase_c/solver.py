@@ -643,7 +643,8 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         y0 = _m(solver.Value(ry[r.id]))
         x1 = _m(solver.Value(rx_end[r.id]))
         y1 = _m(solver.Value(ry_end[r.id]))
-        rooms.append(Room(r.id, r.type, Rect(x0, y0, x1, y1), r.zone))
+        rooms.append(Room(r.id, r.type, Rect(x0, y0, x1, y1), r.zone,
+                          mechanical_vent=getattr(r, "mechanical_vent", False)))
 
     # ---------- carport placement ----------
     # If the topology declares a building_void with consumed_by="carport",

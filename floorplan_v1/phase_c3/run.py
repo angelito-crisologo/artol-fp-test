@@ -84,7 +84,8 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 # Add, edit, or remove briefs by editing the JSON — no Python changes.
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
-                 "must_haves", "avoid", "carport_preference", "setbacks")
+                 "must_haves", "avoid", "carport_preference", "setbacks",
+                 "occupancy_class")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -357,14 +358,29 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # envelope strips. Building voids are treated as obstacles so rooms don't
     # snap into them.
     layout, n_snaps = snap_gaps(layout, verbose=verbose, void_rects=void_rects)
+    # Build the architectural plan now (post-snap) so the validator's
+    # window-area checks (W-H1, W-H2) can see the windows. Attach the plan
+    # to the layout — downstream rendering reuses it instead of rebuilding.
+    plan = architecturalize(layout, topo)
+    layout.archplan = plan
     if n_snaps:
         # Re-validate to refresh the score with the now-larger room areas.
         issues, score = validate(layout, rules)
+    else:
+        # Validate again so window-area checks run against the attached plan.
+        issues, score = validate(layout, rules)
+    errs = [i for i in issues if i.severity == "error"]
+    if errs:
+        raise RuntimeError(
+            f"hand-authored topology {topology_filename} failed validation: "
+            + "; ".join(str(e) for e in errs[:3]))
     if verbose:
         warns = [i for i in issues if i.severity == "warning"]
         sugg = [i for i in issues if i.severity == "suggestion"]
         snap_note = f" ({n_snaps} snap(s))" if n_snaps else ""
         print(f"  COMPLIANT  score={score:.2f}  {len(warns)} warn  {len(sugg)} sugg{snap_note}")
+        for w in warns:
+            print(f"    [WARN] {w.msg}")
     reason = f"[hand-authored] using {topology_filename} (no API call)"
     return layout, topo, reason
 
@@ -390,10 +406,16 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
         raise RuntimeError("validator caught hard violation(s): "
                            + "; ".join(str(i) for i in hard[:3]))
     # Snap unused envelope strips after the AI-realized layout has cleared
-    # the validator. Re-validate so the score reflects the polished layout.
+    # the validator. Build the archplan post-snap and re-validate so the
+    # final score reflects window-area compliance (W-H1, W-H2).
     layout, n_snaps = snap_gaps(layout, verbose=False, void_rects=void_rects)
-    if n_snaps:
-        issues, score = validate(layout, rules)
+    plan = architecturalize(layout, topo)
+    layout.archplan = plan
+    issues, score = validate(layout, rules)
+    hard = [i for i in issues if i.severity == "error"]
+    if hard:
+        raise RuntimeError("validator caught hard violation(s) post-archplan: "
+                           + "; ".join(str(i) for i in hard[:3]))
     return layout, topo, score, issues
 
 
@@ -552,7 +574,9 @@ def _write(name, layout, topo, reason, no_version=False, rel_dir=""):
                 os.path.join(out_dir, "versions"), OUT)
             print(f"  archived previous as {rel_versions}/{name}_v{archived}.svg")
 
-    plan = architecturalize(layout, topo)
+    # Reuse the plan that the run/realize step attached after snap_gaps;
+    # rebuild only if it wasn't cached (defensive).
+    plan = getattr(layout, "archplan", None) or architecturalize(layout, topo)
     svg_path = os.path.join(out_dir, f"{name}.svg")
     with open(svg_path, "w", encoding="utf-8") as f:
         f.write(archplan_to_svg(plan))

@@ -9,7 +9,7 @@
     { "id": "standard", "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
     { "id": "common",   "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" },
     { "id": "hall",     "type": "hallway",          "zone": "circulation", "size_priority": "service_and_baths" },
-    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service",     "size_priority": "public_LDK", "mechanical_vent": true },
     { "id": "great",    "type": "great_room",       "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true }
   ],
 

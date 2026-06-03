@@ -66,6 +66,8 @@ class Room:
     zone: str = "private"      # public | private | service | circulation
     covered: bool = True
     rect2: Optional[Rect] = None   # optional 2nd cell -> L-shaped (composite) room
+    mechanical_vent: bool = False  # opt-out from PD 1096 §808 10% window rule
+                                   # (substitute artificial ventilation per §805)
 
     @property
     def cells(self) -> List[Rect]:
@@ -106,6 +108,10 @@ class Lot:
     left: float
     right: float
     street_side: str = "front"
+    # PD 1096 / IRR Rule VII residential occupancy class — drives setback
+    # minimums (W-H11) and firewall legality (W-H10). Default "R-1" matches
+    # the project's primary target (single-detached single-family).
+    occupancy_class: str = "R-1"
 
     @property
     def area(self) -> float:

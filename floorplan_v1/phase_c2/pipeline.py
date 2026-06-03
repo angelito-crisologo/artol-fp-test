@@ -59,6 +59,7 @@ def _make_default_lot(brief: Brief) -> Lot:
     (e.g., `setbacks: {front: 2, rear: 2, left: 2, right: 0}` for a firewall
     on the right). When `setbacks` is given, carport_preference is ignored —
     the brief is fully in control of envelope geometry."""
+    occupancy = getattr(brief, "occupancy_class", "R-1")
     explicit = getattr(brief, "setbacks", None)
     if explicit:
         return Lot(
@@ -68,6 +69,7 @@ def _make_default_lot(brief: Brief) -> Lot:
             left=float(explicit.get("left", 2.0)),
             right=float(explicit.get("right", 2.0)),
             street_side="front",
+            occupancy_class=occupancy,
         )
     front, rear, left, right = 2.0, 2.0, 2.0, 2.0
     pref = (brief.carport_preference or "right").lower()
@@ -81,6 +83,7 @@ def _make_default_lot(brief: Brief) -> Lot:
         width=brief.lot_width, depth=brief.lot_depth,
         front=front, rear=rear, left=left, right=right,
         street_side="front",
+        occupancy_class=occupancy,
     )
 
 

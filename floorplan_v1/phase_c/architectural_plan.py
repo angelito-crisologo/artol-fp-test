@@ -23,6 +23,7 @@ from typing import List, Optional, Tuple
 
 from model import Layout, Rect, Room
 from topology import Topology
+from fixture_orientation import derive_orientations, RoomOrientation
 
 
 # Door clear-width defaults by adjacency kind. Defaults match PD 1096 minima
@@ -114,6 +115,29 @@ WINDOWED_TYPES = HABITABLE | BATH_TYPES | {"kitchen"}
 # larger habitable-style window). Kitchens take the habitable style — the
 # window over the sink is typically larger than a bath vent.
 BATH_STYLE_WINDOW = set(BATH_TYPES)
+
+# PH-practice sill height (m, from finished floor level) and typical glazed
+# height (m). Pulled from developer plan packs (Camella, Avida) and UAP
+# teaching notes. Sill heights:
+#   bedroom        0.9 m — clears a typical bed headboard.
+#   kitchen        1.1 m — sits above the 0.85 m counter + backsplash.
+#   bath / WC      1.6 m — clerestory: above standing eye-level for privacy.
+#   living/dining  0.7 m — low sill for view to street/yard.
+# Glazed height is the window height itself; sill + height = head height.
+# (Project default head ≈ 2.1 m to align with door head.)
+PER_ROOM_WINDOW_DEFAULTS = {
+    "master_bedroom":   {"sill": 0.90, "height": 1.20},
+    "bedroom_standard": {"sill": 0.90, "height": 1.20},
+    "maids_room":       {"sill": 0.90, "height": 1.00},
+    "kitchen":          {"sill": 1.05, "height": 0.80},
+    "common_bath":      {"sill": 1.60, "height": 0.50},
+    "ensuite_bath":     {"sill": 1.60, "height": 0.50},
+    "bath_toilet":      {"sill": 1.60, "height": 0.50},
+    "powder_room":      {"sill": 1.70, "height": 0.40},
+    "living_room":      {"sill": 0.70, "height": 1.40},
+    "dining_room":      {"sill": 0.70, "height": 1.40},
+    "great_room":       {"sill": 0.70, "height": 1.40},
+}
 
 
 # Side names use compass directions. N = rear, S = front (street), E = right,
@@ -403,32 +427,98 @@ def _open_plan_edge_for_adjacency(adj, layout: Layout) -> Optional[OpenPlanEdge]
     return OpenPlanEdge(room_a=adj.a, room_b=adj.b, wall=edge[0])
 
 
-def _windows_for_room(room: Room, env: Rect, bath: bool, exclude_walls: set,
-                       firewall_sides: set) -> List[Window]:
-    """One window on every exterior wall of `room`, skipping:
-      - sides already consumed by a door (`exclude_walls`),
-      - sides that are a firewall (party wall against the neighbor; the lot
-        has setback=0 on that side, so no openings are allowed)."""
+def _free_segments(wall_len: float, blockers: List[Tuple[float, float]],
+                    clearance: float = 0.30) -> List[Tuple[float, float]]:
+    """Subtract a list of `blocker` intervals (in wall-local coords, each
+    expanded by `clearance` on each side for jamb/casing) from [0, wall_len].
+    Returns the remaining FREE intervals sorted by descending length."""
+    if not blockers:
+        return [(0.0, wall_len)]
+    expanded = [(max(0.0, s - clearance), min(wall_len, e + clearance))
+                for s, e in blockers]
+    expanded.sort()
+    merged = [expanded[0]]
+    for s, e in expanded[1:]:
+        if s <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+        else:
+            merged.append((s, e))
+    free: List[Tuple[float, float]] = []
+    cursor = 0.0
+    for s, e in merged:
+        if s > cursor + 1e-6:
+            free.append((cursor, s))
+        cursor = max(cursor, e)
+    if wall_len > cursor + 1e-6:
+        free.append((cursor, wall_len))
+    free.sort(key=lambda iv: iv[1] - iv[0], reverse=True)
+    return free
+
+
+def _windows_for_room(room: Room, env: Rect, bath: bool,
+                      door_segments: dict, firewall_sides: set,
+                      orientation: Optional[RoomOrientation] = None) -> List[Window]:
+    """Place windows on the exterior walls of `room`.
+
+    `door_segments` maps side → list of (start, end) door footprints in
+    wall-local coordinates. A wall may carry BOTH a door and a window (e.g.,
+    the front door + a living-room picture window on the same south wall) as
+    long as there's a wall segment of sufficient length, separated from the
+    door by ~0.30 m of jamb/casing clearance.
+
+    `firewall_sides` (lot setback = 0) get no openings at all (PD 1096 §704;
+    RA 9514 firewall rule)."""
     out: List[Window] = []
+    # Score each candidate side; orientation hints add or subtract priority
+    # so window placement matches PH practice (kitchen window over the sink
+    # wall; bedroom window NOT on the head wall; bath window NOT on the
+    # wet/shower wall). Hints are SOFT — if the only available exterior wall
+    # is the "wrong" one, we still place a window there for §808 compliance.
+    candidates: List[tuple] = []      # (priority, side)
     for side in SIDES:
-        if side in exclude_walls:
-            continue
         if side in firewall_sides:
             continue
         if not _touches_exterior(room.rect, env, side):
             continue
+        priority = 0.0
+        if orientation is not None:
+            if orientation.sink_wall == side:    priority += 5.0   # kitchen
+            if orientation.head_wall == side:    priority -= 3.0   # bedroom
+            if orientation.wet_wall == side:     priority -= 4.0   # bath
+            if orientation.shower_wall == side:  priority -= 2.0   # bath
+        # Mild tie-breaker by wall length — prefer the longer wall.
+        priority += _wall_length(room.rect, side) * 0.01
+        candidates.append((priority, side))
+    candidates.sort(reverse=True)
+    for _, side in candidates:
         wall_len = _wall_length(room.rect, side)
-        if bath:
-            w = max(0.6, min(0.9, wall_len * 0.4))
-        else:
-            w = max(0.9, min(2.4, wall_len * 0.55))
-        if wall_len < w + 0.20:                      # not enough room — skip
+        free = _free_segments(wall_len, door_segments.get(side, []))
+        if not free:
             continue
-        pos = (wall_len - w) / 2.0                   # centered
+        # Use the largest free segment.
+        seg_start, seg_end = free[0]
+        seg_len = seg_end - seg_start
+        if bath:
+            w = max(0.6, min(0.9, seg_len * 0.5))
+        else:
+            w = max(0.9, min(2.4, seg_len * 0.55))
+        # Centering inside the free segment already gives a corner offset;
+        # we only need a tiny extra slack to keep the jamb off the wall
+        # corner / door jamb (which the 0.30 m clearance already includes).
+        if seg_len < w + 0.05:
+            # Try shrinking to a minimum-size window for ventilation.
+            min_w = 0.6 if bath else 0.9
+            if seg_len < min_w + 0.05:
+                continue
+            w = min_w
+        pos = seg_start + (seg_len - w) / 2.0          # center in free segment
+        defaults = PER_ROOM_WINDOW_DEFAULTS.get(room.type, {})
         out.append(Window(
             room=room.id, wall=side,
             position_m=round(pos, 3),
             width_m=round(w, 3),
+            height_m=defaults.get("height", 1.2),
+            sill_height_m=defaults.get("sill", 0.9),
         ))
     return out
 
@@ -508,15 +598,26 @@ def _front_door(topology: Topology, layout: Layout, env: Rect) -> Optional[Door]
     clear = DOOR_CLEAR_WIDTH_M["main_door"]
     if wall_len < clear + 0.30:
         clear = max(0.80, wall_len - 0.30)
-    # For the front door, position toward the corner closer to the carport-
-    # neutral side. Simplest: centered.
-    pos = (wall_len - clear) / 2.0
+    # Front-door placement: centered ONLY when there's enough room for the
+    # door PLUS a centered window on either side (i.e., wall_len wide enough
+    # that a habitable-style 0.9 m window fits after subtracting door +
+    # clearances). On narrower facades (e.g., 2.4–2.6 m great_room in a
+    # firewall-compact layout), shove the front door into a corner so the
+    # other half of the wall is free for the room's 10% window.
+    space_for_centered = clear + 2 * (0.9 + 0.30) + 0.20  # door + window each side
+    if wall_len >= space_for_centered:
+        pos = (wall_len - clear) / 2.0
+        hinge_at = "low"
+    else:
+        pos = CORNER_OFFSET_M
+        hinge_at = "low"
     return Door(
         room_a="exterior", room_b=entry_id, wall=chosen,
         position_m=round(pos, 3),
         clear_width_m=round(clear, 3),
         swing_into=entry_id,
         kind="main_door",
+        hinge_at=hinge_at,
     )
 
 
@@ -530,12 +631,39 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
     plan = ArchPlan(layout=layout, topology=topology)
     env = layout.lot.envelope()
 
-    # Track which walls of each room have a door — windows on those same walls
-    # are suppressed (we don't want a door and window stacked).
-    door_walls_by_room: dict = {}
+    # Track per-(room, side) door footprints (start, end in wall-local m)
+    # so windows can coexist on the same wall as a door when there's room.
+    door_segments_by_room: dict = {}     # {(room_id, side): [(start, end), ...]}
+    rooms_by_id = {r.id: r for r in layout.rooms}
+
+    def _record_door(room_id: str, side: str, start_m: float, end_m: float):
+        door_segments_by_room.setdefault((room_id, side), []).append(
+            (start_m, end_m))
+
+    def _record_interior_door(door: "Door"):
+        """Record an interior door on BOTH rooms' walls, converting the
+        position_m (which is local to room_a's wall_origin) into room_b's
+        wall_origin frame on the opposite wall."""
+        a_id, a_side = door.room_a, door.wall
+        b_id, b_side = door.room_b, _opposite(door.wall)
+        a_local_start = door.position_m
+        a_local_end   = a_local_start + door.clear_width_m
+        _record_door(a_id, a_side, a_local_start, a_local_end)
+        r_a = rooms_by_id[a_id]
+        r_b = rooms_by_id[b_id]
+        if door.wall in ("N", "S"):
+            abs_start = r_a.rect.x0 + a_local_start
+            abs_end   = r_a.rect.x0 + a_local_end
+            b_local_start = abs_start - r_b.rect.x0
+            b_local_end   = abs_end   - r_b.rect.x0
+        else:
+            abs_start = r_a.rect.y0 + a_local_start
+            abs_end   = r_a.rect.y0 + a_local_end
+            b_local_start = abs_start - r_b.rect.y0
+            b_local_end   = abs_end   - r_b.rect.y0
+        _record_door(b_id, b_side, b_local_start, b_local_end)
 
     # Pass 1: doors and open-plan edges from topology adjacencies
-    rooms_by_id = {r.id: r for r in layout.rooms}
     for adj in topology.adjacencies:
         ra, rb = rooms_by_id.get(adj.a), rooms_by_id.get(adj.b)
         if ra is None or rb is None:
@@ -551,24 +679,31 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
         door = _door_for_adjacency(adj, layout)
         if door:
             plan.doors.append(door)
-            door_walls_by_room.setdefault(door.room_a, set()).add(door.wall)
-            # Record on room_b too — adjacency is symmetric, but the wall key
-            # is relative to room_a so on room_b's side it's the opposite side.
-            door_walls_by_room.setdefault(door.room_b, set()).add(_opposite(door.wall))
+            _record_interior_door(door)
 
-    # Pass 2: front door
+    # Pass 2: front door — only one side is a real room.
     fd = _front_door(topology, layout, env)
     if fd:
         plan.doors.append(fd)
-        # The entry room's exterior wall is now consumed by the front door.
-        door_walls_by_room.setdefault(fd.room_b, set()).add(fd.wall)
+        _record_door(fd.room_b, fd.wall,
+                     fd.position_m, fd.position_m + fd.clear_width_m)
 
-    # Pass 2b: kitchen-to-dirty-kitchen back door. PH practice always has
-    # this pass-through when a dirty kitchen setback element is declared.
+    # Pass 2b: kitchen-to-dirty-kitchen back door (also exterior on the room side).
     dk_door = _dirty_kitchen_door(topology, layout, env)
     if dk_door:
         plan.doors.append(dk_door)
-        door_walls_by_room.setdefault(dk_door.room_b, set()).add(dk_door.wall)
+        _record_door(dk_door.room_b, dk_door.wall,
+                     dk_door.position_m,
+                     dk_door.position_m + dk_door.clear_width_m)
+
+    # Pass 2c: derive per-room wall-function hints (RoomOrientation) from
+    # the door layout. Used by Pass 3 below to steer window placement to
+    # the PH-practice wall (kitchen → sink wall, bath → away from wet/shower
+    # walls, bedroom → away from head wall).
+    door_walls_by_room: dict = {}
+    for (room_id, side) in door_segments_by_room.keys():
+        door_walls_by_room.setdefault(room_id, set()).add(side)
+    orientations = derive_orientations(layout, env, door_walls_by_room)
 
     # Pass 3: windows for habitable + bath + kitchen on remaining exterior
     # walls, skipping any firewall sides (lot setback = 0).
@@ -582,9 +717,14 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
         if r.type not in WINDOWED_TYPES:
             continue
         bath_style = r.type in BATH_STYLE_WINDOW
-        used = door_walls_by_room.get(r.id, set())
+        # Build {side: [door segments]} for this room
+        door_segments = {}
+        for (room_id, side), segs in door_segments_by_room.items():
+            if room_id == r.id:
+                door_segments[side] = segs
         plan.windows.extend(_windows_for_room(
-            r, env, bath_style, used, firewall_sides))
+            r, env, bath_style, door_segments, firewall_sides,
+            orientation=orientations.get(r.id)))
 
     return plan
 

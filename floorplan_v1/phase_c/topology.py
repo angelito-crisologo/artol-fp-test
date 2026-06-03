@@ -16,6 +16,11 @@ class RoomSpec:
     zone: str = "private"
     size_priority: str = "service_and_baths"
     hosts_entry: bool = False
+    # Topology-level opt-out from PD 1096 §808 10% window rule when the room
+    # geometry can't physically fit a compliant window (e.g. a tight kitchen
+    # whose only exterior wall is the back-door wall). The intent is that
+    # the room uses artificial ventilation instead.
+    mechanical_vent: bool = False
 
 
 @dataclass

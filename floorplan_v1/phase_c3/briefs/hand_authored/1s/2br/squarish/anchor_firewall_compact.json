@@ -11,6 +11,7 @@
   ],
   "avoid": [],
   "carport_preference": "left",
+  "occupancy_class": "R-2",
   "setbacks": {
     "front": 2.0,
     "rear": 2.0,

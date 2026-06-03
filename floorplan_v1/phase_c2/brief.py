@@ -21,6 +21,12 @@ class Brief:
     # When given, overrides the carport_preference default geometry; useful
     # for firewall configs (right=0) or any non-symmetric setback need.
     setbacks: Optional[Dict[str, float]] = None
+    # PD 1096 / IRR Rule VII residential occupancy class. Drives setback
+    # minimums (W-H11) and firewall legality (W-H10: R-1 cannot have a
+    # firewall on any side; R-2 may have one on a single side; R-3 may
+    # have multiple). Defaults to R-1 (single-detached) — the project's
+    # primary target.
+    occupancy_class: str = "R-1"
 
     @property
     def lot_area(self) -> float:
