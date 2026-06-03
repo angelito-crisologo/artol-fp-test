@@ -30,19 +30,21 @@ class StubLLM:
     not a real LLM."""
 
     def __init__(self):
-        # the order matters: more specific rules first
+        # Filenames are relative to floorplan_v1/topologies/.
+        # Order matters: more specific rules first; the last entry with an
+        # empty primary list is the fallback.
         self._rules = [
             # split + open-plan / modern / casual signal → openplan variant
             (["split", "private wing", "separation", "noise"],
              ["open plan", "openplan", "modern", "casual"],
-             "squarish_two_bedroom_split_openplan.json"),
+             "1s/2br/squarish/split_openplan.json"),
             # plain split → traditional stacked LDK variant
             (["split", "private wing", "separation", "noise"], [],
-             "squarish_two_bedroom_split_stacked.json"),
+             "1s/2br/squarish/split_stacked.json"),
             (["clustered", "wet core", "share plumbing", "plumbing wall"], [],
-             "squarish_two_bedroom_clustered_baths.json"),
+             "1s/2br/squarish/clustered_baths.json"),
             ([], [],   # fallback
-             "squarish_two_bedroom_distributed_baths.json"),
+             "1s/2br/squarish/distributed_baths.json"),
         ]
 
     def generate(self, brief, error_feedback: Optional[str] = None) -> Tuple[Dict, str]:
@@ -59,7 +61,7 @@ class StubLLM:
                 reason = self._reason(brief, fname, ["(fallback)"], [])
                 return topo, reason
         # shouldn't reach here, but safety net
-        return _load_topology_json("squarish_two_bedroom_distributed_baths.json"), "fallback"
+        return _load_topology_json("1s/2br/squarish/distributed_baths.json"), "fallback"
 
     @staticmethod
     def _reason(brief, fname, primary, secondary) -> str:
