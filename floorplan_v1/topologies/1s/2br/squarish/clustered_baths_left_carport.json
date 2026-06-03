@@ -31,7 +31,8 @@
 
   "match_bedroom_widths": true,
 
-  "left_anchored":  ["kitchen"],
+  "kitchen_side": "left",
+
   "right_anchored": ["master", "standard"],
 
   "setback_elements": [

@@ -536,32 +536,16 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             model.Add(rx_end[rid] == ex1)
 
     # ---------- canonical orientation (symmetry break) ----------
-    # Anchor the kitchen on whichever half of the envelope contains the
-    # carport. With an x-symmetric topology the layout and its left-right
-    # mirror score identically; without a symmetry break the multi-shot
-    # would produce two carport candidates that are pure mirrors. Pinning
-    # kitchen on the carport side makes carport-on-left vs carport-on-right
-    # genuinely different design choices: the kitchen / public LDK presents
-    # the "showy face" to the driveway, and the private wing stays on the
-    # opposite side. A topology can override by setting kitchen_side to
-    # "left" or "right" explicitly; default tracks the carport side from
-    # the building_void. If neither is set, we fall back to right (the
-    # historical default).
+    # Anchor the kitchen on one half of the envelope (default RIGHT). With
+    # an x-symmetric topology the layout and its left-right mirror score
+    # identically; without a symmetry break, multi-shot generation would
+    # produce two carport candidates that are pure mirrors. A topology can
+    # override the default by setting `kitchen_side` to "left" — useful for
+    # mirror-sibling topologies where the design intent is "public LDK on
+    # the carport side, private wing on the opposite side".
     kitchen_id = next((r.id for r in topology.rooms if r.type == "kitchen"), None)
     if kitchen_id is not None:
-        # Determine the canonical kitchen side from the building_voids
-        # (which also drive the carport placement downstream).
-        kitchen_side = None
-        for v in (topology.building_voids or []):
-            if (v.consumed_by or "").lower() == "carport":
-                loc = (v.location or "").lower()
-                if loc in ("front_left", "rear_left"):
-                    kitchen_side = "left"
-                elif loc in ("front_right", "rear_right"):
-                    kitchen_side = "right"
-                break
-        if kitchen_side is None:
-            kitchen_side = "right"
+        kitchen_side = getattr(topology, "kitchen_side", None) or "right"
         if kitchen_side == "right":
             # 2 * center_x(kitchen) >= 2 * center_x(envelope)
             model.Add(rx[kitchen_id] + rx_end[kitchen_id] >= ex0 + ex1)

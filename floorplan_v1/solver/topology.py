@@ -106,6 +106,13 @@ class Topology:
     # if the block spans the full shared width).
     match_bedroom_widths: bool = False
 
+    # Canonical-orientation override for the symmetry-break constraint that
+    # pins the kitchen on one half of the envelope. Default "right" matches
+    # the historical behavior; mirror-sibling topologies (carport on the
+    # left, public LDK on the left next to the carport) should set "left"
+    # so the kitchen tracks the carport instead of being pinned opposite.
+    kitchen_side: Optional[str] = None
+
     # Optional ordering hints. Each entry is a list of room ids that must
     # stack front-to-rear (room[0] in front, room[-1] at rear). The solver
     # adds hard constraints: room[i].y_end <= room[i+1].y for each pair.
