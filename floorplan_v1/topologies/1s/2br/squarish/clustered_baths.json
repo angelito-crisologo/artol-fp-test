@@ -9,8 +9,7 @@
     { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
     { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
     { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
-    { "id": "living",   "type": "living_room",      "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
-    { "id": "dining",   "type": "dining_room",      "zone": "public",  "size_priority": "public_LDK" },
+    { "id": "great",    "type": "great_room",       "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
     { "id": "kitchen",  "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
   ],
 
@@ -18,18 +17,17 @@
     { "a": "master",   "b": "ensuite",  "min_shared_wall_m": 0.70, "kind": "ensuite_door" },
     { "a": "ensuite",  "b": "common",   "min_shared_wall_m": 1.20, "kind": "wet_core", "note": "shared plumbing wall between the two baths" },
     { "a": "common",   "b": "standard", "min_shared_wall_m": 0.80, "kind": "bath_to_bedroom_wall", "note": "common's south face touches standard — the bath block is the buffer between bedrooms" },
-    { "a": "master",   "b": "living",   "min_shared_wall_m": 0.80, "kind": "bedroom_to_public" },
-    { "a": "standard", "b": "dining",   "min_shared_wall_m": 0.80, "kind": "bedroom_to_public" },
-    { "a": "common",   "b": "dining",   "min_shared_wall_m": 0.70, "kind": "bath_door", "note": "common is publicly accessible — door faces dining" },
-    { "a": "living",   "b": "dining",   "min_shared_wall_m": 1.50, "kind": "open_plan" },
-    { "a": "dining",   "b": "kitchen",  "min_shared_wall_m": 1.50, "kind": "open_plan" }
+    { "a": "master",   "b": "great",    "min_shared_wall_m": 0.80, "kind": "bedroom_to_public" },
+    { "a": "standard", "b": "great",    "min_shared_wall_m": 0.80, "kind": "bedroom_to_public" },
+    { "a": "common",   "b": "great",    "min_shared_wall_m": 0.70, "kind": "bath_door", "note": "common is publicly accessible — door faces the great room" },
+    { "a": "great",    "b": "kitchen",  "min_shared_wall_m": 1.50, "kind": "open_plan" }
   ],
 
   "soft_proximities": [
     { "a": "master", "b": "common", "weight": 20, "note": "secondary pull — keeps the master-side of the wet core hugging master rather than drifting" }
   ],
 
-  "entry_point": "living",
+  "entry_point": "great",
 
   "match_bedroom_widths": true,
 
@@ -52,8 +50,7 @@
   "front_to_rear_stacks": [
     ["master",  "common",   "standard"],
     ["master",  "ensuite",  "standard"],
-    ["living",  "dining"],
-    ["living",  "kitchen"]
+    ["great",   "kitchen"]
   ],
 
   "notes": [
