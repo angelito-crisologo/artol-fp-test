@@ -62,13 +62,11 @@ from pipeline import (                                           # noqa: E402  (
 
 _TOPOLOGIES_DIR = os.path.join(_HERE, "topologies")
 OUT = os.path.join(_HERE, "output")
-VERSIONS_DIR = os.path.join(OUT, "versions")
 CACHE_DIR = os.path.join(_HERE, "cache")
 BRIEFS_DIR = os.path.join(_HERE, "briefs")
 HAND_AUTHORED_DIR = os.path.join(BRIEFS_DIR, "hand_authored")
 AI_DIR = os.path.join(BRIEFS_DIR, "ai")
 os.makedirs(OUT, exist_ok=True)
-os.makedirs(VERSIONS_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(HAND_AUTHORED_DIR, exist_ok=True)
 os.makedirs(AI_DIR, exist_ok=True)
@@ -533,51 +531,12 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
     )
 
 
-import re                                                       # noqa: E402
-
-
-def _next_version_for(name: str, versions_dir: str) -> int:
-    """Find the next available v<N> archive number for this brief in the
-    given versions directory."""
-    pat = re.compile(rf"^{re.escape(name)}_v(\d+)\.svg$")
-    highest = 0
-    if os.path.isdir(versions_dir):
-        for fname in os.listdir(versions_dir):
-            m = pat.match(fname)
-            if m:
-                highest = max(highest, int(m.group(1)))
-    return highest + 1
-
-
-def _archive_existing(name: str, out_dir: str) -> int:
-    """If <name>.svg already exists in out_dir, move it (and its .png
-    companion) into out_dir/versions/<name>_v<N>.svg. Returns the N used,
-    or 0 if nothing was archived."""
-    svg_path = os.path.join(out_dir, f"{name}.svg")
-    png_path = os.path.join(out_dir, f"{name}.png")
-    if not os.path.exists(svg_path):
-        return 0
-    versions_dir = os.path.join(out_dir, "versions")
-    os.makedirs(versions_dir, exist_ok=True)
-    n = _next_version_for(name, versions_dir)
-    os.rename(svg_path, os.path.join(versions_dir, f"{name}_v{n}.svg"))
-    if os.path.exists(png_path):
-        os.rename(png_path, os.path.join(versions_dir, f"{name}_v{n}.png"))
-    return n
-
-
-def _write(name, layout, topo, reason, no_version=False, rel_dir=""):
+def _write(name, layout, topo, reason, rel_dir=""):
     """Write the architectural plan SVG + PNG. Mirrors the brief's relative
     path under OUT (e.g. brief at 1s/2br/wide/anchor_no_hall.json lands at
-    OUT/1s/2br/wide/anchor_no_hall.svg). Versions per output directory."""
+    OUT/1s/2br/wide/anchor_no_hall.svg). Overwrites any existing file."""
     out_dir = os.path.join(OUT, rel_dir) if rel_dir else OUT
     os.makedirs(out_dir, exist_ok=True)
-    if not no_version:
-        archived = _archive_existing(name, out_dir)
-        if archived:
-            rel_versions = os.path.relpath(
-                os.path.join(out_dir, "versions"), OUT)
-            print(f"  archived previous as {rel_versions}/{name}_v{archived}.svg")
 
     # Reuse the plan that the run/realize step attached after snap_gaps;
     # rebuild only if it wasn't cached (defensive).
@@ -613,11 +572,6 @@ def _parse_args(argv=None):
                    default="all",
                    help="Restrict to one section. 'hand_authored' skips all "
                         "Claude calls; 'ai' skips deterministic anchors.")
-    p.add_argument("--no-version", action="store_true",
-                   help="Overwrite existing output files instead of archiving "
-                        "the previous version into output/versions/. By default "
-                        "each re-run preserves the prior layout under "
-                        "<name>_v<N>.svg so you can compare iterations.")
     return p.parse_args(argv)
 
 
@@ -658,7 +612,7 @@ def main(argv=None):
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
-        _write(name, layout, topo, reason, no_version=args.no_version, rel_dir=rel_dir)
+        _write(name, layout, topo, reason, rel_dir=rel_dir)
 
     # Section 2 — AI briefs (cache controlled per-brief by use_cache flag).
     for name, brief, use_cache, adjustments, rel_dir in ai_briefs:
@@ -670,7 +624,7 @@ def main(argv=None):
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
-        _write(name, layout, topo, reason, no_version=args.no_version, rel_dir=rel_dir)
+        _write(name, layout, topo, reason, rel_dir=rel_dir)
 
 
 if __name__ == "__main__":
