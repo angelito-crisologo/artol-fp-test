@@ -288,9 +288,16 @@ def layout_to_svg(layout: Layout) -> str:
     s.append(f'<rect x="{ex:.1f}" y="{ey:.1f}" width="{env.w*SCALE:.1f}" height="{env.h*SCALE:.1f}" '
              f'fill="none" stroke="#9aa" stroke-width="1" stroke-dasharray="3 3"/>')
 
-    # setback elements (uncovered, dashed)
+    # setback elements (uncovered, dashed). Inset by SETBACK_STROKE_INSET so
+    # the dashed stroke's half-thickness overhang doesn't poke past the
+    # rect's footprint (e.g., into the inside corner of an L-shape building
+    # when the setback element sits flush against a building wall).
+    from model import Rect as _Rect
     for e in layout.elements:
-        s.append(_rect_svg(lot, e.rect, _fill(e), dashed=True,
+        r = e.rect
+        inset = SETBACK_STROKE_INSET
+        inset_rect = _Rect(r.x0 + inset, r.y0 + inset, r.x1 - inset, r.y1 - inset)
+        s.append(_rect_svg(lot, inset_rect, _fill(e), dashed=True,
                            label=LABELS.get(e.type, e.type),
                            sub=f"{e.rect.w:.1f}×{e.rect.h:.1f} m"))
 
@@ -585,6 +592,15 @@ def _window_svg(window, layout) -> str:
 WALL_THICKNESS_INTERIOR = 0.10   # m — interior partition (drywall or thin CHB)
 WALL_THICKNESS_EXTERIOR = 0.20   # m — exterior CHB + finish
 WALL_FILL = "#555"               # gray fill for walls
+
+# Setback elements (carport, dirty kitchen, etc.) are drawn with a dashed
+# 1.5 px stroke; the stroke is centred on the rect perimeter and overhangs
+# half its width past the rect bounds. When the element sits flush against
+# a building wall (e.g., 3 m carport flush at the L-cut), that overhang
+# pokes past the building's corner into the room interior. Insetting the
+# rendered rect by ~3 cm keeps the dashed line clear of the building corner
+# without visibly changing the dimensions.
+SETBACK_STROKE_INSET = 0.03      # m — half-stroke overhang clearance
 EPS = 1e-3
 
 
