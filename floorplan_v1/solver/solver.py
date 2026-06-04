@@ -631,6 +631,42 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         model.AddAbsEquality(ady, dy_raw)
         terms.append(-int(sp.weight) * (adx + ady))
 
+    # ---------- zone ratio (private/public) ----------
+    # Tiered enforcement:
+    #   - HARD floor: total private area >= 50% of (private + public). Guarantees
+    #     the private wing never collapses below half the livable footprint.
+    #   - SOFT bias: penalize |100 * private - 55 * (private + public)|.
+    #     Pulls the solver toward a 55/45 split (PH mid-market norm) without
+    #     making boundary briefs infeasible.
+    # 'service' / 'circulation' rooms are excluded from both sides — they are
+    # neutral overhead (baths, dirty kitchen, hallways) that take envelope
+    # space but don't bias the wing-balance ratio.
+    private_ids = [r.id for r in topology.rooms if r.zone == "private"]
+    public_ids  = [r.id for r in topology.rooms if r.zone == "public"]
+    if private_ids and public_ids:
+        max_sum = (EW * EH) * len(topology.rooms)
+        priv_total = model.NewIntVar(0, max_sum, "priv_total")
+        pub_total  = model.NewIntVar(0, max_sum, "pub_total")
+        model.Add(priv_total == sum(area[i] for i in private_ids))
+        model.Add(pub_total  == sum(area[i] for i in public_ids))
+        # Hard 50% floor: 2 * private >= (private + public)  ⟺  private >= public
+        # (avoids integer rounding issues that come with multiplying by 0.5)
+        model.Add(priv_total >= pub_total)
+        # Soft 55/45 bias: minimize |100 * private - 55 * (private + public)|
+        # which equals |45 * private - 55 * public|. Penalty weight is tuned to
+        # dominate per-room area tradeoffs (~BIG/100) without overpowering the
+        # preferred-low BIG bonuses.
+        ratio_delta_raw = model.NewIntVar(-100 * max_sum, 100 * max_sum, "ratio_delta")
+        model.Add(ratio_delta_raw == 45 * priv_total - 55 * pub_total)
+        ratio_delta_abs = model.NewIntVar(0, 100 * max_sum, "ratio_delta_abs")
+        model.AddAbsEquality(ratio_delta_abs, ratio_delta_raw)
+        # Weight: BIG/50 puts the ratio bias on the same order of magnitude as
+        # the chunky_bonus (BIG/4 × priority) but applied to the full envelope.
+        # The bias steers the layout WHEN there's flex; it yields to hard area
+        # / dimension / adjacency constraints.
+        ratio_weight = max(1, BIG // 50)
+        terms.append(-ratio_weight * ratio_delta_abs)
+
     model.Maximize(sum(terms))
 
     # ---------- solve ----------

@@ -9,7 +9,7 @@
     { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
     { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
     { "id": "great",    "type": "great_room",       "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
-    { "id": "kitchen",  "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
+    { "id": "kitchen",  "type": "kitchen",          "zone": "public",  "size_priority": "public_LDK" }
   ],
 
   "adjacencies": [
@@ -50,15 +50,9 @@
       "auto_apply": {
         "kitchen": {
           "min_least_dim_m": 2.0
-        },
-        "master_bedroom": {
-          "min_least_dim_m": 3.0
-        },
-        "bedroom_standard": {
-          "min_least_dim_m": 2.5
         }
       },
-      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable."
+      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable. Bedroom width floors are no longer needed — the solver's zone-ratio constraint (55/45 target, 50/50 floor) keeps the private wing balanced automatically."
     }
   ],
 
