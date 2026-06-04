@@ -338,8 +338,15 @@ def _swing_into(room_a: Room, room_b: Room, kind: str) -> str:
     return room_a.id if pa >= pb else room_b.id
 
 
-def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
-    """Emit a Door (or None) for a single topology adjacency."""
+def _door_for_adjacency(adj, layout: Layout,
+                        topology: Optional[Topology] = None) -> Optional[Door]:
+    """Emit a Door (or None) for a single topology adjacency.
+
+    When `topology` is provided, the hinge selection also considers
+    front_to_rear_stacks: a bedroom stacked with another bedroom prefers
+    to hinge TOWARD the stack neighbor (so the two bedroom doors converge
+    at the shared horizontal boundary, creating a clear 'bedroom-wing
+    entry' rather than spreading doors along the great-room wall)."""
     room_a = next((r for r in layout.rooms if r.id == adj.a), None)
     room_b = next((r for r in layout.rooms if r.id == adj.b), None)
     if room_a is None or room_b is None:
@@ -382,10 +389,51 @@ def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
                                                     # perpendicular walls
     low_real, high_real = _perpendicular_walls_real(
         room_a, side_a, env, layout.rooms)
+    # Stack-bias for bedroom doors: if this is a bedroom-to-public door AND
+    # the bedroom is in a front_to_rear_stack with another bedroom, prefer
+    # to hinge TOWARD the stack neighbor so the two bedroom doors cluster
+    # at the shared horizontal boundary (a clean 'bedroom-wing entry').
+    stack_bias = None
+    if topology is not None and side_a in ("E", "W"):
+        # The "bedroom" side of this adjacency is room_a iff it's a bedroom
+        # type. Same for room_b; in practice only one is a bedroom.
+        bedroom_for_stack = None
+        if room_a.type in _BEDROOM_TYPES:
+            bedroom_for_stack = room_a
+        elif room_b.type in _BEDROOM_TYPES:
+            bedroom_for_stack = room_b
+        if bedroom_for_stack is not None:
+            for stack in topology.front_to_rear_stacks or []:
+                if bedroom_for_stack.id not in stack:
+                    continue
+                idx = stack.index(bedroom_for_stack.id)
+                # bedroom-type ids in this stack other than this one
+                bedroom_ids_in_stack = {
+                    rid for rid in stack
+                    if rid != bedroom_for_stack.id and
+                    next((r for r in layout.rooms if r.id == rid), None) and
+                    next(r for r in layout.rooms if r.id == rid).type in _BEDROOM_TYPES
+                }
+                if not bedroom_ids_in_stack:
+                    break
+                front_of = set(stack[:idx])
+                rear_of  = set(stack[idx + 1:])
+                has_front_bedroom = bool(front_of & bedroom_ids_in_stack)
+                has_rear_bedroom  = bool(rear_of  & bedroom_ids_in_stack)
+                # On E/W walls: HIGH end of wall = rear (high y), LOW = front.
+                if has_rear_bedroom and not has_front_bedroom:
+                    stack_bias = "high"
+                elif has_front_bedroom and not has_rear_bedroom:
+                    stack_bias = "low"
+                break
+
     # Hinge selection priority:
+    #   0. Stack-bias (bedroom in a bedroom-stack — hinge toward stack neighbor).
     #   1. Exactly one corner has a real perpendicular wall — use that one.
     #   2. Both real (or both fake) — fall back to nearer corner; ties LOW.
-    if low_real and not high_real:
+    if stack_bias:
+        prefer = stack_bias
+    elif low_real and not high_real:
         prefer = "low"
     elif high_real and not low_real:
         prefer = "high"
@@ -776,7 +824,7 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
             continue
         if kind == "wet_core":
             continue
-        door = _door_for_adjacency(adj, layout)
+        door = _door_for_adjacency(adj, layout, topology=topology)
         if door:
             plan.doors.append(door)
             _record_interior_door(door)
