@@ -987,14 +987,15 @@ def _corner_caps(walls, rooms=None):
         half = cap_size / 2.0
         mixed = len(thicknesses) > 1
         if not mixed:
-            # Same-thickness corner: emit cap at L-corners (convex AND
-            # concave). The cap fills the one quadrant of the cap area
-            # that's not already covered by the two abutting walls — at a
-            # convex corner that's the exterior notch; at a concave corner
-            # it's the small interior notch where the wall has to turn
-            # around the L. Skip 'corner' points where 4 quadrants are
-            # symmetrically inside (a + junction, both axes pass through
-            # cleanly with no notch).
+            # Same-thickness corner: emit cap at L-corners AND + junctions.
+            # The cap fills the one quadrant of the cap area that's not
+            # covered by the abutting walls — at a convex L that's the
+            # exterior notch, at a concave L it's the small interior notch,
+            # and at a + junction (3+ rooms meeting) it's the diagonal
+            # notch left where two perpendicular walls of the same thickness
+            # share only a corner-of-corner rather than fully overlapping.
+            # Skip only inside_count == 2 (straight-through wall at the
+            # building boundary — no corner, nothing to cap).
             offset = max(half * 1.5, 0.05)
             quads = [
                 (px - offset, py - offset),
@@ -1003,7 +1004,7 @@ def _corner_caps(walls, rooms=None):
                 (px + offset, py + offset),
             ]
             inside_count = sum(1 for q in quads if _is_inside_any_room(q))
-            if inside_count not in (1, 3):
+            if inside_count == 2 or inside_count == 0:
                 continue
         caps.append(_Rect(px - half, py - half, px + half, py + half))
     return caps
