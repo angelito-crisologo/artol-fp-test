@@ -870,54 +870,62 @@ def _wall_svg(wall, layout) -> str:
 
 
 def _corner_caps(walls):
-    """Emit a small filled square at each wall endpoint where another wall
-    actually meets it. The cap covers the small notch that appears where
-    two perpendicular walls meet — without this, the thinner wall's outer
-    face leaves a triangular gap at the corner with the thicker wall.
+    """Emit a small filled square at corners where walls of DIFFERENT
+    thicknesses meet — fills the small notch where the thinner wall's outer
+    face is set back from the thicker wall's outer face.
 
-    Cap size = max wall thickness (so the cap matches the largest exterior
-    wall and fully fills any L-corner). Endpoints with NO other wall at the
-    same coordinate (e.g., the inside corner of an L-shape composite room
-    where a wall ends in open interior) are NOT capped — capping there
-    would render a stray dark dot as if a corner post existed.
+    Same-thickness right-angle corners (e.g., two exterior walls at the
+    building's NW corner, or the inside corner of an L-shape cut where both
+    abutting walls are exterior) form a clean joint by themselves: each
+    wall's filled rect already covers the full corner, so no cap is needed.
+    Emitting one would render as a stray dark dot inside the room.
 
-    Multiple walls meeting at the same corner stack caps at the same
-    coordinate, which is fine (same fill)."""
+    Endpoints with NO other wall at the same coordinate (a wall that just
+    'ends' in open interior) are also skipped.
+    """
     if not walls:
         return []
-    # Find the thickest wall in the set; cap size = that thickness.
-    thick = max(min(w.w, w.h) for w in walls)
-    half = thick / 2.0
     eps = 1e-3
-    # Collect candidate (point, wall) pairs first so we can check whether
-    # another wall meets the point before emitting a cap.
+    # Collect candidate (point, wall) pairs.
     candidates = []
     for w in walls:
         if w.w >= w.h:                          # horizontal-oriented wall
             cy_mid = (w.y0 + w.y1) / 2.0
+            thickness = w.h
             for cx in (w.x0, w.x1):
-                candidates.append((cx, cy_mid, w))
+                candidates.append((cx, cy_mid, thickness, w))
         else:                                    # vertical-oriented wall
             cx_mid = (w.x0 + w.x1) / 2.0
+            thickness = w.w
             for cy in (w.y0, w.y1):
-                candidates.append((cx_mid, cy, w))
+                candidates.append((cx_mid, cy, thickness, w))
 
-    def _other_wall_meets(point, source_wall):
+    def _other_walls_at(point, source_wall):
+        out = []
         px, py = point
         for ow in walls:
             if ow is source_wall:
                 continue
-            # Point is inside `ow` (touching its boundary or its body).
             if (ow.x0 - eps <= px <= ow.x1 + eps and
                 ow.y0 - eps <= py <= ow.y1 + eps):
-                return True
-        return False
+                out.append(ow)
+        return out
 
     from model import Rect as _Rect
     caps = []
-    for px, py, w in candidates:
-        if not _other_wall_meets((px, py), w):
+    for px, py, my_thick, w in candidates:
+        meets = _other_walls_at((px, py), w)
+        if not meets:
+            continue                               # wall ends in open interior
+        # Only cap when this corner mixes wall thicknesses — same-thickness
+        # corners form a clean joint without a cap.
+        thicknesses = {round(my_thick, 4)} | {
+            round(min(ow.w, ow.h), 4) for ow in meets
+        }
+        if len(thicknesses) <= 1:
             continue
+        # Cap size = max thickness of the walls meeting at this corner.
+        half = max(thicknesses) / 2.0
         caps.append(_Rect(px - half, py - half, px + half, py + half))
     return caps
 
