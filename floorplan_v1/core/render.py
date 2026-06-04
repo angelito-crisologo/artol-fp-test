@@ -974,10 +974,14 @@ def _corner_caps(walls, rooms=None):
         half = cap_size / 2.0
         mixed = len(thicknesses) > 1
         if not mixed:
-            # Same-thickness corner: only cap when convex (1 quadrant inside
-            # building, 3 outside). Concave (3 inside / 1 outside) needs no
-            # cap — the joint is already covered by the wall rects, and a
-            # cap would intrude into the room.
+            # Same-thickness corner: emit cap at L-corners (convex AND
+            # concave). The cap fills the one quadrant of the cap area
+            # that's not already covered by the two abutting walls — at a
+            # convex corner that's the exterior notch; at a concave corner
+            # it's the small interior notch where the wall has to turn
+            # around the L. Skip 'corner' points where 4 quadrants are
+            # symmetrically inside (a + junction, both axes pass through
+            # cleanly with no notch).
             offset = max(half * 1.5, 0.05)
             quads = [
                 (px - offset, py - offset),
@@ -986,10 +990,98 @@ def _corner_caps(walls, rooms=None):
                 (px + offset, py + offset),
             ]
             inside_count = sum(1 for q in quads if _is_inside_any_room(q))
-            if inside_count != 1:
+            if inside_count not in (1, 3):
                 continue
         caps.append(_Rect(px - half, py - half, px + half, py + half))
     return caps
+
+
+def _merge_open_plan_edges(edges):
+    """Merge adjacent open-plan edges that share a room pair AND lie on the
+    same straight line, so two consecutive cell-level erases (e.g., when one
+    side of the boundary is a composite L-shape made of rect + rect2) become
+    one continuous erase. Without merging, the 0.10 m inset at each end of
+    each edge leaves a small unerased segment at the cell boundary that the
+    room-stroke shows through.
+    """
+    eps = 1e-3
+    intervals = []  # list of dicts with normalized geometry
+    for e in edges:
+        ca = getattr(e, "cell_a", None)
+        cb = getattr(e, "cell_b", None)
+        if ca is None or cb is None:
+            intervals.append({"edge": e, "axis": None})
+            continue
+        # Determine the shared edge's axis and coordinate.
+        if abs(ca.x1 - cb.x0) <= eps:                   # vertical wall, ca west
+            axis = "V"; coord = ca.x1
+            s, t = max(ca.y0, cb.y0), min(ca.y1, cb.y1)
+        elif abs(ca.x0 - cb.x1) <= eps:                 # vertical wall, ca east
+            axis = "V"; coord = ca.x0
+            s, t = max(ca.y0, cb.y0), min(ca.y1, cb.y1)
+        elif abs(ca.y1 - cb.y0) <= eps:                 # horizontal, ca south
+            axis = "H"; coord = ca.y1
+            s, t = max(ca.x0, cb.x0), min(ca.x1, cb.x1)
+        elif abs(ca.y0 - cb.y1) <= eps:                 # horizontal, ca north
+            axis = "H"; coord = ca.y0
+            s, t = max(ca.x0, cb.x0), min(ca.x1, cb.x1)
+        else:
+            intervals.append({"edge": e, "axis": None})
+            continue
+        intervals.append({
+            "edge": e, "axis": axis, "coord": round(coord, 4),
+            "s": s, "t": t,
+            "pair": frozenset((e.room_a, e.room_b)),
+            "wall": e.wall,
+        })
+    # Group by (pair, axis, coord, wall) and merge touching intervals.
+    groups = {}
+    leftovers = []
+    for it in intervals:
+        if it["axis"] is None:
+            leftovers.append(it["edge"])
+            continue
+        key = (it["pair"], it["axis"], it["coord"], it["wall"])
+        groups.setdefault(key, []).append(it)
+    out = leftovers[:]
+    from model import Rect as _Rect
+    for key, items in groups.items():
+        items.sort(key=lambda x: x["s"])
+        merged = [items[0]]
+        for it in items[1:]:
+            last = merged[-1]
+            if it["s"] <= last["t"] + eps:                # touch or overlap
+                last["t"] = max(last["t"], it["t"])
+            else:
+                merged.append(it)
+        # For each merged interval, build a representative edge using the
+        # original first item's edge as a template, but with cell rects
+        # spanning the merged span.
+        for m in merged:
+            template = m["edge"]
+            if m["axis"] == "V":
+                # vertical wall at x=coord; cells flank it
+                # If template's cell_a is west: ca.x1==coord; spans s..t in y
+                ca, cb = template.cell_a, template.cell_b
+                if abs(ca.x1 - m["coord"]) <= eps:        # ca west of boundary
+                    new_a = _Rect(ca.x0, m["s"], ca.x1, m["t"])
+                    new_b = _Rect(cb.x0, m["s"], cb.x1, m["t"])
+                else:                                       # ca east of boundary
+                    new_a = _Rect(ca.x0, m["s"], ca.x1, m["t"])
+                    new_b = _Rect(cb.x0, m["s"], cb.x1, m["t"])
+            else:                                            # horizontal
+                ca, cb = template.cell_a, template.cell_b
+                if abs(ca.y1 - m["coord"]) <= eps:        # ca south of boundary
+                    new_a = _Rect(m["s"], ca.y0, m["t"], ca.y1)
+                    new_b = _Rect(m["s"], cb.y0, m["t"], cb.y1)
+                else:                                       # ca north
+                    new_a = _Rect(m["s"], ca.y0, m["t"], ca.y1)
+                    new_b = _Rect(m["s"], cb.y0, m["t"], cb.y1)
+            from architectural_plan import OpenPlanEdge
+            out.append(OpenPlanEdge(
+                room_a=template.room_a, room_b=template.room_b,
+                wall=template.wall, cell_a=new_a, cell_b=new_b))
+    return out
 
 
 def _open_plan_svg(edge, layout) -> str:
@@ -1086,8 +1178,10 @@ def archplan_to_svg(plan) -> str:
     # a dark dot inside the room.
     for cap in _corner_caps(walls, plan.layout.rooms):
         overlays.append(_wall_svg(cap, plan.layout))
-    # Open-plan: erase room strokes where there's no wall.
-    for ope in plan.open_plan_edges:
+    # Open-plan: erase room strokes where there's no wall. Merge adjacent
+    # cell-level edges of the same room pair first so that a composite L's
+    # cell boundary doesn't leave a 0.2 m unerased gap at the inset seam.
+    for ope in _merge_open_plan_edges(plan.open_plan_edges):
         overlays.append(_open_plan_svg(ope, plan.layout))
     # Doors and windows punch openings through walls.
     for d in plan.doors:
