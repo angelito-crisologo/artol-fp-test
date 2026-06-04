@@ -31,7 +31,11 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
       use a fixed 5.0 m width × 2.6 m depth and ignore these overrides.
     """
     elements = []
-    if carport_side == "front":
+    if carport_side == "none":
+        # Brief opted out of a carport. Skip carport generation; the dirty
+        # kitchen + service area still get placed in the rear setback below.
+        pass
+    elif carport_side == "front":
         # HORIZONTAL (parallel-parked) carport across the front setback: the car
         # length runs along the lot width, the car width runs into the lot.
         # Only ~3 m of front setback is needed, not the 5 m of a side carport.

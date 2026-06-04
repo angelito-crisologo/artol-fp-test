@@ -670,22 +670,30 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # matching side of the lot.
     # Otherwise fall back to the historical heuristic — whichever side has
     # the widest setback (>= 2.8 m) gets the carport.
+    # When the topology has NO carport setback element at all (e.g., the
+    # runner stripped it because brief.carport_preference == "none"), pass
+    # 'none' to the setback-element placer to suppress carport generation.
+    has_carport_element = any(sb.type == "carport"
+                              for sb in topology.setback_elements)
     carport_side = None
-    for v in (topology.building_voids or []):
-        if (v.consumed_by or "").lower() == "carport":
-            loc = (v.location or "").lower()
-            if loc in ("front_left", "rear_left"):
+    if not has_carport_element:
+        carport_side = "none"
+    else:
+        for v in (topology.building_voids or []):
+            if (v.consumed_by or "").lower() == "carport":
+                loc = (v.location or "").lower()
+                if loc in ("front_left", "rear_left"):
+                    carport_side = "left"
+                elif loc in ("front_right", "rear_right"):
+                    carport_side = "right"
+                break
+        if carport_side is None:
+            if lot.front >= 2.8:
+                carport_side = "front"
+            elif lot.left >= 2.8:
                 carport_side = "left"
-            elif loc in ("front_right", "rear_right"):
+            else:
                 carport_side = "right"
-            break
-    if carport_side is None:
-        if lot.front >= 2.8:
-            carport_side = "front"
-        elif lot.left >= 2.8:
-            carport_side = "left"
-        else:
-            carport_side = "right"
 
     # dirty kitchen sits behind the solver-placed kitchen; service area spans
     # the rest of the rear-setback width.

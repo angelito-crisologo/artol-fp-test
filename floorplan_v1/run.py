@@ -305,6 +305,35 @@ def _match_lot_profile(profiles, env_w: float, env_h: float):
     return None, {}
 
 
+def _strip_carport_from_topology(topo):
+    """Return a copy of `topo` with the carport setback element removed AND
+    any building_void that was carved for the carport (`consumed_by="carport"`)
+    removed too. Used when brief.carport_preference == 'none' — the building
+    footprint becomes a clean rectangle (no L-cut) and no carport is rendered
+    in the side setback."""
+    from topology import Topology as _Topology  # type: ignore
+    new_setbacks = [sb for sb in topo.setback_elements
+                    if (sb.type or "").lower() != "carport"]
+    new_voids = [v for v in (topo.building_voids or [])
+                 if (v.consumed_by or "").lower() != "carport"]
+    return _Topology(
+        id=topo.id, label=topo.label, target_shell=topo.target_shell,
+        rooms=list(topo.rooms), adjacencies=list(topo.adjacencies),
+        entry_point=topo.entry_point,
+        setback_elements=new_setbacks,
+        soft_proximities=list(topo.soft_proximities),
+        zone_split=topo.zone_split,
+        notes=list(topo.notes),
+        match_bedroom_widths=topo.match_bedroom_widths,
+        front_to_rear_stacks=list(topo.front_to_rear_stacks),
+        rear_anchored=list(topo.rear_anchored),
+        left_anchored=list(topo.left_anchored),
+        right_anchored=list(topo.right_anchored),
+        lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
+        building_voids=new_voids,
+    )
+
+
 def _topology_void_rects(topo, lot):
     """Convert each topology BuildingVoid (anchored at an envelope corner)
     into a Rect in model coordinates for downstream consumers (snap_gaps,
@@ -370,11 +399,17 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # the LEFT, mirror the topology's x-axis fields (anchored lists and
     # building-void corner locations) and flip the solver's kitchen_side
     # symmetry break so the kitchen tracks the carport on the same side
-    # rather than getting pinned opposite.
+    # rather than getting pinned opposite. When the brief asks for NO
+    # carport ('none'), strip the carport's setback element and the
+    # building_void that pairs with it so the building footprint becomes
+    # a clean rectangle (no L-cut).
     cps = (brief.carport_preference or "right").lower()
     if cps == "left":
         topo = mirror_topology_x(topo)
         kitchen_side = "left"
+    elif cps == "none":
+        topo = _strip_carport_from_topology(topo)
+        kitchen_side = "right"
     else:
         kitchen_side = "right"
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose)
@@ -439,11 +474,14 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
         raise RuntimeError("structural topology errors: " + "; ".join(errs))
     lot = _make_default_lot(brief)
     env = lot.envelope()
-    # Same carport-side mirroring rule as _run_hand_authored — see note there.
+    # Same carport-side rules as _run_hand_authored — see note there.
     cps = (brief.carport_preference or "right").lower()
     if cps == "left":
         topo = mirror_topology_x(topo)
         kitchen_side = "left"
+    elif cps == "none":
+        topo = _strip_carport_from_topology(topo)
+        kitchen_side = "right"
     else:
         kitchen_side = "right"
     merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose=False)

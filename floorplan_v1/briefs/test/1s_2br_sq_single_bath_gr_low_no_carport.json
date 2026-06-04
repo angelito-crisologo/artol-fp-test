@@ -1,0 +1,22 @@
+{
+  "intent": "2BR / 1 bath compact starter — lower band of the 45-65 m² floor range. Single common bath shared between bedrooms (no ensuite). Open-plan great room + kitchen. Squarish lot, Pag-IBIG-style mid-market. NO CARPORT — the building footprint is a clean rectangle, no L-cut on the front-right corner.",
+  "lot_width": 11.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "single common bath between bedrooms",
+    "open-plan great room + kitchen",
+    "compact footprint",
+    "no carport"
+  ],
+  "avoid": [],
+  "carport_preference": "none",
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear":  2.0,
+    "left":  2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_single_bath_gr.json"
+}

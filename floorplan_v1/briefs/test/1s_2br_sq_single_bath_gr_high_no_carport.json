@@ -1,0 +1,21 @@
+{
+  "intent": "2BR / 1 bath upper band — 12x12 lot landing near the 65 m² 1-bath ceiling. Single common bath shared between bedrooms. Open-plan great room + kitchen. Squarish lot. NO CARPORT — the building footprint is a clean rectangle, no L-cut on the front-right corner.",
+  "lot_width": 12.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "single common bath between bedrooms",
+    "open-plan great room + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "carport_preference": "none",
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear":  2.0,
+    "left":  2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_single_bath_gr.json"
+}
