@@ -598,9 +598,18 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     )
 
 
-def _front_door(topology: Topology, layout: Layout, env: Rect) -> Optional[Door]:
+def _front_door(topology: Topology, layout: Layout, env: Rect,
+                existing_doors: Optional[List["Door"]] = None) -> Optional[Door]:
     """The entry-host room gets a front door on whichever exterior wall faces
-    the street (south by convention, falling back to any exterior wall)."""
+    the street (south by convention, falling back to any exterior wall).
+
+    `existing_doors`: interior doors already placed in this layout. When the
+    front door's natural centered position would land near an interior door
+    on a perpendicular wall (the entry door would open into another door —
+    e.g., the main entry directly facing the master-bedroom door across the
+    threshold), shift the front door to the OPPOSITE corner of the entry
+    wall so the two doors no longer face each other.
+    """
     entry_id = topology.entry_point
     entry_room = next((r for r in layout.rooms if r.id == entry_id), None)
     if entry_room is None:
@@ -630,6 +639,22 @@ def _front_door(topology: Topology, layout: Layout, env: Rect) -> Optional[Door]
     else:
         pos = CORNER_OFFSET_M
         hinge_at = "low"
+
+    # Avoid placing the front door near a corner that's already occupied by
+    # an interior door on a perpendicular wall of the entry-host room.
+    threatened = _entry_wall_threatened_corners(
+        entry_room, chosen, existing_doors or [])
+    low_pos = CORNER_OFFSET_M
+    high_pos = wall_len - CORNER_OFFSET_M - clear
+    if threatened == {"low"}:
+        pos, hinge_at = high_pos, "high"
+    elif threatened == {"high"}:
+        pos, hinge_at = low_pos, "low"
+    elif threatened == {"low", "high"}:
+        # Both corners taken — centered is the best of the bad options.
+        pos = (wall_len - clear) / 2.0
+        hinge_at = "low"
+
     return Door(
         room_a="exterior", room_b=entry_id, wall=chosen,
         position_m=round(pos, 3),
@@ -638,6 +663,63 @@ def _front_door(topology: Topology, layout: Layout, env: Rect) -> Optional[Door]
         kind="main_door",
         hinge_at=hinge_at,
     )
+
+
+def _entry_wall_threatened_corners(entry_room, entry_side, doors):
+    """Return the set of {'low', 'high'} for entry-wall corners that already
+    have an interior door on the abutting perpendicular wall of the entry-
+    host room. Front door placed at such a corner would open into the other
+    door's threshold."""
+    threatened = set()
+    # Each entry side has a low and high corner; map the perpendicular walls
+    # of the entry room that hit each corner.
+    threat_map = {
+        "S": ("W", "E"),     # S wall: low corner at W, high at E
+        "N": ("W", "E"),
+        "W": ("S", "N"),     # W wall: low corner at S, high at N
+        "E": ("S", "N"),
+    }
+    if entry_side not in threat_map:
+        return threatened
+    low_perp, high_perp = threat_map[entry_side]
+    # Threshold: distance from corner along the perp-wall axis under which
+    # an interior door 'threatens' the corner. CORNER_OFFSET_M is where
+    # interior doors typically anchor; +0.5 m buffer covers the swing arc.
+    threshold = CORNER_OFFSET_M + 0.5
+    for door in doors:
+        if door.room_a == entry_room.id:
+            door_side_from_entry = door.wall
+        elif door.room_b == entry_room.id:
+            door_side_from_entry = _opposite(door.wall)
+        else:
+            continue
+        if door_side_from_entry not in (low_perp, high_perp):
+            continue
+        # door.position_m is local from the perp wall's wall_origin (the
+        # "low" end of the perp wall, which is the corner closest to the
+        # entry wall when entry_side is S or W; for N or E entry sides the
+        # corner closer to the entry wall is at the perp wall's HIGH end).
+        if entry_side in ("S", "W"):
+            close_to_corner = door.position_m <= threshold
+            far_from_corner = (door.position_m + door.clear_width_m) >= \
+                (_wall_length_for_perp(entry_room, door_side_from_entry) - threshold)
+        else:
+            close_to_corner = (door.position_m + door.clear_width_m) >= \
+                (_wall_length_for_perp(entry_room, door_side_from_entry) - threshold)
+            far_from_corner = door.position_m <= threshold
+        # 'close_to_corner' relative to entry wall side
+        if close_to_corner:
+            if door_side_from_entry == low_perp:
+                threatened.add("low")
+            else:
+                threatened.add("high")
+    return threatened
+
+
+def _wall_length_for_perp(room, side):
+    if side in ("N", "S"):
+        return room.rect.x1 - room.rect.x0
+    return room.rect.y1 - room.rect.y0
 
 
 # ----------------------------------------------------------------------------
@@ -699,8 +781,10 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
             plan.doors.append(door)
             _record_interior_door(door)
 
-    # Pass 2: front door — only one side is a real room.
-    fd = _front_door(topology, layout, env)
+    # Pass 2: front door — only one side is a real room. Pass already-
+    # placed interior doors so _front_door can avoid threading the entry
+    # straight into another door's swing.
+    fd = _front_door(topology, layout, env, existing_doors=list(plan.doors))
     if fd:
         plan.doors.append(fd)
         _record_door(fd.room_b, fd.wall,
