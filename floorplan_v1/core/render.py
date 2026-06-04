@@ -870,33 +870,55 @@ def _wall_svg(wall, layout) -> str:
 
 
 def _corner_caps(walls):
-    """Emit a small filled square at each wall endpoint (the short ends along
-    the wall's length). The cap covers the small notch that appears where
+    """Emit a small filled square at each wall endpoint where another wall
+    actually meets it. The cap covers the small notch that appears where
     two perpendicular walls meet — without this, the thinner wall's outer
     face leaves a triangular gap at the corner with the thicker wall.
 
     Cap size = max wall thickness (so the cap matches the largest exterior
-    wall and fully fills any L-corner). Multiple walls meeting at the same
-    corner just stack caps at the same coordinate — fine (same fill)."""
+    wall and fully fills any L-corner). Endpoints with NO other wall at the
+    same coordinate (e.g., the inside corner of an L-shape composite room
+    where a wall ends in open interior) are NOT capped — capping there
+    would render a stray dark dot as if a corner post existed.
+
+    Multiple walls meeting at the same corner stack caps at the same
+    coordinate, which is fine (same fill)."""
     if not walls:
         return []
     # Find the thickest wall in the set; cap size = that thickness.
     thick = max(min(w.w, w.h) for w in walls)
     half = thick / 2.0
-    caps = []
-    from model import Rect as _Rect
+    eps = 1e-3
+    # Collect candidate (point, wall) pairs first so we can check whether
+    # another wall meets the point before emitting a cap.
+    candidates = []
     for w in walls:
         if w.w >= w.h:                          # horizontal-oriented wall
             cy_mid = (w.y0 + w.y1) / 2.0
-            # Two short ends at x = w.x0 and x = w.x1
             for cx in (w.x0, w.x1):
-                caps.append(_Rect(cx - half, cy_mid - half,
-                                  cx + half, cy_mid + half))
+                candidates.append((cx, cy_mid, w))
         else:                                    # vertical-oriented wall
             cx_mid = (w.x0 + w.x1) / 2.0
             for cy in (w.y0, w.y1):
-                caps.append(_Rect(cx_mid - half, cy - half,
-                                  cx_mid + half, cy + half))
+                candidates.append((cx_mid, cy, w))
+
+    def _other_wall_meets(point, source_wall):
+        px, py = point
+        for ow in walls:
+            if ow is source_wall:
+                continue
+            # Point is inside `ow` (touching its boundary or its body).
+            if (ow.x0 - eps <= px <= ow.x1 + eps and
+                ow.y0 - eps <= py <= ow.y1 + eps):
+                return True
+        return False
+
+    from model import Rect as _Rect
+    caps = []
+    for px, py, w in candidates:
+        if not _other_wall_meets((px, py), w):
+            continue
+        caps.append(_Rect(px - half, py - half, px + half, py + half))
     return caps
 
 
