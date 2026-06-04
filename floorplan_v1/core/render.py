@@ -605,67 +605,124 @@ def _void_rects(plan):
 def _compute_walls(plan):
     """Walk the layout and emit wall geometry (axis-aligned rectangles).
 
-    Strategy:
-      Pass A — interior walls: for every PAIR of rooms that shares a non-zero
-               edge, emit one wall rectangle centred on that edge. Skip pairs
-               flagged as open_plan (no wall between L/D/K rooms etc.).
-      Pass B — exterior walls: for every room edge, subtract all the segments
-               covered by other rooms AND any building voids — what's left
-               faces the lot exterior. Emit one wall rectangle per exterior
-               segment, centred on the edge.
-      Pass C — room↔void walls: walls between a real room and a building
-               void are EXTERIOR-grade (the building's outer face meeting
-               the void). The void itself contributes NO walls along its
+    Strategy (operates on CELLS, so L-shaped composite rooms are handled
+    correctly — the wall between a room's own primary rect and its rect2
+    alcove is not drawn, the alcove's exterior walls are drawn, and the
+    alcove's edges shared with adjacent rooms become proper interior walls):
+      Pass A — interior walls: for every PAIR of cells from DIFFERENT rooms
+               that share a non-zero edge, emit one wall rectangle. Skip
+               room pairs flagged as open_plan.
+      Pass B — exterior walls: for every cell edge, subtract all the segments
+               covered by OTHER cells (including other cells of the same
+               room — those are interior to the composite, not exterior)
+               AND any building voids. What's left faces the lot exterior.
+      Pass C — cell↔void walls: walls between a cell and a building void
+               are EXTERIOR-grade (the building's outer face meeting the
+               void). The void itself contributes NO walls along its
                lot-edge sides (those are open).
 
-    Walls are CENTRED on the room boundary, so each wall extends half its
-    thickness into the room interior AND half into the adjacent space."""
+    Walls are CENTRED on the cell boundary, so each wall extends half its
+    thickness into the cell interior AND half into the adjacent space."""
     rooms = plan.layout.rooms
     open_set = {frozenset((e.room_a, e.room_b)) for e in plan.open_plan_edges}
     voids = _void_rects(plan)               # list of (id, Rect, consumed_by)
     walls = []
 
-    # Pass A — interior walls, one per non-open-plan room pair
-    for i, r1 in enumerate(rooms):
-        for r2 in rooms[i + 1:]:
+    # All (owning_room, cell) pairs. Iterating cells (not rooms) is what
+    # makes L-shape composites render correctly.
+    all_cells = [(r, c) for r in rooms for c in r.cells]
+
+    # Pass A — interior walls, one per non-open-plan CELL pair from
+    # DIFFERENT rooms. Cells of the same room never get a wall between them
+    # (they form an L-shaped composite, internally connected).
+    for i, (r1, c1) in enumerate(all_cells):
+        for r2, c2 in all_cells[i + 1:]:
+            if r1.id == r2.id:
+                continue
             if frozenset((r1.id, r2.id)) in open_set:
                 continue
-            edge = _wall_shared_edge(r1.rect, r2.rect)
+            edge = _wall_shared_edge(c1, c2)
             if edge is None:
                 continue
             side, coord, start, end = edge
             walls.append(_wall_rect(side, coord, start, end,
                                     WALL_THICKNESS_INTERIOR))
 
-    # Pass C — room ↔ void walls (the building's exterior face meeting the
-    # void). Use EXTERIOR thickness because this IS the outer wall on that
-    # side of the building.
+    # Pass C — cell ↔ void walls (the building's exterior face meeting the
+    # void). Use EXTERIOR thickness because this IS the outer wall.
     for r in rooms:
-        for _vid, vrect, _consumed in voids:
-            edge = _wall_shared_edge(r.rect, vrect)
-            if edge is None:
-                continue
-            side, coord, start, end = edge
-            walls.append(_wall_rect(side, coord, start, end,
-                                    WALL_THICKNESS_EXTERIOR))
-
-    # Pass B — exterior walls, uncovered portions of each side per room
-    # Treat voids as "covering" the relevant segment so we don't double-up
-    # with the Pass C walls.
-    void_rects_only = [vr for _vid, vr, _c in voids]
-    for r in rooms:
-        for side in ("N", "S", "E", "W"):
-            uncovered = _uncovered_segments_excluding_voids(
-                r, side, rooms, void_rects_only)
-            if side == "N":   coord = r.rect.y1
-            elif side == "S": coord = r.rect.y0
-            elif side == "E": coord = r.rect.x1
-            else:             coord = r.rect.x0
-            for s_, e_ in uncovered:
-                walls.append(_wall_rect(side, coord, s_, e_,
+        for c in r.cells:
+            for _vid, vrect, _consumed in voids:
+                edge = _wall_shared_edge(c, vrect)
+                if edge is None:
+                    continue
+                side, coord, start, end = edge
+                walls.append(_wall_rect(side, coord, start, end,
                                         WALL_THICKNESS_EXTERIOR))
 
+    # Pass B — exterior walls, uncovered portions of each side per cell.
+    # Treat voids and ALL other cells (including same-room cells) as
+    # coverage. This way the boundary between great's rect and great's
+    # rect2 isn't drawn as an exterior wall.
+    void_rects_only = [vr for _vid, vr, _c in voids]
+    for r in rooms:
+        for c in r.cells:
+            other_cells = [oc for (_or, oc) in all_cells if oc is not c]
+            for side in ("N", "S", "E", "W"):
+                uncovered = _uncovered_segments_for_cell(
+                    c, side, other_cells, void_rects_only)
+                if side == "N":   coord = c.y1
+                elif side == "S": coord = c.y0
+                elif side == "E": coord = c.x1
+                else:             coord = c.x0
+                for s_, e_ in uncovered:
+                    walls.append(_wall_rect(side, coord, s_, e_,
+                                            WALL_THICKNESS_EXTERIOR))
+
     return walls
+
+
+def _uncovered_segments_for_cell(cell, side, other_cells, void_rects):
+    """Like _uncovered_segments_excluding_voids, but cell-based. `other_cells`
+    is the list of all cells from every room EXCEPT this one (it may include
+    other cells of the same room — those are part of the composite and so
+    count as coverage too, preventing a wall between them)."""
+    if side == "N":
+        edge_start, edge_end = cell.x0, cell.x1
+        match_coord = cell.y1
+        is_neighbor = lambda o: abs(o.y0 - match_coord) <= EPS
+        proj = lambda o: (o.x0, o.x1)
+    elif side == "S":
+        edge_start, edge_end = cell.x0, cell.x1
+        match_coord = cell.y0
+        is_neighbor = lambda o: abs(o.y1 - match_coord) <= EPS
+        proj = lambda o: (o.x0, o.x1)
+    elif side == "E":
+        edge_start, edge_end = cell.y0, cell.y1
+        match_coord = cell.x1
+        is_neighbor = lambda o: abs(o.x0 - match_coord) <= EPS
+        proj = lambda o: (o.y0, o.y1)
+    else:  # W
+        edge_start, edge_end = cell.y0, cell.y1
+        match_coord = cell.x0
+        is_neighbor = lambda o: abs(o.x1 - match_coord) <= EPS
+        proj = lambda o: (o.y0, o.y1)
+    covered = []
+    for o in other_cells:
+        if not is_neighbor(o):
+            continue
+        a, b = proj(o)
+        s, e = max(a, edge_start), min(b, edge_end)
+        if e - s > EPS:
+            covered.append((s, e))
+    for v in void_rects:
+        if not is_neighbor(v):
+            continue
+        a, b = proj(v)
+        s, e = max(a, edge_start), min(b, edge_end)
+        if e - s > EPS:
+            covered.append((s, e))
+    return _subtract_segments(edge_start, edge_end, covered)
 
 
 def _uncovered_segments_excluding_voids(room, side, all_rooms, void_rects):
