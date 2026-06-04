@@ -175,14 +175,19 @@ def _y(lot, my):
     return MARGIN + (lot.depth - my) * SCALE
 
 
-def _rect_svg(lot, rect: Rect, fill, dashed=False, label="", sub=""):
+def _rect_svg(lot, rect: Rect, fill, dashed=False, label="", sub="",
+              no_stroke=False):
     px = MARGIN + rect.x0 * SCALE
     py = _y(lot, rect.y1)            # top edge = larger y
     w = rect.w * SCALE
     h = rect.h * SCALE
     dash = ' stroke-dasharray="6 4"' if dashed else ""
+    if no_stroke:
+        stroke = ' stroke="none"'
+    else:
+        stroke = ' stroke="#333" stroke-width="1.5"'
     parts = [f'<rect x="{px:.1f}" y="{py:.1f}" width="{w:.1f}" height="{h:.1f}" '
-             f'fill="{fill}" stroke="#333" stroke-width="1.5"{dash}/>']
+             f'fill="{fill}"{stroke}{dash}/>']
     cx = px + w / 2
     cy = py + h / 2
     if label or sub:
@@ -293,8 +298,14 @@ def layout_to_svg(layout: Layout) -> str:
     for r in layout.rooms:
         fill = _fill(r)
         cells = r.cells
+        composite = len(cells) > 1
         for c in cells:
-            s.append(_rect_svg(lot, c, fill))   # fill cells, no per-cell label
+            # Suppress per-cell stroke on composite rooms — the cell-to-cell
+            # boundaries shouldn't show as thin dark lines inside the room.
+            # The composite's actual outline still appears: walls (Pass A/B/C)
+            # cover all exterior edges, and at open-plan boundaries the
+            # _open_plan_svg overdraw already kills the seam.
+            s.append(_rect_svg(lot, c, fill, no_stroke=composite))
         big = max(cells, key=lambda c: c.area)  # label on the largest cell
         cx = MARGIN + (big.x0 + big.w / 2) * SCALE
         cy = _y(lot, big.y0 + big.h / 2)
@@ -901,13 +912,19 @@ def _open_plan_svg(edge, layout) -> str:
     white erase line would chop a notch out of that wall.) The room stroke
     in the small un-erased segment at each corner is hidden under the
     perpendicular wall's fill, so the visible result is a clean opening
-    between the rooms."""
+    between the rooms.
+
+    Works on whatever specific cells are recorded on the edge (cell_a /
+    cell_b) when present — that handles L-shape composite rooms whose
+    alcove abuts an open-plan neighbour. Falls back to the rooms' primary
+    rects when the edge predates cell tracking."""
     rooms_by_id = {r.id: r for r in layout.rooms}
     a = rooms_by_id.get(edge.room_a)
     b = rooms_by_id.get(edge.room_b)
     if a is None or b is None:
         return ""
-    ra, rb = a.rect, b.rect
+    ra = getattr(edge, "cell_a", None) or a.rect
+    rb = getattr(edge, "cell_b", None) or b.rect
     eps = 1e-3
     inset = WALL_THICKNESS_EXTERIOR / 2.0       # 0.10 m — covers worst case
     if abs(ra.x1 - rb.x0) <= eps:           # vertical wall (a west of b)

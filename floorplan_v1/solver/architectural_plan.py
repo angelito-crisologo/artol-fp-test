@@ -187,10 +187,17 @@ class Window:
 
 @dataclass
 class OpenPlanEdge:
-    """A shared wall that should NOT be drawn — the two rooms are open-plan."""
+    """A shared wall that should NOT be drawn — the two rooms are open-plan.
+
+    When the open-plan adjacency happens at one of the rooms' secondary
+    cells (rect2 / alcove), cell_a / cell_b carry the specific cells the
+    edge sits on. The renderer uses these to overdraw the right boundary;
+    when None, the renderer falls back to the rooms' primary rects."""
     room_a: str
     room_b: str
-    wall: str               # which side of room_a is open to room_b
+    wall: str               # which side of cell_a (or room_a.rect) is open
+    cell_a: Optional["Rect"] = None
+    cell_b: Optional["Rect"] = None
 
 
 @dataclass
@@ -418,17 +425,25 @@ def _door_for_adjacency(adj, layout: Layout) -> Optional[Door]:
     )
 
 
-def _open_plan_edge_for_adjacency(adj, layout: Layout) -> Optional[OpenPlanEdge]:
-    """Build an OpenPlanEdge for `adj`. Caller is responsible for deciding
-    whether this adjacency is actually open-plan (see _effective_kind)."""
+def _open_plan_edges_for_adjacency(adj, layout: Layout) -> List[OpenPlanEdge]:
+    """Build OpenPlanEdges for `adj` across ALL cell-pair combinations of
+    the two rooms (so composite L-shaped rooms get one edge per shared
+    boundary, not just one for the primary rects). Caller is responsible
+    for deciding whether the adjacency is actually open-plan."""
     room_a = next((r for r in layout.rooms if r.id == adj.a), None)
     room_b = next((r for r in layout.rooms if r.id == adj.b), None)
     if room_a is None or room_b is None:
-        return None
-    edge = _shared_edge(room_a.rect, room_b.rect)
-    if edge is None:
-        return None
-    return OpenPlanEdge(room_a=adj.a, room_b=adj.b, wall=edge[0])
+        return []
+    out = []
+    for ca in room_a.cells:
+        for cb in room_b.cells:
+            edge = _shared_edge(ca, cb)
+            if edge is None:
+                continue
+            out.append(OpenPlanEdge(room_a=adj.a, room_b=adj.b,
+                                    wall=edge[0],
+                                    cell_a=ca, cell_b=cb))
+    return out
 
 
 def _free_segments(wall_len: float, blockers: List[Tuple[float, float]],
@@ -674,8 +689,7 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
             continue
         kind = _effective_kind(adj, ra.type, rb.type)
         if kind == "open_plan":
-            ope = _open_plan_edge_for_adjacency(adj, layout)
-            if ope:
+            for ope in _open_plan_edges_for_adjacency(adj, layout):
                 plan.open_plan_edges.append(ope)
             continue
         if kind == "wet_core":
