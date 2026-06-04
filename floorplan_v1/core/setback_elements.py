@@ -38,25 +38,27 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
         cx_center = lot.width / 2.0
         cx0 = cx_center - 2.5
         cx1 = cx_center + 2.5
-        cy0 = 0.3
+        cy0 = 0.0
         cy1 = cy0 + 2.6
         elements.append(Room("carport", "carport",
                              Rect(cx0, cy0, cx1, cy1), "service", covered=False))
     elif carport_side == "right":
-        # Side carport sits in the right setback strip, with its FRONT EDGE
-        # flush against the lot's front line (street side, with a small 0.3 m
-        # buffer for the property edge). The car enters directly from the
-        # street rather than driving past the front setback to reach it.
-        cx1 = lot.width - 0.4
+        # Side carport sits flush with the lot's front-right corner: its right
+        # face is on the lot's right property line and its front face is on the
+        # lot's front line. This makes the geometry tidy when the topology
+        # declares a matching building_void on the front_right corner — a
+        # (carport_width_m - side_setback) x (carport_depth_m - front_setback)
+        # rectangle is then carved cleanly out of the building envelope.
+        cx1 = lot.width
         cx0 = cx1 - carport_width_m
-        cy0 = 0.3
+        cy0 = 0.0
         cy1 = cy0 + carport_depth_m
         elements.append(Room("carport", "carport",
                              Rect(cx0, cy0, cx1, cy1), "service", covered=False))
     else:  # "left"
-        cx0 = 0.4
+        cx0 = 0.0
         cx1 = cx0 + carport_width_m
-        cy0 = 0.3
+        cy0 = 0.0
         cy1 = cy0 + carport_depth_m
         elements.append(Room("carport", "carport",
                              Rect(cx0, cy0, cx1, cy1), "service", covered=False))

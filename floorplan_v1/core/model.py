@@ -79,8 +79,12 @@ class Room:
 
     @property
     def least(self) -> float:
-        """Narrowest arm (each cell must independently clear minimums)."""
-        return min(c.least for c in self.cells)
+        """Least dim of the PRIMARY cell (rect). Secondary cells (rect2) are
+        treated as ALCOVES — small composite extensions that may legitimately
+        be narrower than the room's hard minimum (e.g., a void alcove behind
+        a carport L-cut). The primary cell still has to clear PD 1096 minimums;
+        an alcove is an addition, not a replacement for usable room space."""
+        return self.rect.least
 
     def touches_boundary(self, env: "Rect") -> bool:
         return any(c.touches_boundary(env) for c in self.cells)

@@ -47,13 +47,17 @@ DOOR_CLEAR_WIDTH_M = {
 CORNER_OFFSET_M = 0.15
 
 # Adjacency kinds that DON'T get a door:
-#   open_plan:           emit an OpenPlanEdge (wall removed when rendered)
-#   wet_core:            solid plumbing wall, no door
-#   bath_to_bedroom_wall: bath shares a wall with a bedroom but no door
-#                        (the bath is accessed from the LDK / hall, not
-#                        directly from the bedroom — common in PH practice
-#                        for shared common T&Bs that aren't ensuites)
-_NO_DOOR_KINDS = {"open_plan", "wet_core", "bath_to_bedroom_wall"}
+#   open_plan:               emit an OpenPlanEdge (wall removed when rendered)
+#   wet_core:                solid plumbing wall, no door
+#   bath_to_bedroom_wall:    bath shares a wall with a bedroom but no door
+#                            (the bath is accessed from the LDK / hall, not
+#                            directly from the bedroom — common in PH practice
+#                            for shared common T&Bs that aren't ensuites)
+#   bedroom_to_bedroom_wall: two bedrooms share a wall (stacked layout) but
+#                            never connect through a door — each bedroom
+#                            accesses circulation from the public side
+_NO_DOOR_KINDS = {"open_plan", "wet_core", "bath_to_bedroom_wall",
+                  "bedroom_to_bedroom_wall"}
 
 # Bedroom + common-bath pairs are ALWAYS wall-only regardless of the kind
 # declared in the topology. Common T&B is shared/public; access is from the

@@ -50,7 +50,7 @@ from render import layout_to_svg, archplan_to_svg                # noqa: E402  (
 
 from topology import load_topology, validate_topology, mirror_topology_x  # noqa: E402  (solver)
 from solver import solve, AdjustmentError                        # noqa: E402  (solver)
-from snap_gaps import snap_gaps                                  # noqa: E402  (solver)
+from snap_gaps import snap_gaps, claim_void_alcoves              # noqa: E402  (solver)
 from architectural_plan import architecturalize                  # noqa: E402  (solver)
 
 from brief import Brief                                          # noqa: E402  (ai)
@@ -396,6 +396,12 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # envelope strips. Building voids are treated as obstacles so rooms don't
     # snap into them.
     layout, n_snaps = snap_gaps(layout, verbose=verbose, void_rects=void_rects)
+    # Post-snap alcove claim: rectangular dead space next to a void's INTERIOR
+    # face (e.g., the strip past a front_right carport_cut's north edge) gets
+    # assigned to the adjacent room as a second cell — that room becomes
+    # L-shaped. Without this, the wall along the void's north edge doesn't
+    # sit flush with the void (a small alcove of unowned interior remains).
+    n_alcoves = claim_void_alcoves(layout, void_rects=void_rects, verbose=verbose)
     # Build the architectural plan now (post-snap) so the validator's
     # window-area checks (W-H1, W-H2) can see the windows. Attach the plan
     # to the layout — downstream rendering reuses it instead of rebuilding.

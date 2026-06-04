@@ -1,0 +1,107 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_single_bath_gr",
+  "label": "Squarish 2BR / 1 bath — master front-left, standard rear-left, bath block + kitchen across the rear, open-plan great room takes the front-right.",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
+    { "id": "great",    "type": "great_room",       "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "service", "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "standard", "min_shared_wall_m": 2.0, "kind": "bedroom_to_bedroom_wall",
+      "note": "master and standard stack vertically along the left wall — master at the front (street side), standard at the rear. Shared wall only, no door between them." },
+    { "a": "master",   "b": "great",    "min_shared_wall_m": 0.8, "kind": "bedroom_to_public",
+      "note": "master bedroom door faces the great_room (master's east wall faces great's west wall)" },
+    { "a": "standard", "b": "great",    "min_shared_wall_m": 0.8, "kind": "bedroom_to_public",
+      "note": "standard's east wall overlaps great_room's west wall — hosts standard's door to the great_room" },
+    { "a": "standard", "b": "common",   "min_shared_wall_m": 1.2, "kind": "bath_to_bedroom_wall",
+      "note": "common is just east of standard at the rear; shared wall only, no door (single_bath means bath access through great_room only)" },
+    { "a": "common",   "b": "great",    "min_shared_wall_m": 0.7, "kind": "bath_door",
+      "note": "common's south wall faces great_room — door faces great for shared access by both bedrooms" },
+    { "a": "common",   "b": "kitchen",  "min_shared_wall_m": 1.2, "kind": "wet_core",
+      "note": "shared plumbing wall — kitchen and common bath stack rear-right; bath west of kitchen" },
+    { "a": "kitchen",  "b": "great",    "min_shared_wall_m": 1.5, "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style)" }
+  ],
+
+  "soft_proximities": [],
+
+  "entry_point": "great",
+
+  "match_bedroom_widths": false,
+
+  "left_anchored":  ["master", "standard"],
+  "right_anchored": ["kitchen"],
+  "rear_anchored":  ["standard", "common"],
+
+  "front_to_rear_stacks": [
+    ["master", "standard"]
+  ],
+
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_2br_kitchen_shape",
+      "when": { "buildable_area_lt_sqm": 75 },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable."
+    }
+  ],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false, "width_m": 3.0, "depth_m": 6.0 },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" }
+  ],
+
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+
+  "notes": [
+    "v2 catalog topology #1 — smallest squarish 2BR. Covers the 45-65 m² floor band:",
+    "Pag-IBIG-style starter homes, compact mid-market.",
+    "",
+    "Program: 2BR sharing ONE common bath. No ensuite. Both bedrooms reach the bath",
+    "through the great_room (per the locked rule that no bedroom may be accessed",
+    "through a bathroom, and the inverse: bedrooms don't access baths through bedrooms).",
+    "",
+    "Layout intent (canonical form — brief.carport_preference='right'):",
+    "  Front: [master    | great_room                     ]",
+    "  Rear:  [standard  | common | kitchen               ]",
+    "",
+    "Master sits at the front-LEFT corner; standard stacks directly behind it at",
+    "the rear-LEFT. Standard extends EAST of master by ~1 m so its south wall",
+    "overlaps the great_room's north wall — that overlap hosts standard's door to",
+    "the great room (the only way to reach the common bath without going through",
+    "the master bedroom or the bath itself).",
+    "",
+    "The bath block sits BETWEEN standard and kitchen (standard | common | kitchen)",
+    "at the rear. Kitchen anchors to the rear-right corner (right_anchored + the",
+    "solver's hard kitchen-rear rule). The great_room spans the front-right area,",
+    "hosting the main entry on its front (south) wall.",
+    "",
+    "Carport: 3.0 m wide x 6.0 m deep (Item 2 default single carport). With 2 m",
+    "side and front setbacks the carport's 1 m width + 4 m depth that exceeds the",
+    "setbacks is reclaimed by a building_void (1 x 4 m, front-right corner). The",
+    "result is an L-shaped building footprint with the carport sitting flush",
+    "against the lot's front-right corner. The void eats 4 sqm out of the",
+    "great_room's front-right corner.",
+    "",
+    "When the brief sets carport_preference='left', the runner mirrors the topology",
+    "so master ends up front-right, standard rear-right, and kitchen rear-left."
+  ]
+}
