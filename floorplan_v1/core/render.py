@@ -1098,7 +1098,41 @@ def _merge_open_plan_edges(edges):
     return out
 
 
-def _open_plan_svg(edge, layout) -> str:
+def _open_plan_edge_endpoints(edge):
+    """Return the (x, y) endpoints of an open-plan edge's shared line."""
+    eps = 1e-3
+    ca = getattr(edge, "cell_a", None)
+    cb = getattr(edge, "cell_b", None)
+    if ca is None or cb is None:
+        return set()
+    if abs(ca.x1 - cb.x0) <= eps:
+        x = ca.x1
+        lo_y = max(ca.y0, cb.y0); hi_y = min(ca.y1, cb.y1)
+        return {(x, lo_y), (x, hi_y)}
+    if abs(ca.x0 - cb.x1) <= eps:
+        x = ca.x0
+        lo_y = max(ca.y0, cb.y0); hi_y = min(ca.y1, cb.y1)
+        return {(x, lo_y), (x, hi_y)}
+    if abs(ca.y1 - cb.y0) <= eps:
+        y = ca.y1
+        lo_x = max(ca.x0, cb.x0); hi_x = min(ca.x1, cb.x1)
+        return {(lo_x, y), (hi_x, y)}
+    if abs(ca.y0 - cb.y1) <= eps:
+        y = ca.y0
+        lo_x = max(ca.x0, cb.x0); hi_x = min(ca.x1, cb.x1)
+        return {(lo_x, y), (hi_x, y)}
+    return set()
+
+
+def _collect_open_plan_endpoints(edges):
+    """Union of endpoints from every open-plan edge in the plan."""
+    out = set()
+    for e in edges:
+        out |= _open_plan_edge_endpoints(e)
+    return out
+
+
+def _open_plan_svg(edge, layout, other_endpoints=None) -> str:
     """Erase the shared wall stroke between two open-plan rooms — the entire
     shared segment is overdrawn in white.
 
@@ -1115,7 +1149,14 @@ def _open_plan_svg(edge, layout) -> str:
     Works on whatever specific cells are recorded on the edge (cell_a /
     cell_b) when present — that handles L-shape composite rooms whose
     alcove abuts an open-plan neighbour. Falls back to the rooms' primary
-    rects when the edge predates cell tracking."""
+    rects when the edge predates cell tracking.
+
+    `other_endpoints`: optional set of (x, y) tuples — endpoints of every
+    OTHER open-plan edge in the plan. When this edge's endpoint matches one
+    of those (i.e., two open-plan boundaries meet at a corner), the inset
+    on that end is suppressed — there is no perpendicular wall to avoid,
+    only another open-plan transition, so erasing all the way to the corner
+    sweeps up any stray room-stroke fragments at the intersection."""
     rooms_by_id = {r.id: r for r in layout.rooms}
     a = rooms_by_id.get(edge.room_a)
     b = rooms_by_id.get(edge.room_b)
@@ -1125,31 +1166,47 @@ def _open_plan_svg(edge, layout) -> str:
     rb = getattr(edge, "cell_b", None) or b.rect
     eps = 1e-3
     inset = WALL_THICKNESS_EXTERIOR / 2.0       # 0.10 m — covers worst case
+    others = other_endpoints or set()
+
+    def _has_other_at(point):
+        for ox, oy in others:
+            if abs(ox - point[0]) <= eps and abs(oy - point[1]) <= eps:
+                return True
+        return False
+
     if abs(ra.x1 - rb.x0) <= eps:           # vertical wall (a west of b)
         x = ra.x1
-        y0 = max(ra.y0, rb.y0) + inset
-        y1 = min(ra.y1, rb.y1) - inset
+        lo_y = max(ra.y0, rb.y0)
+        hi_y = min(ra.y1, rb.y1)
+        y0 = lo_y if _has_other_at((x, lo_y)) else lo_y + inset
+        y1 = hi_y if _has_other_at((x, hi_y)) else hi_y - inset
         if y1 - y0 <= eps:
             return ""
         p1, p2 = (x, y0), (x, y1)
     elif abs(ra.x0 - rb.x1) <= eps:         # vertical wall (a east of b)
         x = ra.x0
-        y0 = max(ra.y0, rb.y0) + inset
-        y1 = min(ra.y1, rb.y1) - inset
+        lo_y = max(ra.y0, rb.y0)
+        hi_y = min(ra.y1, rb.y1)
+        y0 = lo_y if _has_other_at((x, lo_y)) else lo_y + inset
+        y1 = hi_y if _has_other_at((x, hi_y)) else hi_y - inset
         if y1 - y0 <= eps:
             return ""
         p1, p2 = (x, y0), (x, y1)
     elif abs(ra.y1 - rb.y0) <= eps:         # horizontal wall (a south of b)
         y = ra.y1
-        x0 = max(ra.x0, rb.x0) + inset
-        x1 = min(ra.x1, rb.x1) - inset
+        lo_x = max(ra.x0, rb.x0)
+        hi_x = min(ra.x1, rb.x1)
+        x0 = lo_x if _has_other_at((lo_x, y)) else lo_x + inset
+        x1 = hi_x if _has_other_at((hi_x, y)) else hi_x - inset
         if x1 - x0 <= eps:
             return ""
         p1, p2 = (x0, y), (x1, y)
     elif abs(ra.y0 - rb.y1) <= eps:         # horizontal wall (a north of b)
         y = ra.y0
-        x0 = max(ra.x0, rb.x0) + inset
-        x1 = min(ra.x1, rb.x1) - inset
+        lo_x = max(ra.x0, rb.x0)
+        hi_x = min(ra.x1, rb.x1)
+        x0 = lo_x if _has_other_at((lo_x, y)) else lo_x + inset
+        x1 = hi_x if _has_other_at((hi_x, y)) else hi_x - inset
         if x1 - x0 <= eps:
             return ""
         p1, p2 = (x0, y), (x1, y)
@@ -1195,8 +1252,17 @@ def archplan_to_svg(plan) -> str:
     # Open-plan: erase room strokes where there's no wall. Merge adjacent
     # cell-level edges of the same room pair first so that a composite L's
     # cell boundary doesn't leave a 0.2 m unerased gap at the inset seam.
-    for ope in _merge_open_plan_edges(plan.open_plan_edges):
-        overlays.append(_open_plan_svg(ope, plan.layout))
+    # Collect every endpoint across all open-plan edges so when two edges
+    # meet at a corner, neither one insets — the erase sweeps fully through
+    # the corner, removing the cell-stroke fragment at the L of the
+    # boundary.
+    merged_open_edges = _merge_open_plan_edges(plan.open_plan_edges)
+    all_endpoints = _collect_open_plan_endpoints(merged_open_edges)
+    for ope in merged_open_edges:
+        # Build the set of OTHER endpoints (every endpoint except this edge's own)
+        my_eps = _open_plan_edge_endpoints(ope)
+        others = all_endpoints - my_eps
+        overlays.append(_open_plan_svg(ope, plan.layout, other_endpoints=others))
     # Doors and windows punch openings through walls.
     for d in plan.doors:
         overlays.append(_door_svg(d, plan.layout))
