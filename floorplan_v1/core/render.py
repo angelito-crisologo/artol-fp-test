@@ -869,36 +869,51 @@ def _wall_svg(wall, layout) -> str:
             f'fill="{WALL_FILL}" stroke="none"/>')
 
 
-def _corner_caps(walls):
-    """Emit a small filled square at corners where walls of DIFFERENT
-    thicknesses meet — fills the small notch where the thinner wall's outer
-    face is set back from the thicker wall's outer face.
+def _corner_caps(walls, rooms=None):
+    """Emit a small filled square at corners where two perpendicular walls
+    meet and leave a small unfilled notch.
 
-    Same-thickness right-angle corners (e.g., two exterior walls at the
-    building's NW corner, or the inside corner of an L-shape cut where both
-    abutting walls are exterior) form a clean joint by themselves: each
-    wall's filled rect already covers the full corner, so no cap is needed.
-    Emitting one would render as a stray dark dot inside the room.
+    Two cases need a cap:
+      * Mixed-thickness joints (interior wall ending at an exterior wall).
+        The thinner wall's face is set back from the thicker wall's face,
+        and the corner has a small visible notch.
+      * Same-thickness L joints at CONVEX exterior corners (e.g., the
+        building's outside SE corner, or the outside corner of the L-cut).
+        The notch is on the exterior side and reads as a stray gap if not
+        capped.
 
-    Endpoints with NO other wall at the same coordinate (a wall that just
-    'ends' in open interior) are also skipped.
+    Skip:
+      * Endpoints where no other wall actually meets.
+      * Same-thickness L joints at CONCAVE corners (e.g., the inside corner
+        of a void-cut L-shape). The wall rects already cover the joint
+        cleanly; emitting a cap there paints a dark dot inside the room.
+      * Same-thickness COLLINEAR joints (two segments of the same straight
+        wall). No notch — the rects touch end-to-end.
+
+    Convex vs concave is detected by sampling the 4 quadrants of the corner:
+    a convex corner has exactly 1 quadrant inside a room (the building
+    interior), a concave corner has 3 quadrants inside a room (the
+    void-cut inside corner sits in the interior). The rooms list is
+    required for this check; if not supplied, same-thickness corners are
+    skipped (legacy behaviour).
     """
     if not walls:
         return []
     eps = 1e-3
-    # Collect candidate (point, wall) pairs.
+    # Collect candidate (point, wall, axis) tuples. axis tells us the
+    # orientation of `w` so we can detect collinear joints.
     candidates = []
     for w in walls:
         if w.w >= w.h:                          # horizontal-oriented wall
             cy_mid = (w.y0 + w.y1) / 2.0
             thickness = w.h
             for cx in (w.x0, w.x1):
-                candidates.append((cx, cy_mid, thickness, w))
+                candidates.append((cx, cy_mid, thickness, w, "H"))
         else:                                    # vertical-oriented wall
             cx_mid = (w.x0 + w.x1) / 2.0
             thickness = w.w
             for cy in (w.y0, w.y1):
-                candidates.append((cx_mid, cy, thickness, w))
+                candidates.append((cx_mid, cy, thickness, w, "V"))
 
     def _other_walls_at(point, source_wall):
         out = []
@@ -911,21 +926,52 @@ def _corner_caps(walls):
                 out.append(ow)
         return out
 
+    def _wall_axis(ow):
+        return "H" if ow.w >= ow.h else "V"
+
+    def _is_inside_any_room(point):
+        if not rooms:
+            return False
+        px, py = point
+        for r in rooms:
+            for c in r.cells:
+                if (c.x0 - eps <= px <= c.x1 + eps and
+                    c.y0 - eps <= py <= c.y1 + eps):
+                    return True
+        return False
+
     from model import Rect as _Rect
     caps = []
-    for px, py, my_thick, w in candidates:
+    for px, py, my_thick, w, my_axis in candidates:
         meets = _other_walls_at((px, py), w)
         if not meets:
             continue                               # wall ends in open interior
-        # Only cap when this corner mixes wall thicknesses — same-thickness
-        # corners form a clean joint without a cap.
+        # If all other walls are COLLINEAR with this wall (same axis), skip:
+        # this is a straight wall split into segments, not a corner.
+        if all(_wall_axis(ow) == my_axis for ow in meets):
+            continue
+        # Cap size = max thickness of the walls meeting at this corner.
         thicknesses = {round(my_thick, 4)} | {
             round(min(ow.w, ow.h), 4) for ow in meets
         }
-        if len(thicknesses) <= 1:
-            continue
-        # Cap size = max thickness of the walls meeting at this corner.
-        half = max(thicknesses) / 2.0
+        cap_size = max(thicknesses)
+        half = cap_size / 2.0
+        mixed = len(thicknesses) > 1
+        if not mixed:
+            # Same-thickness corner: only cap when convex (1 quadrant inside
+            # building, 3 outside). Concave (3 inside / 1 outside) needs no
+            # cap — the joint is already covered by the wall rects, and a
+            # cap would intrude into the room.
+            offset = max(half * 1.5, 0.05)
+            quads = [
+                (px - offset, py - offset),
+                (px + offset, py - offset),
+                (px - offset, py + offset),
+                (px + offset, py + offset),
+            ]
+            inside_count = sum(1 for q in quads if _is_inside_any_room(q))
+            if inside_count != 1:
+                continue
         caps.append(_Rect(px - half, py - half, px + half, py + half))
     return caps
 
@@ -1018,9 +1064,11 @@ def archplan_to_svg(plan) -> str:
     walls = _compute_walls(plan)
     for wall in walls:
         overlays.append(_wall_svg(wall, plan.layout))
-    # Corner caps: small filled squares at every wall endpoint to close the
-    # notch where two perpendicular walls of different thicknesses meet.
-    for cap in _corner_caps(walls):
+    # Corner caps: small filled squares at corners that leave a notch
+    # (mixed-thickness joints, or convex same-thickness L-corners). Inside
+    # corners of L-shape composites (concave) skip the cap to avoid painting
+    # a dark dot inside the room.
+    for cap in _corner_caps(walls, plan.layout.rooms):
         overlays.append(_wall_svg(cap, plan.layout))
     # Open-plan: erase room strokes where there's no wall.
     for ope in plan.open_plan_edges:
