@@ -50,6 +50,12 @@
       "auto_apply": {
         "kitchen": {
           "min_least_dim_m": 2.0
+        },
+        "master_bedroom": {
+          "min_least_dim_m": 3.0
+        },
+        "bedroom_standard": {
+          "min_least_dim_m": 2.5
         }
       },
       "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable."
