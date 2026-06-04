@@ -213,6 +213,38 @@ def claim_void_alcoves(layout, void_rects: Optional[List[Rect]] = None,
                                                vrect.y0, vrect.y1)
                 if claimant is not None:
                     candidates.append((claimant, alcove, "south"))
+        if west_interior:
+            # alcove past the void's west face: between the nearest obstacle
+            # to the west and x=vrect.x0, spanning the void's y range
+            ax1 = vrect.x0
+            ax0 = env.x0
+            for r in layout.rooms:
+                for c in r.cells:
+                    if c.y1 > vrect.y0 + eps and c.y0 < vrect.y1 - eps \
+                       and c.x1 <= vrect.x0 + eps:
+                        ax0 = max(ax0, c.x1)
+            alcove = Rect(ax0, vrect.y0, ax1, vrect.y1)
+            if alcove.area > THRESHOLD_M:
+                # The claimant: the room whose EAST edge sits at the alcove's
+                # west edge (i.e., the room immediately west of the gap).
+                claimant = _room_with_edge(layout.rooms, "east", ax0,
+                                           vrect.y0, vrect.y1)
+                if claimant is not None:
+                    candidates.append((claimant, alcove, "west"))
+        if east_interior:
+            ax0 = vrect.x1
+            ax1 = env.x1
+            for r in layout.rooms:
+                for c in r.cells:
+                    if c.y1 > vrect.y0 + eps and c.y0 < vrect.y1 - eps \
+                       and c.x0 >= vrect.x1 - eps:
+                        ax1 = min(ax1, c.x0)
+            alcove = Rect(ax0, vrect.y0, ax1, vrect.y1)
+            if alcove.area > THRESHOLD_M:
+                claimant = _room_with_edge(layout.rooms, "west", ax1,
+                                           vrect.y0, vrect.y1)
+                if claimant is not None:
+                    candidates.append((claimant, alcove, "east"))
 
         for room, alcove, where in candidates:
             if room.rect2 is not None:
