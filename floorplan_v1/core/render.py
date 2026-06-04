@@ -111,11 +111,12 @@ def _fit_label_lines(text, max_w_px, max_font, min_font, *,
     return [fallback if fallback else text], min_font
 
 
-def _fit_sub_fixed(text, max_w_px, font_size, bold=False):
+def _fit_sub_fixed(text, max_w_px, font_size, bold=False, fallbacks=None):
     """Fit a dimensions sub at a FIXED font size. Returns a list of lines
-    (1 line if it fits as-is, 2 lines if a " · " split fits, otherwise [])
-    — dimensions are dropped entirely if they don't fit at the fixed size,
-    so the font stays consistent across the whole plan."""
+    (1 line if it fits as-is, 2 lines if a " · " split fits, otherwise the
+    first fallback that fits — or [] if none does). Fallbacks let composite
+    or very-narrow rooms still show SOMETHING (typically just the area)
+    instead of being labeled blank."""
     if _estimate_text_width_px(text, font_size, bold) <= max_w_px:
         return [text]
     if " · " in text:
@@ -123,6 +124,9 @@ def _fit_sub_fixed(text, max_w_px, font_size, bold=False):
         if (_estimate_text_width_px(l1, font_size, bold) <= max_w_px and
                 _estimate_text_width_px(l2, font_size, bold) <= max_w_px):
             return [l1, l2]
+    for f in (fallbacks or []):
+        if _estimate_text_width_px(f, font_size, bold) <= max_w_px:
+            return [f]
     return []
 
 
@@ -320,8 +324,15 @@ def layout_to_svg(layout: Layout) -> str:
         fallback = LABEL_FALLBACKS.get(r.type)
         if len(cells) > 1:
             sub_raw = f"{r.area:.1f} sqm (L-shaped)"
+            sub_fallbacks = [
+                f"{r.area:.1f} sqm L",
+                f"{r.area:.1f} sqm",
+            ]
         else:
             sub_raw = f"{r.rect.w:.1f}×{r.rect.h:.1f} m · {r.rect.area:.1f} sqm"
+            sub_fallbacks = [
+                f"{r.rect.area:.1f} sqm",
+            ]
         # Available text width = label cell width × usable ratio.
         max_w = big.w * SCALE * LABEL_USE_RATIO
         label_lines, label_font = _fit_label_lines(
@@ -331,10 +342,12 @@ def layout_to_svg(layout: Layout) -> str:
         # the exact rect, and on a small cell the dimensions just don't fit.
         # All other rooms use the SAME dimension font size (wraps on " · "
         # if needed) so the dimensions read at a consistent visual weight
-        # across the whole plan.
+        # across the whole plan. Fallbacks let narrow / composite rooms
+        # still show the area when the full dim+area string overflows.
         if r.area >= SMALL_ROOM_THRESHOLD_SQM:
             sub_lines = _fit_sub_fixed(
-                sub_raw, max_w, SUB_FONT_FIXED, bold=False)
+                sub_raw, max_w, SUB_FONT_FIXED, bold=False,
+                fallbacks=sub_fallbacks)
         else:
             sub_lines = []
         s.append(_emit_centered_text_block(
