@@ -112,11 +112,12 @@ def _fit_label_lines(text, max_w_px, max_font, min_font, *,
 
 
 def _fit_sub_fixed(text, max_w_px, font_size, bold=False, fallbacks=None):
-    """Fit a dimensions sub at a FIXED font size. Returns a list of lines
-    (1 line if it fits as-is, 2 lines if a " · " split fits, otherwise the
-    first fallback that fits — or [] if none does). Fallbacks let composite
-    or very-narrow rooms still show SOMETHING (typically just the area)
-    instead of being labeled blank."""
+    """Fit a dimensions sub at a FIXED font size. Returns a list of lines:
+    1 line if the full text fits as-is, 2 lines if a " · " split fits,
+    otherwise the first fallback that fits. As a last resort returns the
+    shortest fallback (the bare area) even if it slightly overflows — every
+    room must show its size, so a small label overflow is better than no
+    label at all."""
     if _estimate_text_width_px(text, font_size, bold) <= max_w_px:
         return [text]
     if " · " in text:
@@ -124,9 +125,14 @@ def _fit_sub_fixed(text, max_w_px, font_size, bold=False, fallbacks=None):
         if (_estimate_text_width_px(l1, font_size, bold) <= max_w_px and
                 _estimate_text_width_px(l2, font_size, bold) <= max_w_px):
             return [l1, l2]
-    for f in (fallbacks or []):
+    fbs = list(fallbacks or [])
+    for f in fbs:
         if _estimate_text_width_px(f, font_size, bold) <= max_w_px:
             return [f]
+    # None fit — force the shortest fallback (last in list, typically just
+    # the bare area). Better to slightly overflow than to drop the size.
+    if fbs:
+        return [fbs[-1]]
     return []
 
 
@@ -338,18 +344,16 @@ def layout_to_svg(layout: Layout) -> str:
         label_lines, label_font = _fit_label_lines(
             label_raw, max_w, LABEL_FONT_MAX, LABEL_FONT_MIN,
             fallback=fallback, bold=True)
-        # Tiny rooms drop the dimensions sub — the floor ruler still shows
-        # the exact rect, and on a small cell the dimensions just don't fit.
-        # All other rooms use the SAME dimension font size (wraps on " · "
-        # if needed) so the dimensions read at a consistent visual weight
-        # across the whole plan. Fallbacks let narrow / composite rooms
-        # still show the area when the full dim+area string overflows.
-        if r.area >= SMALL_ROOM_THRESHOLD_SQM:
-            sub_lines = _fit_sub_fixed(
-                sub_raw, max_w, SUB_FONT_FIXED, bold=False,
-                fallbacks=sub_fallbacks)
-        else:
-            sub_lines = []
+        # Every room shows a sub-line — never leave a room un-sized. The fit
+        # function tries the full "dims · area" string first; if it won't fit
+        # at the fixed sub-font size, the fallbacks ("area sqm" alone, or the
+        # L-shaped composite's variants) are tried in order until one fits.
+        # Tiny rooms typically end up with just the area; that's intentional —
+        # the floor ruler still shows the exact rect, but the user can read
+        # the area off the label without hunting on the ruler.
+        sub_lines = _fit_sub_fixed(
+            sub_raw, max_w, SUB_FONT_FIXED, bold=False,
+            fallbacks=sub_fallbacks)
         s.append(_emit_centered_text_block(
             cx, cy, label_lines, label_font, sub_lines, SUB_FONT_FIXED))
 
@@ -400,7 +404,17 @@ def _door_svg(door, layout) -> str:
         other = next((r for r in layout.rooms if r.id == door.room_b), None)
     if owner is None:
         return ""
-    rect, wall, pos, cw = owner.rect, door.wall, door.position_m, door.clear_width_m
+    # Pick the cell the door was placed on. For L-shape composites, the door
+    # may live on rect2 rather than the primary rect (e.g., master.rect2 ↔
+    # dining when ensuite_alcove_joins_master triggers). `cell_idx` is set
+    # by _interior_door when generating the Door.
+    cell_idx = getattr(door, "cell_idx", 0)
+    cells = owner.cells
+    if 0 <= cell_idx < len(cells):
+        rect = cells[cell_idx]
+    else:
+        rect = owner.rect
+    wall, pos, cw = door.wall, door.position_m, door.clear_width_m
 
     # Two endpoints of the door opening, in MODEL coords. The "near" end is
     # where position_m sits; the "far" end is `cw` further along the wall.

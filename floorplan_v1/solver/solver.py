@@ -500,6 +500,68 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         if topology.match_bedroom_widths:
             model.Add(rw[master_id] == rw[standard_id])
 
+    # ---------- match bath widths (clustered-bath topologies) ----------
+    # When the design intent is a SYMMETRIC bath block in the middle band
+    # (ensuite + common sharing a wet_core wall and spanning the bedroom
+    # width), constrain ensuite.width == common.width. Without this, the
+    # `master ↔ common` soft proximity pulls common wider at the expense of
+    # ensuite, and the bath block split becomes asymmetric — particularly
+    # noticeable on no-carport variants where the extra public-side area
+    # gives the solver more room to skew the split. Forcing equal widths
+    # makes the bath block read identically regardless of carport.
+    if topology.match_bath_widths:
+        ensuite_id = next((r.id for r in topology.rooms if r.type == "ensuite_bath"), None)
+        common_id  = next((r.id for r in topology.rooms if r.type == "common_bath"), None)
+        if ensuite_id is not None and common_id is not None:
+            model.Add(rw[ensuite_id] == rw[common_id])
+
+    # ---------- bedroom-band fills bedroom width ----------
+    # Force the rooms in the middle band (any room sandwiched between master
+    # and standard via a front_to_rear_stack) to tile the bedroom width
+    # exactly. Without this, the middle band can be wider than the bedrooms;
+    # the snap-gaps post-process then extends master east to fill the
+    # resulting interior gap but standard can't, breaking the matched-
+    # bedroom-widths invariant. With this constraint the solver picks
+    # bedroom dimensions that exactly accept the middle band.
+    #
+    # Generic detection: middle-band rooms are union of stack[1:-1] for every
+    # stack of form [master, ..., standard]. Works equally for clustered
+    # (ensuite + common + maybe hall — all three in [master, X, standard]
+    # stacks) and distributed (only ensuite between master and standard;
+    # common bath sits elsewhere e.g. at the rear).
+    if topology.bedroom_band_fills_width:
+        master_id_b   = next((r.id for r in topology.rooms if r.type == "master_bedroom"), None)
+        standard_id_b = next((r.id for r in topology.rooms if r.type == "bedroom_standard"), None)
+        if master_id_b and standard_id_b:
+            band_ids = []
+            for stack in topology.front_to_rear_stacks:
+                if (len(stack) >= 3
+                        and stack[0] == master_id_b
+                        and stack[-1] == standard_id_b):
+                    for rid in stack[1:-1]:
+                        if rid not in band_ids and rid in rw:
+                            band_ids.append(rid)
+            if band_ids:
+                model.Add(sum(rw[rid] for rid in band_ids) == rw[master_id_b])
+
+    # ---------- ensuite alcove joins master (L-shape) ----------
+    # On distributed-bath topologies the bedroom column can be wider than
+    # ensuite needs to be (ensuite preferred area tops out at 4.5 m²; at the
+    # 1.5 m min depth, that's a 3.0 m max width). When the bedroom column is
+    # wider than that, capping ensuite leaves a strip east of ensuite within
+    # the bedroom column. The post-process `claim_ensuite_alcove` (in
+    # snap_gaps.py) hands that strip to master as a rect2 — making master
+    # L-shaped — instead of letting snap_gaps grow ensuite past preferred.
+    if topology.ensuite_alcove_joins_master:
+        ens_id_alc = next((r.id for r in topology.rooms if r.type == "ensuite_bath"), None)
+        if ens_id_alc is not None:
+            # Cap ensuite width at preferred_high / min_depth = 4.5 / 1.5 = 3.0 m
+            # (using the rules.json ensuite_bath defaults). The cap is on the
+            # WIDTH (x dimension) specifically, since this topology orients
+            # ensuite with its long edge as width.
+            max_ensuite_width_u = _u(3.0)
+            model.Add(rw[ens_id_alc] <= max_ensuite_width_u)
+
     # ---------- front-to-rear stack ordering hints ----------
     # Each list is a chain of rooms that must stack front-to-rear: rooms[i] in
     # front of rooms[i+1]. Implemented as y_end[i] <= y[i+1], which forces a
@@ -512,6 +574,47 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         for a, b in zip(stack, stack[1:]):
             if a in ry_end and b in ry:
                 model.Add(ry_end[a] <= ry[b])
+
+    # ---------- LDK arrangement rule (global) ----------
+    # PH practice rules for how LDK rooms may be arranged:
+    #   - kitchen + great_room: MUST stack front-to-rear (no side-by-side).
+    #     A "great_room" already aggregates living+dining, so a side-by-side
+    #     kitchen+great would create an oddly partitioned public wing.
+    #   - kitchen + dining_room: side-by-side allowed ONLY when a living_room
+    #     also exists AND it sits in front of both (living above the dining +
+    #     kitchen row).
+    #   - kitchen + dining_room (NO living_room): must stack front-to-rear.
+    # Enforced globally so any topology — hand-authored or AI-generated —
+    # respects these layout rules without having to declare them explicitly.
+    def _room_id_of_type(rt):
+        return next((r.id for r in topology.rooms if r.type == rt), None)
+    kitchen_id_g = _room_id_of_type("kitchen")
+    great_id     = _room_id_of_type("great_room")
+    dining_id    = _room_id_of_type("dining_room")
+    living_id    = _room_id_of_type("living_room")
+    if kitchen_id_g is not None and great_id is not None:
+        # Disjoint in y: either great.y_end <= kitchen.y OR kitchen.y_end <= great.y.
+        # Translation: they share a horizontal wall (stack), not a vertical one.
+        ks_g_front = model.NewBoolVar("ldk_great_in_front")
+        ks_g_rear  = model.NewBoolVar("ldk_great_in_rear")
+        model.Add(ry_end[great_id]   <= ry[kitchen_id_g]).OnlyEnforceIf(ks_g_front)
+        model.Add(ry_end[kitchen_id_g] <= ry[great_id]).OnlyEnforceIf(ks_g_rear)
+        model.AddBoolOr([ks_g_front, ks_g_rear])
+    if kitchen_id_g is not None and dining_id is not None and living_id is None:
+        # No living_room — kitchen+dining must stack (mirror of the great_room rule)
+        ks_d_front = model.NewBoolVar("ldk_dining_in_front")
+        ks_d_rear  = model.NewBoolVar("ldk_dining_in_rear")
+        model.Add(ry_end[dining_id]   <= ry[kitchen_id_g]).OnlyEnforceIf(ks_d_front)
+        model.Add(ry_end[kitchen_id_g] <= ry[dining_id]).OnlyEnforceIf(ks_d_rear)
+        model.AddBoolOr([ks_d_front, ks_d_rear])
+    if (kitchen_id_g is not None and dining_id is not None and
+            living_id is not None):
+        # Living must be in front of BOTH dining and kitchen, so that if dining
+        # and kitchen sit side-by-side at the rear they have living above them.
+        # (If the solver chooses dining behind kitchen or vice versa, this still
+        # holds — living is just in front of all the other LDK rooms.)
+        model.Add(ry_end[living_id] <= ry[dining_id])
+        model.Add(ry_end[living_id] <= ry[kitchen_id_g])
 
     # ---------- rear-anchored rooms ----------
     # Kitchen is already pinned to the rear wall via a hard solver rule.

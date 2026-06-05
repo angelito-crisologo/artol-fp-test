@@ -15,6 +15,11 @@ _RULES_PATH = os.path.normpath(
 # bedroom when geometry allows; standard bedrooms moved up to tie with
 # LDK so they also get pulled above the preferred-low when there's slack.
 # Targets the PH mid-market norm of ~1.4:1 LDK:private.
+#
+# Note: master's tendency to grow past preferred-high (20 m²) is NOT
+# controlled by this weight — that growth happens in post-solve passes
+# (snap_gaps + claim_ensuite_alcove), which now respect per-room
+# max_area_sqm caps when set (see snap_gaps.py).
 PRIORITY_WEIGHT = {
     "public_LDK": 3.0,
     "master_bedroom": 4.0,

@@ -279,11 +279,18 @@ def _make_ai_client():
 # ---------- runners ----------
 
 def _match_lot_profile(profiles, env_w: float, env_h: float):
-    """Return the first matching profile's (name, auto_apply_dict), or
-    (None, {}). Predicate keys understood:
+    """Return the first matching profile's (name, auto_apply, preferred_apply)
+    triple, or (None, {}, {}). Predicate keys understood:
       buildable_depth_lt_m / buildable_depth_gte_m
       buildable_width_lt_m / buildable_width_gte_m
       buildable_area_lt_sqm / buildable_area_gte_sqm
+
+    `auto_apply` adjustments are applied unconditionally to every solve.
+    `preferred_apply` adjustments are tried FIRST (added on top of auto_apply);
+    if that solve is infeasible, the runner retries with only `auto_apply` and
+    emits a 'tiered_preferred_dropped' warning. Use preferred_apply for soft
+    floors (e.g., baths at 3.0 m² preferred-low) that should hold on roomy
+    lots but yield to space pressure on tight ones.
     """
     area = env_w * env_h
     for prof in profiles or []:
@@ -301,8 +308,10 @@ def _match_lot_profile(profiles, env_w: float, env_h: float):
                 ok = False  # unknown predicate -> profile doesn't match
                 break
         if ok:
-            return prof.get("name", "(unnamed)"), prof.get("auto_apply") or {}
-    return None, {}
+            return (prof.get("name", "(unnamed)"),
+                    prof.get("auto_apply") or {},
+                    prof.get("preferred_apply") or {})
+    return None, {}, {}
 
 
 def _strip_carport_from_topology(topo):
@@ -325,13 +334,62 @@ def _strip_carport_from_topology(topo):
         zone_split=topo.zone_split,
         notes=list(topo.notes),
         match_bedroom_widths=topo.match_bedroom_widths,
+        match_bath_widths=topo.match_bath_widths,
+        bedroom_band_fills_width=topo.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
         rear_anchored=list(topo.rear_anchored),
         left_anchored=list(topo.left_anchored),
         right_anchored=list(topo.right_anchored),
         lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
         building_voids=new_voids,
+        fallback_topology=topo.fallback_topology,
     )
+
+
+def _strip_carport_void_only(topo):
+    """Return a copy of `topo` with the carport building_void removed but the
+    carport setback element kept. Used when brief.carport_preference == 'front'
+    — the front-parallel carport doesn't carve the building envelope (it sits
+    entirely in the front setback area), so the L-cut void must go, but the
+    carport itself stays so the setback-element placer still renders it."""
+    from topology import Topology as _Topology  # type: ignore
+    new_voids = [v for v in (topo.building_voids or [])
+                 if (v.consumed_by or "").lower() != "carport"]
+    return _Topology(
+        id=topo.id, label=topo.label, target_shell=topo.target_shell,
+        rooms=list(topo.rooms), adjacencies=list(topo.adjacencies),
+        entry_point=topo.entry_point,
+        setback_elements=list(topo.setback_elements),
+        soft_proximities=list(topo.soft_proximities),
+        zone_split=topo.zone_split,
+        notes=list(topo.notes),
+        match_bedroom_widths=topo.match_bedroom_widths,
+        match_bath_widths=topo.match_bath_widths,
+        bedroom_band_fills_width=topo.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
+        front_to_rear_stacks=list(topo.front_to_rear_stacks),
+        rear_anchored=list(topo.rear_anchored),
+        left_anchored=list(topo.left_anchored),
+        right_anchored=list(topo.right_anchored),
+        lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
+        building_voids=new_voids,
+        fallback_topology=topo.fallback_topology,
+    )
+
+
+def _bump_lot_front(lot, min_front: float):
+    """Return a Lot with `front` setback bumped to at least `min_front` (keeps
+    other dims unchanged). Used by front-carport handling — the front-parallel
+    carport (2.6 m deep) needs ≥ 3.0 m front setback so it clears the building
+    face cleanly."""
+    from model import Lot as _Lot
+    if lot.front >= min_front:
+        return lot
+    return _Lot(width=lot.width, depth=lot.depth,
+                front=min_front, rear=lot.rear, left=lot.left, right=lot.right,
+                street_side=getattr(lot, "street_side", "front"),
+                occupancy_class=getattr(lot, "occupancy_class", "R-1"))
 
 
 def _topology_void_rects(topo, lot):
@@ -360,29 +418,54 @@ def _topology_void_rects(topo, lot):
 def _merge_lot_profile(topo, env_w: float, env_h: float, brief_adj: dict,
                        verbose: bool):
     """If the topology defines lot_adjustment_profiles, find the first match
-    based on the envelope dims and merge its auto_apply into brief_adj.
-    Brief always wins on conflicting (room_type, knob) pairs.
-    Returns the merged dict."""
+    based on the envelope dims and merge its `auto_apply` (and optionally
+    `preferred_apply`) into brief_adj. Brief always wins on conflicting
+    (room_type, knob) pairs.
+
+    Returns (base_adj, preferred_adj) — two dicts.
+      base_adj      = auto_apply ∪ brief — applied to every solve attempt
+      preferred_adj = preferred_apply layered ON TOP of base_adj — tried
+                      first; the caller drops it on infeasibility.
+    When the profile has no preferred_apply, preferred_adj is None and the
+    caller skips the tiered-retry path.
+    """
     profiles = getattr(topo, "lot_adjustment_profiles", None) or []
     if not profiles:
-        return brief_adj or {}
-    name, auto = _match_lot_profile(profiles, env_w, env_h)
-    if not auto:
-        return brief_adj or {}
-    merged = {rt: dict(knobs) for rt, knobs in auto.items()}
+        return (brief_adj or {}), None
+    name, auto, preferred = _match_lot_profile(profiles, env_w, env_h)
+    if not auto and not preferred:
+        return (brief_adj or {}), None
+    base = {rt: dict(knobs) for rt, knobs in auto.items()}
     for rt, knobs in (brief_adj or {}).items():
-        merged.setdefault(rt, {}).update(knobs)
+        base.setdefault(rt, {}).update(knobs)
     if verbose:
         print(f"  lot profile auto-applied: '{name}' -> {auto}")
-    return merged
+    if preferred:
+        merged_pref = {rt: dict(knobs) for rt, knobs in base.items()}
+        for rt, knobs in preferred.items():
+            merged_pref.setdefault(rt, {}).update(knobs)
+        if verbose:
+            print(f"  lot profile preferred-tier: '{name}' -> {preferred}")
+        return base, merged_pref
+    return base, None
 
 
 def _run_hand_authored(brief: Brief, topology_filename: str,
                        adjustments: dict = None, verbose: bool = True,
-                       deterministic: bool = False):
+                       deterministic: bool = False,
+                       _fallback_warning: str = None):
     """Load named topology, solve, validate. No API call. `deterministic`
     pins the solver to single-threaded + fixed random seed so test mode
-    can byte-diff the SVG against a baseline."""
+    can byte-diff the SVG against a baseline.
+
+    Fallback behavior: when the primary topology declares a
+    `fallback_topology` and the solver reports infeasibility on the brief's
+    lot, recursively retry with the fallback. A "topology_fallback" warning
+    is attached to layout.issues so the test summary surfaces the downgrade
+    (e.g., hall-variant → no-hall variant when the shell can't fit a hall).
+    `_fallback_warning` is the private propagation channel — callers
+    shouldn't pass it directly.
+    """
     rules = Rules()
     lot = _make_default_lot(brief)
     shell = shell_category(lot)
@@ -410,12 +493,73 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     elif cps == "none":
         topo = _strip_carport_from_topology(topo)
         kitchen_side = "right"
+    elif cps == "front":
+        # Front-parallel carport sits across the front setback, not the side.
+        # We (1) bump the front setback to 3.0 m so the carport (5 × 2.6 m
+        # parallel-parked) clears the building face cleanly, then (2) strip
+        # the front-right building_void since the front carport doesn't carve
+        # the envelope — the footprint stays a clean rectangle. The solver's
+        # carport-side auto-detection (solver.py) sees a carport setback
+        # element + no carport void + lot.front >= 2.8 m and picks "front"
+        # automatically.
+        topo = _strip_carport_void_only(topo)
+        if lot.front < 3.0:
+            lot = _bump_lot_front(lot, 3.0)
+            env = lot.envelope()
+        kitchen_side = "right"
     else:
         kitchen_side = "right"
-    merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose)
-    layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=merged_adj, deterministic=deterministic,
-                   kitchen_side=kitchen_side)
+    base_adj, preferred_adj = _merge_lot_profile(
+        topo, env.w, env.h, adjustments, verbose)
+    # Tiered solve attempt: try with preferred_apply layered on top first
+    # (e.g., baths floored at 3.0 m² preferred-low). On infeasibility,
+    # quietly drop preferred and retry with just base_adj — emit a warning
+    # so the user knows the soft floor was relaxed.
+    tiered_dropped = False
+    if preferred_adj is not None:
+        try:
+            layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
+                           adjustments=preferred_adj, deterministic=deterministic,
+                           kitchen_side=kitchen_side)
+        except RuntimeError as e:
+            if "no feasible" not in str(e).lower():
+                raise   # not an infeasibility — re-raise as-is
+            if verbose:
+                print(f"  preferred tier infeasible; relaxing preferred_apply "
+                      f"and retrying with base adjustments")
+            tiered_dropped = True
+            layout = None  # solver retry below
+    else:
+        layout = None
+    if layout is None:
+        merged_adj = base_adj
+    else:
+        merged_adj = preferred_adj
+    try:
+        if layout is None:
+            layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
+                           adjustments=merged_adj, deterministic=deterministic,
+                           kitchen_side=kitchen_side)
+    except RuntimeError as e:
+        # Solver couldn't find a feasible layout. If the topology declares a
+        # fallback (typically a hall-variant falling back to its no-hall
+        # sibling), retry with the fallback and propagate a warning that the
+        # primary topology didn't fit the shell.
+        msg = str(e).lower()
+        if topo.fallback_topology and "no feasible" in msg:
+            fb_warning = (
+                f"primary topology '{topology_filename}' does not fit the "
+                f"given shell — falling back to '{topo.fallback_topology}'"
+            )
+            if verbose:
+                print(f"  primary infeasible ({e}); fallback -> "
+                      f"{topo.fallback_topology}")
+            return _run_hand_authored(
+                brief, topo.fallback_topology, adjustments=adjustments,
+                verbose=verbose, deterministic=deterministic,
+                _fallback_warning=fb_warning,
+            )
+        raise
     # Attach the topology's building voids to the layout so the validator
     # can see them and suppress the "element in envelope" false positive
     # (a setback element overlapping a void is intentional).
@@ -427,10 +571,41 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         raise RuntimeError(
             f"hand-authored topology {topology_filename} failed validation: "
             + "; ".join(str(e) for e in errs[:3]))
+    # Build per-room max_area_sqm caps from the merged adjustments so the
+    # post-solve passes (claim_ensuite_alcove + snap_gaps) honor the cap
+    # the solver was given. Solver-time max_area_sqm is enforced as
+    # area[r.id] <= cap, but snap_gaps and the alcove claim run after solve
+    # and would otherwise overrun the cap.
+    area_caps = {}
+    for room in topo.rooms:
+        knobs = merged_adj.get(room.type) if merged_adj else None
+        if knobs and "max_area_sqm" in knobs:
+            area_caps[room.id] = float(knobs["max_area_sqm"])
+    # Pre-snap-gaps: claim the strip east of ensuite for master (L-shape)
+    # if the topology opted in via ensuite_alcove_joins_master. Doing this
+    # BEFORE snap_gaps means ensuite can't drift east into the strip — the
+    # strip is already master's rect2 when snap_gaps starts its scan.
+    from snap_gaps import claim_ensuite_alcove
+    claim_ensuite_alcove(layout, topo, verbose=verbose, max_area_caps=area_caps)
     # Post-solve, post-validate gap snapper: extend room walls into any unused
     # envelope strips. Building voids are treated as obstacles so rooms don't
-    # snap into them.
-    layout, n_snaps = snap_gaps(layout, verbose=verbose, void_rects=void_rects)
+    # snap into them. Pass matched_x_pairs so snap_gaps preserves any
+    # match_*_widths invariants the solver enforced (without this, an
+    # asymmetric east-side gap can drift the matched widths apart).
+    matched_x_pairs = []
+    if topo.match_bedroom_widths:
+        m_id = next((r.id for r in topo.rooms if r.type == "master_bedroom"), None)
+        s_id = next((r.id for r in topo.rooms if r.type == "bedroom_standard"), None)
+        if m_id and s_id:
+            matched_x_pairs.append((m_id, s_id))
+    if topo.match_bath_widths:
+        e_id = next((r.id for r in topo.rooms if r.type == "ensuite_bath"), None)
+        c_id = next((r.id for r in topo.rooms if r.type == "common_bath"), None)
+        if e_id and c_id:
+            matched_x_pairs.append((e_id, c_id))
+    layout, n_snaps = snap_gaps(layout, verbose=verbose, void_rects=void_rects,
+                                matched_x_pairs=matched_x_pairs,
+                                max_area_caps=area_caps)
     # Post-snap alcove claim: rectangular dead space next to a void's INTERIOR
     # face (e.g., the strip past a front_right carport_cut's north edge) gets
     # assigned to the adjacent room as a second cell — that room becomes
@@ -453,14 +628,29 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         raise RuntimeError(
             f"hand-authored topology {topology_filename} failed validation: "
             + "; ".join(str(e) for e in errs[:3]))
+    # If we got here via fallback, surface that as a top-level warning so the
+    # test summary and CLI both see it (validator owns layout.issues now).
+    if _fallback_warning is not None:
+        from validator import Issue as _Issue
+        layout.issues.insert(0, _Issue(
+            "warning", "topology_fallback", _fallback_warning))
+    if tiered_dropped:
+        from validator import Issue as _Issue
+        layout.issues.insert(0, _Issue(
+            "warning", "tiered_preferred_dropped",
+            f"preferred_apply adjustments did not fit '{topology_filename}' "
+            f"on this shell — relaxed to base auto_apply (e.g., baths held to "
+            f"hard minimum instead of preferred-low)"))
     if verbose:
-        warns = [i for i in issues if i.severity == "warning"]
-        sugg = [i for i in issues if i.severity == "suggestion"]
+        warns = [i for i in layout.issues if i.severity == "warning"]
+        sugg = [i for i in layout.issues if i.severity == "suggestion"]
         snap_note = f" ({n_snaps} snap(s))" if n_snaps else ""
         print(f"  COMPLIANT  score={score:.2f}  {len(warns)} warn  {len(sugg)} sugg{snap_note}")
         for w in warns:
             print(f"    [WARN] {w.msg}")
     reason = f"[hand-authored] using {topology_filename} (no API call)"
+    if _fallback_warning is not None:
+        reason += " (fallback)"
     return layout, topo, reason
 
 
@@ -484,9 +674,20 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
         kitchen_side = "right"
     else:
         kitchen_side = "right"
-    merged_adj = _merge_lot_profile(topo, env.w, env.h, adjustments, verbose=False)
-    layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                   adjustments=merged_adj, kitchen_side=kitchen_side)
+    base_adj, preferred_adj = _merge_lot_profile(
+        topo, env.w, env.h, adjustments, verbose=False)
+    # AI pipeline mirror of the hand-authored tiered-retry: try preferred
+    # first, fall back to base on infeasibility (warning isn't surfaced here
+    # because AI-pipeline runs use a different reporting path).
+    try_adj = preferred_adj if preferred_adj is not None else base_adj
+    try:
+        layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
+                       adjustments=try_adj, kitchen_side=kitchen_side)
+    except RuntimeError as e:
+        if preferred_adj is None or "no feasible" not in str(e).lower():
+            raise
+        layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
+                       adjustments=base_adj, kitchen_side=kitchen_side)
     void_rects = _topology_void_rects(topo, lot)
     layout.building_void_rects = void_rects
     issues, score = validate(layout, rules)

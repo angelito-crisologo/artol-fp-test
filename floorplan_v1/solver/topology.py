@@ -106,6 +106,36 @@ class Topology:
     # if the block spans the full shared width).
     match_bedroom_widths: bool = False
 
+    # When True the solver constrains width(ensuite_bath) == width(common_bath).
+    # Use this on clustered-bath topologies where the bath block sits in the
+    # middle band: matching widths forces a symmetric split of that band so
+    # the bath layout stays invariant to changes in the public-side area
+    # (e.g., between a with-carport L-shape and a no-carport rectangle, the
+    # private wing reads identically — only the L-cut at front-right differs).
+    match_bath_widths: bool = False
+
+    # When True the solver constrains the rooms in the bedroom-band (the
+    # middle band between master and standard — typically ensuite + common,
+    # plus any hallway in a [master, X, standard] stack) to tile the bedroom
+    # width exactly. Without this, the middle band can overhang the bedroom
+    # column (bath block wider than bedrooms), leaving an interior gap east
+    # of master that the snap-gaps post-process then fills asymmetrically —
+    # master grows east, standard stays narrow because kitchen blocks, and
+    # the matched bedroom widths invariant breaks. Pair this flag with
+    # match_bedroom_widths + match_bath_widths for a fully symmetric private
+    # wing.
+    bedroom_band_fills_width: bool = False
+
+    # When True the topology caps the ensuite at preferred-high area
+    # (4.5 m²) and lets the strip east of ensuite within the bedroom column
+    # join master as an L-extension. Use this on distributed-bath topologies
+    # where the bedroom column is wider than the ensuite needs to be: rather
+    # than letting the snap-gaps post-process extend ensuite to bedroom
+    # width (giving an oversized ensuite at 5-6 m²), the strip becomes
+    # additional master area. The post-process `claim_ensuite_alcove`
+    # handles the actual L-shape assignment.
+    ensuite_alcove_joins_master: bool = False
+
     # Optional ordering hints. Each entry is a list of room ids that must
     # stack front-to-rear (room[0] in front, room[-1] at rear). The solver
     # adds hard constraints: room[i].y_end <= room[i+1].y for each pair.
@@ -144,6 +174,14 @@ class Topology:
     # carport "cuts" into the building from a side or front edge).
     building_voids: List[BuildingVoid] = field(default_factory=list)
 
+    # Optional path (relative to topologies/) to a fallback topology that the
+    # runner should attempt when this topology is infeasible on the given lot.
+    # Use case: a hall-variant declares its no-hall sibling as fallback so the
+    # runner can downgrade gracefully on a too-small shell rather than erroring
+    # out. When the fallback is used, the runner emits a "warning" issue noting
+    # that the primary topology didn't fit.
+    fallback_topology: Optional[str] = None
+
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
             if r.id == room_id:
@@ -180,12 +218,16 @@ def load_topology(path: str) -> Topology:
         setback_elements=elems, soft_proximities=sprox, zone_split=zs,
         notes=d.get("notes", []),
         match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
+        match_bath_widths=bool(d.get("match_bath_widths", False)),
+        bedroom_band_fills_width=bool(d.get("bedroom_band_fills_width", False)),
+        ensuite_alcove_joins_master=bool(d.get("ensuite_alcove_joins_master", False)),
         front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
         rear_anchored=list(d.get("rear_anchored", []) or []),
         left_anchored=list(d.get("left_anchored", []) or []),
         right_anchored=list(d.get("right_anchored", []) or []),
         lot_adjustment_profiles=list(d.get("lot_adjustment_profiles", []) or []),
         building_voids=voids,
+        fallback_topology=d.get("fallback_topology"),
     )
 
 
@@ -265,6 +307,9 @@ def mirror_topology_x(t: Topology) -> Topology:
         zone_split=t.zone_split,
         notes=list(t.notes),
         match_bedroom_widths=t.match_bedroom_widths,
+        match_bath_widths=t.match_bath_widths,
+        bedroom_band_fills_width=t.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         front_to_rear_stacks=list(t.front_to_rear_stacks),
         rear_anchored=list(t.rear_anchored),
         # x-axis fields swap:
@@ -272,4 +317,5 @@ def mirror_topology_x(t: Topology) -> Topology:
         right_anchored=list(t.left_anchored),
         lot_adjustment_profiles=list(t.lot_adjustment_profiles),
         building_voids=mirrored_voids,
+        fallback_topology=t.fallback_topology,
     )

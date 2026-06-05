@@ -37,7 +37,16 @@
 
   "entry_point": "great",
 
-  "match_bedroom_widths": true,
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["master", "ensuite", "standard", "common"],
+    "public_rooms":  ["great", "kitchen"]
+  },
+
+  "match_bedroom_widths":      true,
+  "match_bath_widths":         true,
+  "bedroom_band_fills_width":  true,
 
   "left_anchored":  ["master", "ensuite", "standard"],
   "right_anchored": ["kitchen"],
@@ -45,7 +54,8 @@
 
   "front_to_rear_stacks": [
     ["master", "ensuite", "standard"],
-    ["master", "common",  "standard"]
+    ["master", "common",  "standard"],
+    ["great",  "kitchen"]
   ],
 
   "lot_adjustment_profiles": [
@@ -54,10 +64,21 @@
       "when": { "buildable_area_lt_sqm": 85 },
       "auto_apply": {
         "kitchen": {
+          "min_least_dim_m": 1.8
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
           "min_least_dim_m": 2.0
         }
       },
-      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable. The zone-ratio constraint handles bedroom/LDK balance globally."
+      "rationale": "Soft floors are tiered by priority. auto_apply (always): kitchen width floored at 1.8 m — still a usable galley (above PD 1096's 1.5 m hard minimum) and the lowest the solver may shrink kitchen to. preferred_apply (tried first, relaxed on infeasibility together as a group): baths at 3.0 m² preferred-low AND kitchen at 2.0 m generous galley width. On the tightest lots the runner relaxes the whole preferred group, surfacing a 'tiered_preferred_dropped' warning. Bath priority is implicit in this split: even when preferred relaxes, kitchen never drops below 1.8 m — but baths CAN drop toward the 1.2 m² hard min if absolutely necessary."
     }
   ],
 

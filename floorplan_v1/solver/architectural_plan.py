@@ -172,6 +172,11 @@ class Door:
                             # "high" = hinge at the far end (E/N).
                             # Picked so the door swings open against the
                             # nearest perpendicular wall.
+    cell_idx: int = 0       # which cell of room_a (or room_b for exterior
+                            # doors) the door lives on — 0 = primary rect,
+                            # 1 = rect2 (L-shape alcove). position_m is
+                            # measured along THIS cell's wall, not the
+                            # room's primary rect.
 
 
 @dataclass
@@ -214,6 +219,28 @@ class ArchPlan:
 # ----------------------------------------------------------------------------
 # Geometric helpers
 # ----------------------------------------------------------------------------
+
+def _best_shared_edge_for_rooms(room_a, room_b, eps: float = 1e-3
+                                ) -> Optional[Tuple[str, float, float, float, "Rect", "Rect"]]:
+    """Scan every cell pair (room_a.cells × room_b.cells) for shared edges and
+    return the LONGEST one as (side_of_cell_a, coord, start, end, cell_a,
+    cell_b). For composite rooms (L-shape with rect2), this picks the right
+    cell to place the door against — e.g., master.rect2 ↔ dining.rect when
+    master is L-shaped and rect2 is what actually touches dining."""
+    best = None
+    best_len = 0.0
+    for ca in room_a.cells:
+        for cb in room_b.cells:
+            edge = _shared_edge(ca, cb, eps=eps)
+            if edge is None:
+                continue
+            side, coord, start, end = edge
+            length = end - start
+            if length > best_len:
+                best_len = length
+                best = (side, coord, start, end, ca, cb)
+    return best
+
 
 def _shared_edge(a: Rect, b: Rect, eps: float = 1e-3
                  ) -> Optional[Tuple[str, float, float, float]]:
@@ -362,12 +389,15 @@ def _door_for_adjacency(adj, layout: Layout,
     types = {room_a.type, room_b.type}
     if types & _BEDROOM_TYPES and types & _COMMON_BATH_TYPES:
         return None
-    # Find the shared edge between cell A of each room. (Composite cells
-    # ignored for D.1 — they're not present in current topologies.)
-    edge = _shared_edge(room_a.rect, room_b.rect)
-    if edge is None:
+    # Scan all (cell_a, cell_b) pairs and pick the LONGEST shared edge.
+    # This is what handles L-shape composites correctly: e.g., when master
+    # has a rect2 alcove that touches dining, the door goes on rect2's
+    # east wall (the long shared edge) rather than master.rect's east wall
+    # (which might have a tiny or zero overlap with dining).
+    best = _best_shared_edge_for_rooms(room_a, room_b)
+    if best is None:
         return None
-    side_a, coord, start, end = edge
+    side_a, coord, start, end, cell_a, cell_b = best
     shared_len = end - start
     clear = DOOR_CLEAR_WIDTH_M.get(adj.kind, 0.80)
     # If the shared wall isn't long enough for the door + 0.1 m frame, skip.
@@ -382,10 +412,13 @@ def _door_for_adjacency(adj, layout: Layout,
     # at 180°. If both corners are real (or both fake), fall back to the
     # nearer-corner rule; ties go LOW for consistency.
     env = layout.lot.envelope()
-    wall_origin = _wall_origin(room_a.rect, side_a)
-    wall_end = wall_origin + _wall_length(room_a.rect, side_a)
+    # wall geometry uses the CELL that's actually sharing the edge with room_b
+    # (not room_a.rect) — important for L-shape composites where the door
+    # lives on rect2's wall, not rect's wall.
+    wall_origin = _wall_origin(cell_a, side_a)
+    wall_end = wall_origin + _wall_length(cell_a, side_a)
     dist_low_to_corner  = start - wall_origin       # how far the shared edge's
-    dist_high_to_corner = wall_end - end            # ends are from room_a's
+    dist_high_to_corner = wall_end - end            # ends are from cell_a's
                                                     # perpendicular walls
     low_real, high_real = _perpendicular_walls_real(
         room_a, side_a, env, layout.rooms)
@@ -463,6 +496,13 @@ def _door_for_adjacency(adj, layout: Layout,
     max_pos = (end - wall_origin) - clear
     if position_m < min_pos: position_m = min_pos
     if position_m > max_pos: position_m = max_pos
+    # Index of cell_a in room_a.cells — needed by the renderer so it can pick
+    # the right cell when the room is an L-shape composite.
+    cell_idx = 0
+    for i, c in enumerate(room_a.cells):
+        if c is cell_a:
+            cell_idx = i
+            break
     return Door(
         room_a=adj.a, room_b=adj.b, wall=side_a,
         position_m=round(position_m, 3),
@@ -470,6 +510,7 @@ def _door_for_adjacency(adj, layout: Layout,
         swing_into=_swing_into(room_a, room_b, adj.kind),
         kind=adj.kind,
         hinge_at=hinge_at,
+        cell_idx=cell_idx,
     )
 
 

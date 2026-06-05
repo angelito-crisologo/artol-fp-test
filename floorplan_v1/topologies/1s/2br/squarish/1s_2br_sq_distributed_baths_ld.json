@@ -1,0 +1,139 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_distributed_baths_ld",
+  "label": "Squarish 2BR / 2 baths DISTRIBUTED — ensuite sandwiched between master and standard in the private column; common T&B at rear-middle, accessible from dining (public) and standard (private). LDK is separate living + dining + kitchen, stacked front-to-rear.",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
+    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
+    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
+    { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
+    { "id": "living",   "type": "living_room",      "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "dining",   "type": "dining_room",      "zone": "public",  "size_priority": "public_LDK" },
+    { "id": "kitchen",  "type": "kitchen",          "zone": "public",  "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",   "b": "ensuite",  "min_shared_wall_m": 0.80, "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive — door opens north from master" },
+    { "a": "ensuite",  "b": "standard", "min_shared_wall_m": 0.80, "kind": "bath_to_bedroom_wall",
+      "note": "ensuite north wall touches standard south — no door, acoustic+privacy buffer" },
+
+    { "a": "standard", "b": "common",   "min_shared_wall_m": 0.80, "kind": "bath_door",
+      "note": "common bath is accessible from standard (the bedroom-side door) — door on standard east wall" },
+    { "a": "common",   "b": "kitchen",  "min_shared_wall_m": 1.00, "kind": "wet_core",
+      "note": "shared plumbing wall between common bath and kitchen — wet stacks in one rear bay" },
+    { "a": "common",   "b": "dining",   "min_shared_wall_m": 0.70, "kind": "bath_door",
+      "note": "common is publicly accessible — second door on common south wall to dining" },
+
+    { "a": "master",   "b": "dining",   "min_shared_wall_m": 1.00, "kind": "bedroom_to_public",
+      "note": "master door east into dining — placed on the L-extension (rect2) east wall, hinged at the HIGH (north) end via the bedroom stack-bias. This clusters master's door right next to standard's door at the bedroom-wing boundary." },
+    { "a": "standard", "b": "dining",   "min_shared_wall_m": 1.10, "kind": "bedroom_to_public",
+      "note": "standard door east into dining (rear of the LDK column, in front of kitchen). 1.1 m floor = 0.8 m clear panel + 2x 0.1 m frame stops + 0.1 m leeway. Half-step compromise between the bare-minimum 1.0 m (which puts the door right at the corner) and the 1.2 m used in clustered topologies — gives standard's door breathing room without making the 11x11 NCP lot infeasible." },
+
+    { "a": "living",   "b": "dining",   "min_shared_wall_m": 1.50, "kind": "open_plan",
+      "note": "living and dining flow as one open public space — no wall (ld style)" },
+    { "a": "dining",   "b": "kitchen",  "min_shared_wall_m": 1.20, "kind": "open_plan",
+      "note": "dining flows into kitchen — open pass-through, no wall (PH practice)" }
+  ],
+
+  "soft_proximities": [
+    { "a": "standard", "b": "common", "weight": 25,
+      "note": "pull common toward standard's east wall (the primary user) when there's slack" }
+  ],
+
+  "entry_point": "living",
+
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["master", "ensuite", "standard"],
+    "public_rooms":  ["living", "dining", "kitchen"]
+  },
+
+  "match_bedroom_widths":          true,
+  "ensuite_alcove_joins_master":   true,
+
+  "left_anchored":  ["master", "ensuite", "standard"],
+  "right_anchored": ["kitchen"],
+  "rear_anchored":  ["standard", "common", "kitchen"],
+
+  "front_to_rear_stacks": [
+    ["master", "ensuite", "standard"],
+    ["living", "dining",  "kitchen"]
+  ],
+
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_distributed_baths_ld",
+      "when": { "buildable_area_lt_sqm": 100 },
+      "auto_apply": {
+        "kitchen":        { "min_least_dim_m": 1.5 },
+        "ensuite_bath":   { "min_area_sqm": 2.5, "max_area_sqm": 4.5 },
+        "common_bath":    { "min_area_sqm": 3.0, "max_area_sqm": 4.5 },
+        "master_bedroom": { "max_area_sqm": 18.0 }
+      },
+      "preferred_apply": {
+        "ensuite_bath":   { "min_area_sqm": 3.0 },
+        "kitchen":        { "min_least_dim_m": 2.0 }
+      },
+      "rationale": "Bath area is the HIGHEST priority soft constraint for this topology — both baths floor at 3.0 m² preferred-low in auto_apply (always applied) so the ensuite reads consistently at preferred across NCP and carport variants. Without this, the carport variants drop the tier and ensuite collapses to its 0.9 m corridor minimum, while NCP variants keep their preferred ensuite. To make room for the bath floors on tight carport lots, kitchen's auto-floor is at the rules.json hard min (1.5 m); the preferred 2.0 m galley sits in preferred_apply and may relax. Master is hard-capped at 18 m² area + 4.5 m greatest dim so its priority-4 weight doesn't steal middle-band depth from ensuite."
+    }
+  ],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false, "width_m": 3.0, "depth_m": 6.0 },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" }
+  ],
+
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+
+  "notes": [
+    "v2 catalog topology #4 — 2BR / 2 baths DISTRIBUTED. The two baths are NOT",
+    "clustered — they sit in different bands of the building. The ensuite is",
+    "sandwiched between master (front) and standard (rear) IN the private",
+    "column, so the private wing reads as [master, ensuite, standard] front-",
+    "to-rear. The common T&B sits at the rear-MIDDLE, between standard (west)",
+    "and kitchen (east), serving as both the bedroom-side bath (standard's",
+    "interior door) and the public-side bath (door to dining for guest use).",
+    "",
+    "LDK is the 'ld' style: separate living + dining + kitchen stacked front-",
+    "to-rear in the public column. Living hosts the entry. The LDK rule that",
+    "kitchen can sit side-by-side with dining only when living is in front of",
+    "both is satisfied here trivially because we explicitly stack the three.",
+    "",
+    "Layout intent (canonical, brief.carport_preference='right'):",
+    "  Rear:  [standard         | T&B | kitchen                            ]",
+    "  Mid:   [ensuite           | dining                                  ]",
+    "  Front: [master            | living                                  ]",
+    "",
+    "Private/public split: master + ensuite + standard on the LEFT, living +",
+    "dining + kitchen on the RIGHT. Common T&B is zone='service' — it is",
+    "geometrically on the public-side x range (east of standard) but not",
+    "constrained by the zone_split. Floor band: ~60-80 m² (similar to the",
+    "clustered_baths_gr band; the distributed bath block adds slightly less",
+    "circulation overhead than a hall variant but more than a single bath).",
+    "",
+    "Carport: 3.0 m x 6.0 m at the front-right (Item 2 default). The 1 m x",
+    "4 m exceeding the side+front setbacks becomes a building_void carved",
+    "from the LDK column's front-right corner — same L-shape pattern as the",
+    "clustered_baths topologies. Brief.carport_preference='none' strips the",
+    "void; brief.carport_preference='left' mirrors the topology.",
+    "",
+    "ACOUSTIC NOTE: when ensuite_alcove_joins_master triggers (bedroom column",
+    "wider than ~3.0 m), the L-extension's north edge butts directly against",
+    "standard's south edge — a short bedroom-to-bedroom wall without the",
+    "ensuite acting as an acoustic buffer there. PH practice mitigates by",
+    "placing master's closet (or standard's closet) against this segment.",
+    "This is a future fixture-placement concern, not a topology constraint."
+  ]
+}

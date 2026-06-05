@@ -30,42 +30,127 @@ from model import Layout, Rect, Room
 
 
 THRESHOLD_M = 0.05   # ignore sub-5 cm gaps as float / grid noise
+# Tolerance for the threshold comparison. The CP-SAT solver outputs grid-
+# quantized coords (5 cm grid), but converting back to floats can introduce
+# sub-millimeter drift — e.g., (7.0 - 6.95) evaluates to 0.04999...982 in
+# IEEE-754, failing `< 0.05` and preventing legitimate 5 cm gaps from being
+# snapped (leaving them as visible "doubled walls" in the render).
+# Subtracting this epsilon from the threshold makes gaps at exactly 5 cm
+# reliably qualify for snapping.
+_THRESHOLD_EPS = 1e-6
 
 
 def snap_gaps(layout: Layout, max_iter: int = 50,
               verbose: bool = False,
-              void_rects: Optional[List[Rect]] = None) -> Tuple[Layout, int]:
+              void_rects: Optional[List[Rect]] = None,
+              matched_x_pairs: Optional[List[Tuple[str, str]]] = None,
+              max_area_caps: Optional[dict] = None
+              ) -> Tuple[Layout, int]:
     """Iteratively snap rooms to fill rectangular gaps. Modifies layout's room
     rects in place; returns (layout, snap_count) for inspection.
 
     `void_rects` are extra obstacles (e.g., topology building voids) that
     rooms must not extend INTO. They behave like other room cells for gap-
-    computation purposes."""
+    computation purposes.
+
+    `matched_x_pairs` is a list of (room_id_a, room_id_b) tuples whose widths
+    must stay equal. When extending one of the matched rooms east or west,
+    the snap distance is capped at min(self_gap, twin_gap) and the snap is
+    applied to BOTH rooms together — so the post-snap layout preserves the
+    solver's match_bedroom_widths / match_bath_widths invariants. Match is
+    enforced ONLY on the x-axis (width); depth (y-axis) is unconstrained.
+
+    `max_area_caps` is a dict {room_id: max_area_sqm} for rooms that should
+    not grow past a target area post-snap. The solver enforces these at
+    solve time but doesn't carry the constraint into snap_gaps; this
+    parameter restores the invariant. When set, the snap distance for a
+    capped room is shrunk so the resulting total area (rect + rect2) stays
+    under the cap. If the room is already at or over its cap, it doesn't
+    grow at all on this iteration.
+    """
     env = layout.lot.envelope()
     voids = void_rects or []
+    # Build a twin lookup: room_id -> twin_room_id (x-axis only).
+    twin_of: dict = {}
+    for a, b in (matched_x_pairs or []):
+        twin_of[a] = b
+        twin_of[b] = a
+    room_by_id = {r.id: r for r in layout.rooms}
+    caps = max_area_caps or {}
     snap_count = 0
     for _ in range(max_iter):
         best_dist = 0.0
         best_target: Optional[Tuple[Room, int, str]] = None
         for room in layout.rooms:
-            other_rects = [c for o in layout.rooms if o is not room
-                           for c in o.cells]
-            obstacles = other_rects + voids
             cells = room.cells
             for cell_idx, cell in enumerate(cells):
+                # Obstacles: every cell in the layout except the one we're
+                # snapping. This includes the same room's OTHER cells (e.g.,
+                # master.rect when we're snapping master.rect2) so an L-shape
+                # composite can't have one of its cells grow over the other.
+                obstacles = ([c for o in layout.rooms for c in o.cells
+                              if c is not cell] + voids)
                 for side in ("west", "east", "south", "north"):
                     d = _gap_distance(cell, side, env, obstacles)
+                    # Max-area cap: shrink d so the room's TOTAL area (across
+                    # all cells) stays under the cap after this extension.
+                    if room.id in caps:
+                        d = _shrink_for_area_cap(d, room, cell, side, caps[room.id])
+                    # If this room has a matched twin and the snap is on the
+                    # x-axis (east/west), cap d to what the twin can also do.
+                    if side in ("east", "west") and room.id in twin_of:
+                        twin = room_by_id.get(twin_of[room.id])
+                        if twin is not None:
+                            twin_obs = ([c for o in layout.rooms for c in o.cells
+                                         if c is not twin.rect] + voids)
+                            td = _gap_distance(twin.rect, side, env, twin_obs)
+                            # Twin also subject to its own area cap.
+                            if twin.id in caps:
+                                td = _shrink_for_area_cap(td, twin, twin.rect, side, caps[twin.id])
+                            d = min(d, td)
                     if d > best_dist:
                         best_dist = d
                         best_target = (room, cell_idx, side)
-        if best_dist < THRESHOLD_M or best_target is None:
+        if best_dist < THRESHOLD_M - _THRESHOLD_EPS or best_target is None:
             break
         room, cell_idx, side = best_target
         _extend_cell(room, cell_idx, side, best_dist)
         snap_count += 1
         if verbose:
             print(f'  snap: {room.id} +{best_dist*100:.0f} cm {side}')
+        # If matched, snap the twin by the same amount in lockstep.
+        if side in ("east", "west") and room.id in twin_of:
+            twin = room_by_id.get(twin_of[room.id])
+            if twin is not None:
+                _extend_cell(twin, 0, side, best_dist)
+                snap_count += 1
+                if verbose:
+                    print(f'  snap: {twin.id} +{best_dist*100:.0f} cm {side} '
+                          f'(matched-twin lockstep)')
     return layout, snap_count
+
+
+def _shrink_for_area_cap(d: float, room: Room, cell: Rect, side: str,
+                          max_area: float) -> float:
+    """Reduce extension distance `d` so the room's total area (across all
+    cells) doesn't exceed `max_area`. Returns the (possibly shrunk) distance.
+    Returns 0 if the room is already at or over its cap."""
+    if d <= 0:
+        return d
+    current_total = sum((c.x1-c.x0)*(c.y1-c.y0)
+                        for c in (room.rect, room.rect2) if c is not None)
+    remaining = max_area - current_total
+    if remaining <= 0:
+        return 0.0
+    # Area added by extending `cell` by distance d on `side` = d * perpendicular_extent.
+    if side in ("west", "east"):
+        perp = cell.y1 - cell.y0
+    else:
+        perp = cell.x1 - cell.x0
+    if perp <= 0:
+        return d
+    max_d = remaining / perp
+    return min(d, max_d)
 
 
 def _gap_distance(r: Rect, side: str, env: Rect, others: List[Rect]) -> float:
@@ -123,6 +208,76 @@ def _extend_cell(room: Room, cell_idx: int, side: str, dist: float) -> None:
         room.rect = new
     else:
         room.rect2 = new
+
+
+def claim_ensuite_alcove(layout, topology, verbose: bool = False,
+                          max_area_caps: Optional[dict] = None) -> int:
+    """Post-solve, pre-snap-gaps pass that hands the strip east of ensuite
+    (within the bedroom column) to master as a rect2 — making master
+    L-shaped. Applies only when the topology declares
+    `ensuite_alcove_joins_master: true`.
+
+    Geometry:
+      Ensuite is in the [master, ensuite, standard] front-to-rear stack so
+      it sits in the middle band between master and standard. The bedroom
+      column spans x=[env.x_start, bedroom_east]; ensuite is capped at
+      width 3.0 m, leaving a strip x=[ensuite.x_end, bedroom_east] at
+      y=[ensuite.y_start, ensuite.y_end]. Master claims this strip as its
+      rect2 so the unclaimed area gets folded into the bedroom rather than
+      eaten by snap_gaps extending ensuite.
+
+    The L-extension also touches standard's south wall along its north edge
+    — that's an intentional bedroom-to-bedroom wall (a closet against it is
+    the typical acoustic mitigation).
+
+    Returns the number of alcoves claimed (0 or 1 for current topologies;
+    1 only when ensuite is genuinely narrower than the bedroom column).
+    """
+    if not getattr(topology, "ensuite_alcove_joins_master", False):
+        return 0
+    master = next((r for r in layout.rooms if r.type == "master_bedroom"), None)
+    ensuite = next((r for r in layout.rooms if r.type == "ensuite_bath"), None)
+    if master is None or ensuite is None:
+        return 0
+    if master.rect2 is not None:
+        # Master already has a rect2 (from a void-alcove claim). Don't clobber.
+        return 0
+    eps = 1e-6
+    # Bedroom column east edge — defined as master's rect east edge (since
+    # master is left-anchored to env.x_start and its rect spans the full
+    # bedroom width at the front band).
+    bedroom_east = master.rect.x1
+    ensuite_east = ensuite.rect.x1
+    if ensuite_east >= bedroom_east - eps:
+        # Ensuite already fills the bedroom column — no alcove to claim.
+        return 0
+    alcove = Rect(ensuite_east, ensuite.rect.y0, bedroom_east, ensuite.rect.y1)
+    if alcove.area < THRESHOLD_M:
+        return 0
+    # Honor master's max_area_sqm cap: if the alcove would push master over
+    # its cap, shrink the alcove width so master.rect + alcove stays at cap.
+    caps = max_area_caps or {}
+    if master.id in caps:
+        master_rect_area = (master.rect.x1 - master.rect.x0) * (master.rect.y1 - master.rect.y0)
+        remaining = caps[master.id] - master_rect_area
+        if remaining <= 0:
+            # master.rect is already at or over the cap — no room for an alcove
+            return 0
+        alcove_height = alcove.y1 - alcove.y0
+        if alcove_height > 0:
+            max_alcove_width = remaining / alcove_height
+            current_alcove_width = alcove.x1 - alcove.x0
+            if current_alcove_width > max_alcove_width:
+                # Shrink alcove: anchor east edge at bedroom_east, pull west edge.
+                new_x0 = bedroom_east - max_alcove_width
+                alcove = Rect(new_x0, alcove.y0, bedroom_east, alcove.y1)
+                if alcove.area < THRESHOLD_M:
+                    return 0
+    master.rect2 = alcove
+    if verbose:
+        print(f"  ensuite alcove: master +{alcove.area:.2f} sqm "
+              f"(x={alcove.x0:.2f}-{alcove.x1:.2f} y={alcove.y0:.2f}-{alcove.y1:.2f})")
+    return 1
 
 
 def claim_void_alcoves(layout, void_rects: Optional[List[Rect]] = None,

@@ -1,0 +1,23 @@
+{
+  "intent": "2BR / 2 baths clustered — LOWER band of the 65-72 m² floor range, NO CARPORT. 12x12 lot gives an 8x8 envelope = 64 m² floor (clean rectangle, no L-cut). Master ensuite + common bath share a wet-core plumbing wall; bath block sits between master (front) and standard (rear). Open-plan great room + kitchen.",
+  "lot_width": 12.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "master ensuite",
+    "common bath publicly accessible from great room",
+    "clustered baths (ensuite + common share a plumbing wall)",
+    "open-plan great room + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "carport_preference": "none",
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear":  2.0,
+    "left":  2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_clustered_baths_gr.json"
+}
