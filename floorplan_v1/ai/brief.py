@@ -27,6 +27,14 @@ class Brief:
     # have multiple). Defaults to R-1 (single-detached) — the project's
     # primary target.
     occupancy_class: str = "R-1"
+    # When True, the runner swaps the placements of master_bedroom and
+    # bedroom_standard before passing the topology to the solver. Use this
+    # to flip from the topology's canonical "master at front" layout to a
+    # "master at rear" layout (more typical of PH bungalow practice — quieter,
+    # wet-stack-aligned, garden-adjacent) without authoring a separate
+    # topology file. See solver/topology.py::swap_master_standard_in_topology
+    # for exactly what the transform changes.
+    swap_master_standard: bool = False
 
     @property
     def lot_area(self) -> float:

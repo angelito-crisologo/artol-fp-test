@@ -48,7 +48,7 @@ from rules import Rules                                          # noqa: E402  (
 from validator import validate                                   # noqa: E402  (core)
 from render import layout_to_svg, archplan_to_svg                # noqa: E402  (core)
 
-from topology import load_topology, validate_topology, mirror_topology_x  # noqa: E402  (solver)
+from topology import load_topology, validate_topology, mirror_topology_x, swap_master_standard_in_topology  # noqa: E402  (solver)
 from solver import solve, AdjustmentError                        # noqa: E402  (solver)
 from snap_gaps import snap_gaps, claim_void_alcoves              # noqa: E402  (solver)
 from architectural_plan import architecturalize                  # noqa: E402  (solver)
@@ -99,7 +99,7 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
                  "must_haves", "avoid", "carport_preference", "setbacks",
-                 "occupancy_class")
+                 "occupancy_class", "swap_master_standard")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -477,6 +477,17 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         if adjustments:
             print(f"  adjustments (brief): {adjustments}")
     topo = load_topology(os.path.join(_TOPOLOGIES_DIR, topology_filename))
+    # Master/standard swap: when the brief asks for master-at-rear, flip the
+    # placements of master_bedroom and bedroom_standard before any other
+    # transform. This is a position-only swap (the rooms keep their types,
+    # sizes, and adjacencies; only stack ordering and anchor-list tokens
+    # change). Applied first so subsequent carport mirroring/stripping
+    # operates on the post-swap topology.
+    if getattr(brief, "swap_master_standard", False):
+        topo = swap_master_standard_in_topology(topo)
+        if verbose:
+            print(f"  swap_master_standard=true → master moves to standard's "
+                  f"position (and vice versa)")
     # Carport-side mirroring: topology files are authored in the canonical
     # "carport on the right" form. When the brief asks for the carport on
     # the LEFT, mirror the topology's x-axis fields (anchored lists and

@@ -10,6 +10,7 @@ from model import Lot, Rect, Room
 
 def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
                       service_rect_xspan, dirty_kitchen_at: str = "rear",
+                      service_at: str = "rear",
                       carport_depth_m: float = 5.0,
                       carport_width_m: float = 2.6):
     """Place the three uncovered setback elements (carport, dirty kitchen,
@@ -23,6 +24,19 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
                            preserve a connection to the rear yard/lanai through
                            the rear elevation rather than have it occupied by
                            the dirty kitchen.
+
+    `service_at`:
+      - "rear"  (default): service area fills whatever rear-setback width
+                           remains after dirty kitchen takes its bay (so it
+                           sits next to dirty kitchen along the rear wall).
+      - "side":            service area moves to the OPPOSITE side setback
+                           from the carport, occupying a strip alongside the
+                           kitchen. Used when a private-zone room (typically
+                           the master bedroom after swap_master_standard) sits
+                           directly south of the planned rear service strip —
+                           keeping a clean rear elevation for the master
+                           bedroom while still placing service near the
+                           kitchen's plumbing/water supply.
 
     `carport_depth_m` / `carport_width_m`:
       Per-topology overrides — set when the topology's building_void was
@@ -88,7 +102,30 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
                              Rect(kitchen.x0, rear_y0, kitchen.x1, rear_y1),
                              "service", covered=False))
 
-    sx0, sx1 = service_rect_xspan
-    elements.append(Room("service_area", "service_area",
-                         Rect(sx0, rear_y0, sx1, rear_y1), "service", covered=False))
+    if service_at == "side":
+        # Move service to the side setback ADJACENT to the kitchen — the same
+        # side the kitchen sits on, so plumbing/water access stays close to
+        # the kitchen wet wall and the service strip doesn't end up behind a
+        # bedroom (which is the whole point of routing it off the rear in the
+        # first place). The strip spans the kitchen's y-range (its rear half
+        # of the side setback). On lots where the kitchen-side setback is
+        # also occupied by a side carport, the carport sits at the FRONT of
+        # that setback (y=0 to ~5 m) while the kitchen sits at the REAR, so
+        # the service strip alongside the kitchen stays clear of the carport.
+        env_mid_x = lot.left + (lot.width - lot.left - lot.right) / 2.0
+        kitchen_at_right = (kitchen.x1 > env_mid_x)
+        if kitchen_at_right:
+            svc_x0 = lot.width - lot.right + 0.1
+            svc_x1 = lot.width - 0.3
+        else:
+            svc_x0 = 0.3
+            svc_x1 = lot.left - 0.1
+        elements.append(Room("service_area", "service_area",
+                             Rect(svc_x0, kitchen.y0, svc_x1, kitchen.y1),
+                             "service", covered=False))
+    else:
+        sx0, sx1 = service_rect_xspan
+        elements.append(Room("service_area", "service_area",
+                             Rect(sx0, rear_y0, sx1, rear_y1),
+                             "service", covered=False))
     return elements

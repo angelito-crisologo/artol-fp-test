@@ -534,13 +534,20 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         standard_id_b = next((r.id for r in topology.rooms if r.type == "bedroom_standard"), None)
         if master_id_b and standard_id_b:
             band_ids = []
+            # Match stacks where master and standard are at opposite ends, in
+            # EITHER order — so the constraint survives swap_master_standard's
+            # stack reversal. Pre-swap: [master, X..., standard]. Post-swap:
+            # [standard, X..., master]. Both forms identify the same logical
+            # bedroom band (the X... rooms sandwiched between the two bedrooms).
             for stack in topology.front_to_rear_stacks:
-                if (len(stack) >= 3
-                        and stack[0] == master_id_b
-                        and stack[-1] == standard_id_b):
-                    for rid in stack[1:-1]:
-                        if rid not in band_ids and rid in rw:
-                            band_ids.append(rid)
+                if len(stack) < 3:
+                    continue
+                ends = (stack[0], stack[-1])
+                if ends != (master_id_b, standard_id_b) and ends != (standard_id_b, master_id_b):
+                    continue
+                for rid in stack[1:-1]:
+                    if rid not in band_ids and rid in rw:
+                        band_ids.append(rid)
             if band_ids:
                 model.Add(sum(rw[rid] for rid in band_ids) == rw[master_id_b])
 
@@ -858,8 +865,32 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             if sb.width_m is not None:
                 cp_width_m = float(sb.width_m)
 
+    # Service area placement: default is the rear-setback strip opposite the
+    # kitchen (service_xspan above). But if the MASTER bedroom (typically
+    # after swap_master_standard puts master at the rear) sits at the rear
+    # of the envelope AND its x-range overlaps the planned service strip,
+    # the service area would end up directly behind the master bedroom —
+    # defeating the privacy/quietness rationale of putting master at the
+    # rear. In that case we route service to a side setback alongside the
+    # kitchen instead. We check master specifically (not "any private room")
+    # so the existing default — service behind a rear standard bedroom —
+    # stays unchanged.
+    svc_at = "rear"
+    sx0, sx1 = service_xspan
+    for r in rooms:
+        if r.type != "master_bedroom":
+            continue
+        # rear-band test: master touches the rear envelope edge (within 1 cm)
+        if abs(r.rect.y1 - env.y1) > 0.01:
+            continue
+        # x-overlap test: master's x-range overlaps planned service x-span
+        if r.rect.x0 < sx1 - 0.01 and r.rect.x1 > sx0 + 0.01:
+            svc_at = "side"
+            break
+
     elements = _setback_elements(lot, carport_side, kitchen_rect, service_xspan,
                                  dirty_kitchen_at=dk_at,
+                                 service_at=svc_at,
                                  carport_depth_m=cp_depth_m,
                                  carport_width_m=cp_width_m)
 

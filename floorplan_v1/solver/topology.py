@@ -276,6 +276,79 @@ _X_MIRROR_LOCATION = {
 }
 
 
+def swap_master_standard_in_topology(t: Topology) -> Topology:
+    """Return a copy of `t` with the placements of the master_bedroom and
+    bedroom_standard rooms swapped.
+
+    Used to support master-at-rear (vs. master-at-front) as a brief-level
+    knob. Topology files are authored in the canonical "master at front of
+    private column" form; when the brief sets swap_master_standard=true,
+    the runner applies this transform before passing the topology to the
+    solver. Net effect: master physically moves to where standard was
+    (typically the rear of the private column), and standard moves to
+    master's old position (typically the front).
+
+    What CHANGES:
+      - front_to_rear_stacks: each stack containing BOTH master_id and
+        standard_id is reversed. This puts master at the rear end of the
+        stack and standard at the front end. Stacks not containing both
+        (e.g., the public LDK stack) are unchanged.
+      - {rear,left,right}_anchored: master_id and standard_id tokens swap
+        simultaneously. If standard was rear-anchored, master becomes
+        rear-anchored instead (and vice versa).
+
+    What does NOT change:
+      - rooms (master is still master, standard is still standard — same
+        sizes, same priority, same type)
+      - adjacencies (keyed by room id; master ↔ ensuite still holds, etc.)
+      - soft_proximities, zone_split, setback_elements, building_voids
+      - match_bedroom_widths, match_bath_widths, bedroom_band_fills_width,
+        ensuite_alcove_joins_master (all position-independent)
+      - lot_adjustment_profiles (keyed by room TYPE)
+
+    No-op if the topology lacks a master_bedroom or a bedroom_standard.
+    """
+    master_id = next((r.id for r in t.rooms if r.type == "master_bedroom"), None)
+    std_id = next((r.id for r in t.rooms if r.type == "bedroom_standard"), None)
+    if master_id is None or std_id is None:
+        return t  # nothing to swap
+
+    def _swap_token(x: str) -> str:
+        if x == master_id:
+            return std_id
+        if x == std_id:
+            return master_id
+        return x
+
+    new_stacks = []
+    for stack in t.front_to_rear_stacks or []:
+        if master_id in stack and std_id in stack:
+            new_stacks.append(list(reversed(stack)))
+        else:
+            new_stacks.append(list(stack))
+
+    return Topology(
+        id=t.id, label=t.label, target_shell=t.target_shell,
+        rooms=list(t.rooms), adjacencies=list(t.adjacencies),
+        entry_point=t.entry_point,
+        setback_elements=list(t.setback_elements),
+        soft_proximities=list(t.soft_proximities),
+        zone_split=t.zone_split,
+        notes=list(t.notes),
+        match_bedroom_widths=t.match_bedroom_widths,
+        match_bath_widths=t.match_bath_widths,
+        bedroom_band_fills_width=t.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
+        front_to_rear_stacks=new_stacks,
+        rear_anchored=[_swap_token(x) for x in t.rear_anchored],
+        left_anchored=[_swap_token(x) for x in t.left_anchored],
+        right_anchored=[_swap_token(x) for x in t.right_anchored],
+        lot_adjustment_profiles=list(t.lot_adjustment_profiles),
+        building_voids=list(t.building_voids),
+        fallback_topology=t.fallback_topology,
+    )
+
+
 def mirror_topology_x(t: Topology) -> Topology:
     """Return a copy of `t` with all x-axis (left/right) fields flipped.
 
