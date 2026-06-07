@@ -912,7 +912,7 @@ def _wall_svg(wall, layout) -> str:
             f'fill="{WALL_FILL}" stroke="none"/>')
 
 
-def _corner_caps(walls, rooms=None):
+def _corner_caps(walls, rooms=None, open_plan_endpoints=None):
     """Emit a small filled square at corners where two perpendicular walls
     meet and leave a small unfilled notch.
 
@@ -932,6 +932,11 @@ def _corner_caps(walls, rooms=None):
         cleanly; emitting a cap there paints a dark dot inside the room.
       * Same-thickness COLLINEAR joints (two segments of the same straight
         wall). No notch — the rects touch end-to-end.
+      * Corners that sit ON an open-plan-edge endpoint. The notch quadrant
+        in such a corner is in the open-plan continuation, and painting it
+        produces a stray dark dot inside the LDK opening. Suppressing the
+        cap leaves the small notch unfilled — it shows the underlying room
+        fill (cyan / public color) and reads as part of the open zone.
 
     Convex vs concave is detected by sampling the 4 quadrants of the corner:
     a convex corner has exactly 1 quadrant inside a room (the building
@@ -939,10 +944,17 @@ def _corner_caps(walls, rooms=None):
     void-cut inside corner sits in the interior). The rooms list is
     required for this check; if not supplied, same-thickness corners are
     skipped (legacy behaviour).
+
+    `open_plan_endpoints`: optional iterable of (x, y) tuples — every endpoint
+    of every open-plan edge in the layout. When provided, caps are
+    suppressed at any corner whose point matches one of these endpoints
+    within `eps`. See the fourth Skip case above. If not supplied,
+    behaviour is unchanged from before (caps drawn at all eligible corners).
     """
     if not walls:
         return []
     eps = 1e-3
+    ope_points = list(open_plan_endpoints or [])
     # Collect candidate (point, wall, axis) tuples. axis tells us the
     # orientation of `w` so we can detect collinear joints.
     candidates = []
@@ -992,6 +1004,13 @@ def _corner_caps(walls, rooms=None):
         # If all other walls are COLLINEAR with this wall (same axis), skip:
         # this is a straight wall split into segments, not a corner.
         if all(_wall_axis(ow) == my_axis for ow in meets):
+            continue
+        # Skip when this corner sits on an open-plan-edge endpoint. At such
+        # corners the cap's diagonal-notch quadrant extends INTO the open
+        # zone (where there's no wall to back it), painting a stray dark
+        # 0.05 m dot inside the LDK opening. Without the cap, that quadrant
+        # falls back to the room's underlying fill color and blends in.
+        if any(abs(ex - px) <= eps and abs(ey - py) <= eps for ex, ey in ope_points):
             continue
         # Cap size = max thickness of the walls meeting at this corner.
         thicknesses = {round(my_thick, 4)} | {
@@ -1179,7 +1198,16 @@ def _open_plan_svg(edge, layout, other_endpoints=None) -> str:
     ra = getattr(edge, "cell_a", None) or a.rect
     rb = getattr(edge, "cell_b", None) or b.rect
     eps = 1e-3
-    inset = WALL_THICKNESS_EXTERIOR / 2.0       # 0.10 m — covers worst case
+    # Inset matches half the INTERIOR wall thickness. Interior walls (0.10 m
+    # thick, centered on the boundary) extend 0.05 m past the open-plan edge
+    # endpoint into the open span, so a 0.05 m inset stops the erase exactly
+    # at the wall's open-plan-side face — no chop. The previous 0.10 m inset
+    # (half EXTERIOR thickness) over-reserved by 0.05 m and left visible
+    # stroke fragments at corners where only one open-plan edge ends. Open-
+    # plan boundaries touching exterior walls are rare in this catalog —
+    # if a future topology needs that, switch back to per-wall thickness
+    # detection.
+    inset = WALL_THICKNESS_INTERIOR / 2.0       # 0.05 m
     others = other_endpoints or set()
 
     def _has_other_at(point):
@@ -1253,6 +1281,24 @@ def archplan_to_svg(plan) -> str:
     """
     base = layout_to_svg(plan.layout)
     overlays = []
+    # Compute open-plan edges + endpoints up front so the corner-cap pass
+    # can suppress caps at points that sit on the open-plan boundary
+    # (otherwise the cap's notch quadrant paints a dark dot inside the LDK
+    # opening). Endpoints are also used later by the open-plan erase pass
+    # to drop the wall-clearance inset where two open-plan edges meet.
+    merged_open_edges = _merge_open_plan_edges(plan.open_plan_edges)
+    all_endpoints = _collect_open_plan_endpoints(merged_open_edges)
+    # A point is "shared" if it appears as an endpoint of TWO OR MORE
+    # open-plan edges. Set subtraction (all_endpoints - my_eps) can't tell
+    # us this because sets dedupe; use a counter and pre-compute the set
+    # of shared corners. At shared corners the erase inset is suppressed
+    # so the two erases meet cleanly with no un-erased gap between them.
+    from collections import Counter as _Counter
+    _ep_counts = _Counter()
+    for _e in merged_open_edges:
+        for _ep in _open_plan_edge_endpoints(_e):
+            _ep_counts[_ep] += 1
+    shared_endpoints = {_ep for _ep, _c in _ep_counts.items() if _c >= 2}
     # Walls first — they cover room strokes for every non-open-plan boundary.
     walls = _compute_walls(plan)
     for wall in walls:
@@ -1260,8 +1306,11 @@ def archplan_to_svg(plan) -> str:
     # Corner caps: small filled squares at corners that leave a notch
     # (mixed-thickness joints, or convex same-thickness L-corners). Inside
     # corners of L-shape composites (concave) skip the cap to avoid painting
-    # a dark dot inside the room.
-    for cap in _corner_caps(walls, plan.layout.rooms):
+    # a dark dot inside the room. Also skip at any open-plan-edge endpoint
+    # so the cap's notch quadrant doesn't paint a dark dot inside the open
+    # LDK transition.
+    for cap in _corner_caps(walls, plan.layout.rooms,
+                            open_plan_endpoints=all_endpoints):
         overlays.append(_wall_svg(cap, plan.layout))
     # Open-plan: erase room strokes where there's no wall. Merge adjacent
     # cell-level edges of the same room pair first so that a composite L's
@@ -1270,13 +1319,14 @@ def archplan_to_svg(plan) -> str:
     # meet at a corner, neither one insets — the erase sweeps fully through
     # the corner, removing the cell-stroke fragment at the L of the
     # boundary.
-    merged_open_edges = _merge_open_plan_edges(plan.open_plan_edges)
-    all_endpoints = _collect_open_plan_endpoints(merged_open_edges)
     for ope in merged_open_edges:
-        # Build the set of OTHER endpoints (every endpoint except this edge's own)
-        my_eps = _open_plan_edge_endpoints(ope)
-        others = all_endpoints - my_eps
-        overlays.append(_open_plan_svg(ope, plan.layout, other_endpoints=others))
+        # Suppress the inset at any of this edge's endpoints that is SHARED
+        # with another open-plan edge (count >= 2). Set subtraction is wrong
+        # here: it loses count info, so a genuinely shared endpoint (in 2+
+        # edges including this one) gets removed by `all - my_eps` and looks
+        # un-shared. Passing the pre-computed shared_endpoints set fixes that.
+        overlays.append(_open_plan_svg(ope, plan.layout,
+                                       other_endpoints=shared_endpoints))
     # Doors and windows punch openings through walls.
     for d in plan.doors:
         overlays.append(_door_svg(d, plan.layout))
