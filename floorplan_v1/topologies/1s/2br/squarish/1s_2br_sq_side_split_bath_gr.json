@@ -1,6 +1,6 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "1s_2br_sq_single_bath_gr",
+  "id": "1s_2br_sq_side_split_bath_gr",
   "label": "Squarish 2BR / 1 bath — master front-left, standard rear-left, bath block + kitchen across the rear, open-plan great room takes the front-right.",
   "target_shell": "squarish",
 
@@ -43,7 +43,7 @@
 
   "lot_adjustment_profiles": [
     {
-      "name": "compact_2br_kitchen_shape",
+      "name": "compact_sq_side_split_bath_gr",
       "when": { "buildable_area_lt_sqm": 75 },
       "auto_apply": {
         "kitchen": {

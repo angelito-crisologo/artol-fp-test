@@ -1,6 +1,6 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "1s_2br_sq_distributed_baths_gr",
+  "id": "1s_2br_sq_side_split_baths_ds_gr",
   "label": "Squarish 2BR / 2 baths DISTRIBUTED with GREAT_ROOM — ensuite between master and standard in the private column; common T&B at rear-middle. Open-plan great_room + kitchen on the public side (gr style instead of separate L+D+K).",
   "target_shell": "squarish",
 
@@ -51,7 +51,7 @@
 
   "lot_adjustment_profiles": [
     {
-      "name": "compact_distributed_baths_gr",
+      "name": "compact_sq_side_split_baths_ds_gr",
       "when": { "buildable_area_lt_sqm": 100 },
       "auto_apply": {
         "kitchen":        { "min_least_dim_m": 1.5 },

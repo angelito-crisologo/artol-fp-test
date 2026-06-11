@@ -4,13 +4,24 @@ PH floor plan generator + validator. Single-detached mid-market houses. CP-SAT s
 
 ## Current focus (as of 2026-06-11)
 
-**Wide-shell 2BR catalog buildout.** Six topologies now exist under `floorplan_v1/topologies/1s/2br/wide/`:
+**Naming convention locked:** `{storey}_{nbr}_{WxD}_{shape}_{strategy}_{bath_token}[_hall][_gr|_ld]_{carport}[_swap]`
+Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`, `l_wrap`, `z_wrap`, `split_wing` | Bath: `bath`, `baths_cl`, `baths_ds`, `baths_mix` | Carport: `ncp`, `fcp`, `ccp`
+
+**Wide 2BR topologies** (`floorplan_v1/topologies/1s/2br/wide/`):
 
 - `1s_2br_wd_side_split_bath_gr` — single bath, private column left
 - `1s_2br_wd_side_split_bath_hall_gr` — single bath, hall in private column
 - `1s_2br_wd_side_split_baths_cl_gr` — clustered baths at rear band
 - `1s_2br_wd_front_rear_bath_gr` — bedrooms at rear, great room front
 - `1s_2br_wd_l_wrap_bath_hall_gr` — L-wrap great room with mid-band hall
+
+**Square 2BR topologies** (`floorplan_v1/topologies/1s/2br/squarish/`):
+
+- `1s_2br_sq_side_split_bath_gr` — single bath, private column left
+- `1s_2br_sq_side_split_baths_cl_gr` — clustered baths (ensuite + common), private column
+- `1s_2br_sq_side_split_baths_cl_hall_gr` — clustered baths with hall
+- `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
+- `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
 All 25 test briefs pass. 1 known pre-existing error from an abandoned `rear_bedrooms_gr` brief.
 

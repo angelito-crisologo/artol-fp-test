@@ -1,5 +1,5 @@
 {
-  "intent": "2BR / 2 baths clustered — LOWER band of the 65-72 m² floor range. Master ensuite + common bath share a wet-core plumbing wall; the bath block sits between master (front) and standard (rear). Open-plan great room + kitchen. Squarish lot.",
+  "intent": "2BR / 2 baths clustered \u2014 LOWER band of the 65-72 m\u00b2 floor range. Master ensuite + common bath share a wet-core plumbing wall; the bath block sits between master (front) and standard (rear). Open-plan great room + kitchen. Squarish lot.",
   "lot_width": 12.5,
   "lot_depth": 12.5,
   "bedroom_count": 2,
@@ -14,9 +14,9 @@
   "occupancy_class": "R-1",
   "setbacks": {
     "front": 2.0,
-    "rear":  2.0,
-    "left":  2.0,
+    "rear": 2.0,
+    "left": 2.0,
     "right": 2.0
   },
-  "topology": "1s/2br/squarish/1s_2br_sq_clustered_baths_gr.json"
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json"
 }

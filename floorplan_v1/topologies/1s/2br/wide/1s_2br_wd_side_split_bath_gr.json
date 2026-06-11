@@ -146,7 +146,7 @@
     }
   ],
   "notes": [
-    "Wide-shell catalog topology #1 \u2014 2BR / 1 bath, wide analog of 1s_2br_sq_single_bath_gr.",
+    "Wide-shell catalog topology #1 \u2014 2BR / 1 bath, wide analog of 1s_2br_sq_side_split_bath_gr.",
     "Covers the 45-65 m\u00b2 floor band on wide lots (buildable aspect ratio \u2265 ~1.3).",
     "",
     "Program: 2BR sharing ONE common bath. No ensuite. Both bedrooms reach the bath",
@@ -155,10 +155,10 @@
     "The 'side_split' name refers to the LEFT/RIGHT private-public zone split:",
     "  Private SIDE (left):  master (front-left) stacked above standard (rear-left).",
     "  Public SIDE (right):  great room (front-right) with kitchen open-plan at rear.",
-    "This is the same column-stack organisation as sq_single_bath_gr, ported to wide",
+    "This is the same column-stack organisation as sq_side_split_bath_gr, ported to wide",
     "shells where the bedrooms and great room gain horizontal width.",
     "",
-    "Structural difference from sq_single_bath_gr:",
+    "Structural difference from sq_side_split_bath_gr:",
     "  target_shell: 'wide' (only difference \u2014 all adjacency, anchoring, and stack",
     "  constraints are identical to the squarish sibling).",
     "  match_bedroom_widths is FALSE: standard must be wider than master by \u2265 1.2 m",

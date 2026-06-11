@@ -1,6 +1,6 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "1s_2br_sq_clustered_baths_hall_gr",
+  "id": "1s_2br_sq_side_split_baths_cl_hall_gr",
   "label": "Squarish 2BR / 2 baths CLUSTERED with mid-band HALL — bedrooms and the common T&B all open onto a hallway tucked into the middle band between master (front) and standard (rear). Hall has an open mouth east into the great_room. Open-plan great_room + kitchen.",
   "target_shell": "squarish",
 
@@ -49,7 +49,7 @@
     "public_rooms":  ["great", "kitchen"]
   },
 
-  "fallback_topology": "1s/2br/squarish/1s_2br_sq_clustered_baths_gr.json",
+  "fallback_topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json",
 
   "match_bedroom_widths":      true,
   "match_bath_widths":         true,
@@ -68,7 +68,7 @@
 
   "lot_adjustment_profiles": [
     {
-      "name": "compact_clustered_baths_hall",
+      "name": "compact_sq_side_split_baths_cl_hall_gr",
       "when": { "buildable_area_lt_sqm": 100 },
       "auto_apply": {
         "kitchen": {

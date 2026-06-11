@@ -1,5 +1,5 @@
 {
-  "intent": "2BR / 2 baths DISTRIBUTED — MEDIUM, NO CARPORT. Ensuite between master and standard; common T&B at rear-middle; separate L + D + K stacked. 12 × 12 lot → envelope 8 × 8 = 64 m² floor (clean rectangle, no L-cut). Mid-range — all rooms hit preferred-low cleanly.",
+  "intent": "2BR / 2 baths DISTRIBUTED \u2014 MEDIUM, NO CARPORT. Ensuite between master and standard; common T&B at rear-middle; separate L + D + K stacked. 12 \u00d7 12 lot \u2192 envelope 8 \u00d7 8 = 64 m\u00b2 floor (clean rectangle, no L-cut). Mid-range \u2014 all rooms hit preferred-low cleanly.",
   "lot_width": 12.0,
   "lot_depth": 12.0,
   "bedroom_count": 2,
@@ -15,9 +15,9 @@
   "occupancy_class": "R-1",
   "setbacks": {
     "front": 2.0,
-    "rear":  2.0,
-    "left":  2.0,
+    "rear": 2.0,
+    "left": 2.0,
     "right": 2.0
   },
-  "topology": "1s/2br/squarish/1s_2br_sq_distributed_baths_ld.json"
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json"
 }

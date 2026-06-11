@@ -1,6 +1,6 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "1s_2br_sq_distributed_baths_ld",
+  "id": "1s_2br_sq_side_split_baths_ds_ld",
   "label": "Squarish 2BR / 2 baths DISTRIBUTED — ensuite sandwiched between master and standard in the private column; common T&B at rear-middle, accessible from dining (public) and standard (private). LDK is separate living + dining + kitchen, stacked front-to-rear.",
   "target_shell": "squarish",
 
@@ -64,7 +64,7 @@
 
   "lot_adjustment_profiles": [
     {
-      "name": "compact_distributed_baths_ld",
+      "name": "compact_sq_side_split_baths_ds_ld",
       "when": { "buildable_area_lt_sqm": 100 },
       "auto_apply": {
         "kitchen":        { "min_least_dim_m": 1.5 },

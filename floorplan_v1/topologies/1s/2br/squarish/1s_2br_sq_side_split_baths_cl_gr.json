@@ -1,6 +1,6 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "1s_2br_sq_clustered_baths_gr",
+  "id": "1s_2br_sq_side_split_baths_cl_gr",
   "label": "Squarish 2BR / 2 baths — ensuite + common share a plumbing wall; bath block sits BETWEEN master (front) and standard (rear). Open-plan great_room + kitchen.",
   "target_shell": "squarish",
 
@@ -60,7 +60,7 @@
 
   "lot_adjustment_profiles": [
     {
-      "name": "compact_clustered_baths",
+      "name": "compact_sq_side_split_baths_cl_gr",
       "when": { "buildable_area_lt_sqm": 85 },
       "auto_apply": {
         "kitchen": {
