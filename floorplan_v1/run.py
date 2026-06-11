@@ -495,31 +495,35 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # building-void corner locations) and flip the solver's kitchen_side
     # symmetry break so the kitchen tracks the carport on the same side
     # rather than getting pinned opposite. When the brief asks for NO
-    # carport ('none'), strip the carport's setback element and the
+    # carport (ncp), strip the carport's setback element and the
     # building_void that pairs with it so the building footprint becomes
     # a clean rectangle (no L-cut).
-    side = (brief.carport_side or "").lower()
+    side  = (brief.carport_side or "").lower()
+    ctype = (brief.carport_type  or "").lower()
     if side == "left":
         topo = mirror_topology_x(topo)
+        if ctype == "fcp":
+            # fcp: full side setback (3 m throughout) — strip the L-void so
+            # the envelope stays a clean rectangle (narrower than ccp).
+            topo = _strip_carport_void_only(topo)
         kitchen_side = "left"
     elif not side:                  # ncp — no carport
         topo = _strip_carport_from_topology(topo)
         kitchen_side = "right"
     elif side == "front":
-        # Front-parallel carport sits across the front setback, not the side.
-        # We (1) bump the front setback to 3.0 m so the carport (5 × 2.6 m
-        # parallel-parked) clears the building face cleanly, then (2) strip
-        # the front-right building_void since the front carport doesn't carve
-        # the envelope — the footprint stays a clean rectangle. The solver's
-        # carport-side auto-detection (solver.py) sees a carport setback
-        # element + no carport void + lot.front >= 2.8 m and picks "front"
-        # automatically.
+        # Front-parallel fcp carport across the full front setback. Bump the
+        # front setback to 3.0 m and strip the side void (front carport
+        # doesn't carve the side envelope). The solver auto-detects "front".
         topo = _strip_carport_void_only(topo)
         if lot.front < 3.0:
             lot = _bump_lot_front(lot, 3.0)
             env = lot.envelope()
         kitchen_side = "right"
-    else:                           # "right" (ccp default)
+    elif ctype == "fcp":
+        # fcp right: full side setback (3 m throughout) — strip the L-void.
+        topo = _strip_carport_void_only(topo)
+        kitchen_side = "right"
+    else:                           # ccp right (default)
         kitchen_side = "right"
     base_adj, preferred_adj = _merge_lot_profile(
         topo, env.w, env.h, adjustments, verbose)
@@ -677,14 +681,26 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     lot = _make_default_lot(brief)
     env = lot.envelope()
     # Same carport-side rules as _run_hand_authored — see note there.
-    side = (brief.carport_side or "").lower()
+    side  = (brief.carport_side or "").lower()
+    ctype = (brief.carport_type  or "").lower()
     if side == "left":
         topo = mirror_topology_x(topo)
+        if ctype == "fcp":
+            topo = _strip_carport_void_only(topo)
         kitchen_side = "left"
     elif not side:                  # ncp
         topo = _strip_carport_from_topology(topo)
         kitchen_side = "right"
-    else:                           # "right" or "front"
+    elif side == "front":
+        topo = _strip_carport_void_only(topo)
+        if lot.front < 3.0:
+            lot = _bump_lot_front(lot, 3.0)
+            env = lot.envelope()
+        kitchen_side = "right"
+    elif ctype == "fcp":            # fcp right
+        topo = _strip_carport_void_only(topo)
+        kitchen_side = "right"
+    else:                           # ccp right (default)
         kitchen_side = "right"
     base_adj, preferred_adj = _merge_lot_profile(
         topo, env.w, env.h, adjustments, verbose=False)
