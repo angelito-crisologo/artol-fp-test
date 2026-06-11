@@ -122,7 +122,7 @@
     "the hall. The hall's east wall is open to the great_room (no door — codebase",
     "rule auto-casts hallway↔great_room to open_plan).",
     "",
-    "Layout intent (canonical, brief.carport_preference='right'):",
+    "Layout intent (canonical, brief.carport_side='right'):",
     "  Front: [master                              | great_room               ]",
     "  Mid:   [ensuite | common  | HALL            | great_room               ]",
     "  Rear:  [standard                            | kitchen                  ]",
@@ -147,7 +147,7 @@
     "the setbacks becomes a front-right building_void — same L-shape pattern as",
     "topology #2.",
     "",
-    "When brief.carport_preference='left', the runner mirrors the topology so the",
+    "When brief.carport_side='left', the runner mirrors the topology so the",
     "private wing flips to the right side."
   ]
 }

@@ -77,7 +77,7 @@
     "through the great_room (per the locked rule that no bedroom may be accessed",
     "through a bathroom, and the inverse: bedrooms don't access baths through bedrooms).",
     "",
-    "Layout intent (canonical form — brief.carport_preference='right'):",
+    "Layout intent (canonical form — brief.carport_side='right'):",
     "  Front: [master    | great_room                     ]",
     "  Rear:  [standard  | common | kitchen               ]",
     "",
@@ -99,7 +99,7 @@
     "against the lot's front-right corner. The void eats 4 sqm out of the",
     "great_room's front-right corner.",
     "",
-    "When the brief sets carport_preference='left', the runner mirrors the topology",
+    "When the brief sets carport_side='left', the runner mirrors the topology",
     "so master ends up front-right, standard rear-right, and kitchen rear-left."
   ]
 }

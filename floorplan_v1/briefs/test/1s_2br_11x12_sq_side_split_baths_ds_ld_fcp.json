@@ -11,7 +11,6 @@
     "front-parallel carport"
   ],
   "avoid": [],
-  "carport_preference": "front",
   "occupancy_class": "R-1",
   "setbacks": {
     "front": 2.0,
@@ -19,5 +18,7 @@
     "left": 2.0,
     "right": 2.0
   },
-  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json"
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json",
+  "carport_side": "front",
+  "carport_type": "fcp"
 }

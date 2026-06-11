@@ -12,7 +12,6 @@
     "no carport"
   ],
   "avoid": [],
-  "carport_preference": "none",
   "occupancy_class": "R-1",
   "setbacks": {
     "front": 2.0,

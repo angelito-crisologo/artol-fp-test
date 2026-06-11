@@ -92,13 +92,13 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 #   briefs/ai/<name>.json             →  Claude composes the topology
 #
 # Each file is a flat JSON object with the Brief fields (intent, lot_width,
-# lot_depth, bedroom_count, must_haves, avoid, carport_preference). Hand-
+# lot_depth, bedroom_count, must_haves, avoid, carport_side, carport_type). Hand-
 # authored briefs additionally include a "topology" field naming a JSON in
 # floorplan_v1/topologies/. The brief name comes from the filename (without .json).
 # Add, edit, or remove briefs by editing the JSON — no Python changes.
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
-                 "must_haves", "avoid", "carport_preference", "setbacks",
+                 "must_haves", "avoid", "carport_side", "carport_type", "setbacks",
                  "occupancy_class", "swap_master_standard")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
@@ -226,7 +226,8 @@ def _brief_cache_key(brief: Brief) -> str:
         "bedroom_count": brief.bedroom_count,
         "must_haves": list(brief.must_haves),
         "avoid": list(brief.avoid),
-        "carport_preference": brief.carport_preference,
+        "carport_side": brief.carport_side,
+        "carport_type": brief.carport_type,
     }
     blob = json.dumps(payload, sort_keys=True).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()[:16]
@@ -317,7 +318,7 @@ def _match_lot_profile(profiles, env_w: float, env_h: float):
 def _strip_carport_from_topology(topo):
     """Return a copy of `topo` with the carport setback element removed AND
     any building_void that was carved for the carport (`consumed_by="carport"`)
-    removed too. Used when brief.carport_preference == 'none' — the building
+    removed too. Used when brief.carport_side/carport_type == 'none' — the building
     footprint becomes a clean rectangle (no L-cut) and no carport is rendered
     in the side setback."""
     from topology import Topology as _Topology  # type: ignore
@@ -349,7 +350,7 @@ def _strip_carport_from_topology(topo):
 
 def _strip_carport_void_only(topo):
     """Return a copy of `topo` with the carport building_void removed but the
-    carport setback element kept. Used when brief.carport_preference == 'front'
+    carport setback element kept. Used when brief.carport_side/carport_type == 'front'
     — the front-parallel carport doesn't carve the building envelope (it sits
     entirely in the front setback area), so the L-cut void must go, but the
     carport itself stays so the setback-element placer still renders it."""
@@ -497,14 +498,14 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # carport ('none'), strip the carport's setback element and the
     # building_void that pairs with it so the building footprint becomes
     # a clean rectangle (no L-cut).
-    cps = (brief.carport_preference or "right").lower()
-    if cps == "left":
+    side = (brief.carport_side or "").lower()
+    if side == "left":
         topo = mirror_topology_x(topo)
         kitchen_side = "left"
-    elif cps == "none":
+    elif not side:                  # ncp — no carport
         topo = _strip_carport_from_topology(topo)
         kitchen_side = "right"
-    elif cps == "front":
+    elif side == "front":
         # Front-parallel carport sits across the front setback, not the side.
         # We (1) bump the front setback to 3.0 m so the carport (5 × 2.6 m
         # parallel-parked) clears the building face cleanly, then (2) strip
@@ -518,7 +519,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
             lot = _bump_lot_front(lot, 3.0)
             env = lot.envelope()
         kitchen_side = "right"
-    else:
+    else:                           # "right" (ccp default)
         kitchen_side = "right"
     base_adj, preferred_adj = _merge_lot_profile(
         topo, env.w, env.h, adjustments, verbose)
@@ -676,14 +677,14 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     lot = _make_default_lot(brief)
     env = lot.envelope()
     # Same carport-side rules as _run_hand_authored — see note there.
-    cps = (brief.carport_preference or "right").lower()
-    if cps == "left":
+    side = (brief.carport_side or "").lower()
+    if side == "left":
         topo = mirror_topology_x(topo)
         kitchen_side = "left"
-    elif cps == "none":
+    elif not side:                  # ncp
         topo = _strip_carport_from_topology(topo)
         kitchen_side = "right"
-    else:
+    else:                           # "right" or "front"
         kitchen_side = "right"
     base_adj, preferred_adj = _merge_lot_profile(
         topo, env.w, env.h, adjustments, verbose=False)

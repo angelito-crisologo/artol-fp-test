@@ -165,7 +165,7 @@
     "  so that standard's south wall overlaps the great room's north wall (hosting",
     "  standard's door). Equal widths would produce zero overlap and infeasibility.",
     "",
-    "Layout intent (canonical form \u2014 brief.carport_preference='right'):",
+    "Layout intent (canonical form \u2014 brief.carport_side='right'):",
     "  Front: [master    | great_room                     ]",
     "  Rear:  [standard  | common | kitchen               ]",
     "",
@@ -177,8 +177,8 @@
     "have \u2265 3 m depth in the rear zone; use NCP briefs on 10 m-deep lots and",
     "carport briefs on 11 m-deep lots (14 \u00d7 11 m lot \u2192 10 \u00d7 7 m buildable).",
     "",
-    "When brief.carport_preference='left', the runner mirrors the topology.",
-    "When brief.carport_preference='none', the void is stripped and the footprint",
+    "When brief.carport_side='left', the runner mirrors the topology.",
+    "When brief.carport_side='none', the void is stripped and the footprint",
     "is a clean rectangle \u2014 standard gains full shell depth."
   ]
 }

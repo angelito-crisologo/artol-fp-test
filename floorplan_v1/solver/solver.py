@@ -651,7 +651,7 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # an x-symmetric topology the layout and its left-right mirror score
     # identically; without a symmetry break, multi-shot generation would
     # produce two carport candidates that are pure mirrors. The caller
-    # passes `kitchen_side` derived from brief.carport_preference — "right"
+    # passes `kitchen_side` derived from brief.carport_side/carport_type — "right"
     # for the canonical case and "left" when the brief asks for a mirrored
     # layout (carport on the left, public LDK alongside it).
     kitchen_id = next((r.id for r in topology.rooms if r.type == "kitchen"), None)
@@ -817,7 +817,7 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # Otherwise fall back to the historical heuristic — whichever side has
     # the widest setback (>= 2.8 m) gets the carport.
     # When the topology has NO carport setback element at all (e.g., the
-    # runner stripped it because brief.carport_preference == "none"), pass
+    # runner stripped it because brief.carport_side/carport_type == "none"), pass
     # 'none' to the setback-element placer to suppress carport generation.
     has_carport_element = any(sb.type == "carport"
                               for sb in topology.setback_elements)

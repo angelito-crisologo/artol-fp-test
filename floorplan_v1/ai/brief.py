@@ -16,9 +16,10 @@ class Brief:
     bedroom_count: int = 2
     must_haves: List[str] = field(default_factory=list)   # e.g. ["dirty kitchen", "open plan"]
     avoid: List[str] = field(default_factory=list)
-    carport_preference: Optional[str] = None       # "right" | "left" | "front" | None
+    carport_side: Optional[str] = None             # "left" | "right" | "front" | None (None = ncp)
+    carport_type: Optional[str] = None             # "fcp" | "ccp" | None (None = ncp)
     # Optional explicit setbacks (m) — keys: front, rear, left, right.
-    # When given, overrides the carport_preference default geometry; useful
+    # When given, overrides carport_side/carport_type geometry; useful
     # for firewall configs (right=0) or any non-symmetric setback need.
     setbacks: Optional[Dict[str, float]] = None
     # PD 1096 / IRR Rule VII residential occupancy class. Drives setback
@@ -49,6 +50,6 @@ class Brief:
             parts.append("must have: " + ", ".join(self.must_haves))
         if self.avoid:
             parts.append("avoid: " + ", ".join(self.avoid))
-        if self.carport_preference:
-            parts.append(f"carport preference: {self.carport_preference}")
+        if self.carport_side:
+            parts.append(f"carport: {self.carport_type or 'ccp'} on {self.carport_side}")
         return " | ".join(parts) + f"\nintent: {self.intent}"

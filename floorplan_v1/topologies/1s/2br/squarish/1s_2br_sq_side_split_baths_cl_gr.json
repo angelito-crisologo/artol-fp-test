@@ -107,7 +107,7 @@
     "Common bath is publicly accessible via a door to the great_room so guests",
     "and standard use it without going through master.",
     "",
-    "Layout intent (canonical form — brief.carport_preference='right'):",
+    "Layout intent (canonical form — brief.carport_side='right'):",
     "  Front: [master              | great_room                          ]",
     "  Mid:   [ensuite | common    | great_room                          ]",
     "  Rear:  [standard            | kitchen                             ]",
@@ -127,7 +127,7 @@
     "width + 4 m depth that exceed the setbacks become a building_void on the",
     "front-right corner — same L-shape pattern as topology #1.",
     "",
-    "When the brief sets carport_preference='left', the runner mirrors the",
+    "When the brief sets carport_side='left', the runner mirrors the",
     "topology so the wet-core bay flips to the other side."
   ]
 }

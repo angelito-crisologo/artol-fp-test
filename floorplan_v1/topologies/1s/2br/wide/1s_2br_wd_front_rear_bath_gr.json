@@ -153,7 +153,7 @@
     "",
     "Floor band: 50-70 sqm buildable. Designed against 14x10 m (60 sqm) as the canonical case.",
     "",
-    "Layout intent (canonical form \u2014 brief.carport_preference='right' or 'none'):",
+    "Layout intent (canonical form \u2014 brief.carport_side='right' or 'none'):",
     "  Rear band:    [MASTER BR | COMMON T&B | STANDARD BR | KITCHEN]",
     "  Front band:   [          GREAT ROOM (L + D combined)         ]",
     "                                                      \u2514 entry from front",
@@ -190,7 +190,7 @@
     "",
     "Front-to-rear stacks: [great, master], [great, common], [great, standard], [great, kitchen] \u2014 all four rear rooms are vertically behind the great room, enforcing the rear-band/front-band split.",
     "",
-    "Carport: not declared in the base topology \u2014 NCP form. To add a side carport, add a building_void at front_left or front_right. For front-parallel carport, brief.carport_preference='front' bumps the front setback to 3 m. When brief.carport_preference='left', the runner mirrors the topology (kitchen ends up on left, master on right).",
+    "Carport: not declared in the base topology \u2014 NCP form. To add a side carport, add a building_void at front_left or front_right. For front-parallel carport, brief.carport_side='front' bumps the front setback to 3 m. When brief.carport_side='left', the runner mirrors the topology (kitchen ends up on left, master on right).",
     "",
     "No fallback declared. This is the simplest 2BR/1bath wide-shell topology \u2014 if it doesn't fit, the lot is too small and the brief should fail explicitly."
   ]

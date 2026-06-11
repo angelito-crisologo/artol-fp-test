@@ -208,7 +208,7 @@
     "Floor band: 60-80 sqm buildable. Designed against 14x10 m as the low edge (60 sqm tiles exactly).",
     "Larger lots (14x12, 15x11, 16x11) let master and bedrooms breathe toward the preferred high.",
     "",
-    "Layout intent (CANONICAL form \u2014 kitchen on RIGHT, bedrooms on LEFT, matches squarish catalog convention; brief.carport_preference='right' or 'none'):",
+    "Layout intent (CANONICAL form \u2014 kitchen on RIGHT, bedrooms on LEFT, matches squarish catalog convention; brief.carport_side='right' or 'none'):",
     "  Rear band  (1.5 m deep):    [ENSUITE | COMMON T&B | KITCHEN       ]",
     "  Middle band (1.5 m deep):   [(master | HALL       | (great cont.) ]",
     "  Front band (3-4 m deep):    [ MASTER | STANDARD   | GREAT ROOM    ]",
@@ -232,7 +232,7 @@
     "",
     "Hall depth: lot_adjustment_profile floors the hallway at 1.4 m on compact lots so the hall\u2194great open mouth (which equals great's depth that extends into the hall's y-range) stays at 1.0 m minimum.",
     "",
-    "Carport: not declared in the base topology \u2014 this is the NCP form. To add a left-side carport (mirrors the canonical), set brief.carport_preference='left' \u2014 the runner mirrors the topology and LDK appears on the left. For a right-side carport, add a building_void at rear_right but be aware the rear-right corner is the kitchen+dirty-kitchen wet stack so a right-side carport doesn't fit naturally here. For a front-parallel carport, brief.carport_preference='front' bumps the front setback to 3 m.",
+    "Carport: not declared in the base topology \u2014 this is the NCP form. To add a left-side carport (mirrors the canonical), set brief.carport_side='left' \u2014 the runner mirrors the topology and LDK appears on the left. For a right-side carport, add a building_void at rear_right but be aware the rear-right corner is the kitchen+dirty-kitchen wet stack so a right-side carport doesn't fit naturally here. For a front-parallel carport, brief.carport_side='front' bumps the front setback to 3 m.",
     "",
     "Fallback: on shells too tight for the rear-bath cluster (envelope < ~55 sqm buildable or ratio outside 1.30-1.85), the runner falls back to 1s_2br_wd_side_split_bath_gr (single common bath, no ensuite, no hall, simpler floor demand)."
   ]

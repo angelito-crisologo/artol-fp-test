@@ -54,13 +54,14 @@ def _topology_from_dict(d: dict) -> Topology:
 
 def _make_default_lot(brief: Brief) -> Lot:
     """Lot built from the brief's dims with default 2 m setbacks and a 3 m
-    carport setback on the side named by brief.carport_preference. Defaults
-    to RIGHT when the brief doesn't specify (the historical default).
+    carport setback on the side named by brief.carport_side. When
+    carport_side is None the brief has no carport (ncp) and all setbacks
+    are 2 m.
 
     A brief can override the four setbacks directly via its `setbacks` dict
     (e.g., `setbacks: {front: 2, rear: 2, left: 2, right: 0}` for a firewall
-    on the right). When `setbacks` is given, carport_preference is ignored —
-    the brief is fully in control of envelope geometry."""
+    on the right). When `setbacks` is given, carport_side/carport_type are
+    ignored — the brief is fully in control of envelope geometry."""
     occupancy = getattr(brief, "occupancy_class", "R-1")
     explicit = getattr(brief, "setbacks", None)
     if explicit:
@@ -74,13 +75,14 @@ def _make_default_lot(brief: Brief) -> Lot:
             occupancy_class=occupancy,
         )
     front, rear, left, right = 2.0, 2.0, 2.0, 2.0
-    pref = (brief.carport_preference or "right").lower()
-    if pref == "left":
+    side = (brief.carport_side or "").lower()
+    if side == "left":
         left = 3.0
-    elif pref == "front":
+    elif side == "front":
         front = 3.0
-    else:                       # "right" or unknown -> historical default
+    elif side == "right":
         right = 3.0
+    # else: ncp — all setbacks stay at 2.0
     return Lot(
         width=brief.lot_width, depth=brief.lot_depth,
         front=front, rear=rear, left=left, right=right,
