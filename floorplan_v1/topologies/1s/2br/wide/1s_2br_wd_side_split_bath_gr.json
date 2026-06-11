@@ -1,0 +1,184 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_side_split_bath_gr",
+  "label": "Wide 2BR / 1 bath \u2014 master front-left, standard rear-left, common bath + kitchen across the rear-right, wide great room takes the front-right. Private left / public right zone split.",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "standard",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master and standard stack vertically along the left wall \u2014 master at the front, standard at the rear. Shared wall only, no door between them."
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 0.8,
+      "kind": "bedroom_to_public",
+      "note": "master bedroom door faces the great room (master's east wall faces great's west wall)."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's east wall overlaps great room's west wall \u2014 hosts standard's door. 1.2 m floor gives 0.8 m clear door + 0.15 m frame each side, keeping the door panel clear of the common bath's south wall when it swings open."
+    },
+    {
+      "a": "standard",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common is just east of standard at the rear; shared wall only, no door (single_bath means bath access through great room only)."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common's south wall faces great room \u2014 door faces great for shared access by both bedrooms."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "shared plumbing wall \u2014 kitchen and common bath stack rear-right; bath west of kitchen."
+    },
+    {
+      "a": "kitchen",
+      "b": "great",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great room + kitchen form the open LDK (gr style)."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "match_bedroom_widths": false,
+  "left_anchored": [
+    "master",
+    "standard"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "standard",
+    "common"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "standard"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_2br_kitchen_shape",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable. Bedroom width floors are not needed \u2014 the solver's zone-ratio constraint (55/45 target, 50/50 floor) keeps the private wing balanced automatically."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Wide-shell catalog topology #1 \u2014 2BR / 1 bath, wide analog of 1s_2br_sq_single_bath_gr.",
+    "Covers the 45-65 m\u00b2 floor band on wide lots (buildable aspect ratio \u2265 ~1.3).",
+    "",
+    "Program: 2BR sharing ONE common bath. No ensuite. Both bedrooms reach the bath",
+    "through the great room. Entry is through the great room (street-facing front).",
+    "",
+    "The 'side_split' name refers to the LEFT/RIGHT private-public zone split:",
+    "  Private SIDE (left):  master (front-left) stacked above standard (rear-left).",
+    "  Public SIDE (right):  great room (front-right) with kitchen open-plan at rear.",
+    "This is the same column-stack organisation as sq_single_bath_gr, ported to wide",
+    "shells where the bedrooms and great room gain horizontal width.",
+    "",
+    "Structural difference from sq_single_bath_gr:",
+    "  target_shell: 'wide' (only difference \u2014 all adjacency, anchoring, and stack",
+    "  constraints are identical to the squarish sibling).",
+    "  match_bedroom_widths is FALSE: standard must be wider than master by \u2265 1.2 m",
+    "  so that standard's south wall overlaps the great room's north wall (hosting",
+    "  standard's door). Equal widths would produce zero overlap and infeasibility.",
+    "",
+    "Layout intent (canonical form \u2014 brief.carport_preference='right'):",
+    "  Front: [master    | great_room                     ]",
+    "  Rear:  [standard  | common | kitchen               ]",
+    "",
+    "Standard extends EAST of master by ~1 m so its south wall overlaps the great",
+    "room's north wall \u2014 that overlap hosts standard's door to the great room.",
+    "",
+    "Carport: 3.0 m wide \u00d7 6.0 m deep (Item 2 default). Note: the 1 m \u00d7 4 m",
+    "building_void at front-right requires \u2265 7 m buildable depth for standard to",
+    "have \u2265 3 m depth in the rear zone; use NCP briefs on 10 m-deep lots and",
+    "carport briefs on 11 m-deep lots (14 \u00d7 11 m lot \u2192 10 \u00d7 7 m buildable).",
+    "",
+    "When brief.carport_preference='left', the runner mirrors the topology.",
+    "When brief.carport_preference='none', the void is stripped and the footprint",
+    "is a clean rectangle \u2014 standard gains full shell depth."
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_front_rear_bath_gr",
+  "label": "Wide-shell 2BR / 1 bath \u2014 REAR BEDROOMS pattern. Both bedrooms sit at the REAR (master rear-left, standard rear-middle-right), with the common T&B sandwiched between them. Kitchen at the rear-far-right corner for wet-stack alignment with the dirty kitchen. Great room (combined L+D, gr style) spans the entire FRONT. Matches the dominant PH 60 sqm 2BR/1bath bungalow pattern: bedrooms quiet at rear (garden-facing), public area at front (street-facing).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "master's south wall opens into the great room \u2014 master's primary public access. 1.0 m floor = 0.8 m clear bedroom door + 2x 0.1 m frame stops."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "standard's south wall opens into the great room \u2014 standard's primary public access. Same door spec as master."
+    },
+    {
+      "a": "master",
+      "b": "common",
+      "min_shared_wall_m": 1.5,
+      "kind": "bath_to_bedroom_wall",
+      "note": "master's east wall touches common's west wall \u2014 shared wall only, no door (single-bath rule). The wall is the acoustic + privacy buffer between master and the bath."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 1.5,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common's east wall touches standard's west wall \u2014 shared wall only, no door. Same buffer role as master's side. Bath is sandwiched between the two bedrooms at the rear."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common bath's south wall opens south into the great room \u2014 the single bath's only door. Both bedrooms reach the bath via the great room (master via south door to great, around to bath south door; standard via south door to great, around to bath south door). 0.7 m mouth = 0.8 m clear door minus frame allowance."
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great room + kitchen form one open LDK (gr style). Kitchen at the rear-far-right corner; great spans the front and extends west across the building."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "common",
+      "b": "kitchen",
+      "weight": 15,
+      "note": "soft pull to keep common bath toward kitchen-side of the rear band \u2014 encourages a single wet-bay where the bath, kitchen, and dirty kitchen vents stack together. Not a hard wet_core because the layout sandwiches the bath between bedrooms and the kitchen is at the far right; a soft pull keeps the bath as far east as the bedroom geometry allows."
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": null,
+  "fallback_topology": null,
+  "match_bedroom_widths": false,
+  "left_anchored": [
+    "master"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master",
+    "standard",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "master"
+    ],
+    [
+      "great",
+      "common"
+    ],
+    [
+      "great",
+      "standard"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_front_rear_bath_gr",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        }
+      },
+      "rationale": "On compact wide lots (<75 sqm buildable, e.g. 14x10 m = 60 sqm), kitchen depth floors at 1.8 m to satisfy the 2.5:1 aspect cap. Common bath caps at preferred range 3.0-4.5 sqm. Bedroom caps prevent the high-priority master/standard rooms from absorbing all slack at the expense of the great room. Great room caps at 22 sqm \u2014 preferred-mid for an LDK that hosts living + dining + circulation to bath and kitchen."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Wide-shell 2BR / 1 bath topology with REAR BEDROOMS and combined GREAT ROOM. Designed against the dominant PH 60 sqm 2BR/1bath bungalow pattern observed across Pinoy ePlans, Pinoy House Plans, and the Pag-IBIG socialized-housing line.",
+    "",
+    "Floor band: 50-70 sqm buildable. Designed against 14x10 m (60 sqm) as the canonical case.",
+    "",
+    "Layout intent (canonical form \u2014 brief.carport_preference='right' or 'none'):",
+    "  Rear band:    [MASTER BR | COMMON T&B | STANDARD BR | KITCHEN]",
+    "  Front band:   [          GREAT ROOM (L + D combined)         ]",
+    "                                                      \u2514 entry from front",
+    "",
+    "Why REAR bedrooms (not the squarish convention of master-front):",
+    "  - Quieter \u2014 bedrooms face the rear garden, away from street noise",
+    "  - Better cross-ventilation pairing with the front porch / great room entry",
+    "  - Matches the dominant PH starter-home pattern (researched from Pinoy",
+    "    ePlans 60 sqm 2BR/1bath and similar)",
+    "  - No swap_master_standard flag needed \u2014 the topology IS the master-rear form",
+    "",
+    "Bath access (single-bath rule):",
+    "  - Master: south door into great room; bath south door is in the same",
+    "    great room, just a few steps away. Master never transits standard or bath.",
+    "  - Standard: same path \u2014 south door into great room, around to bath's south door.",
+    "  - Bath: south door into great room only. No private bedroom-to-bath doors.",
+    "  - Bath sandwiched between bedrooms with shared walls but NO doors on those",
+    "    walls \u2014 the walls act as acoustic + privacy buffers between sleeping rooms",
+    "    and the bath.",
+    "",
+    "LDK arrangement (gr style):",
+    "  - Living + Dining combined into one open great_room spanning the front",
+    "  - Kitchen at the rear-far-right corner, open-plan to great_room",
+    "  - Total LDK floor: great ~18-22 sqm + kitchen ~6-8 sqm",
+    "  - Entry through the great room from the front porch",
+    "",
+    "Wet-stack: bath and kitchen are NOT directly adjacent in this topology (standard sits between them at the rear), so there's no wet_core wall constraint. A soft_proximity pulls bath toward kitchen-side of its allowable range, so on layouts where geometry permits, the bath ends up as close to the kitchen wet bay as standard's width allows. Plumbing typically routes through the rear wall to the dirty kitchen behind kitchen.",
+    "",
+    "Anchors:",
+    "  - Master left-anchored (rear-far-left corner)",
+    "  - Kitchen right-anchored (rear-far-right corner)",
+    "  - All four rear-band rooms (master, common, standard, kitchen) rear-anchored",
+    "  - Great room takes the rest by elimination (front band, full width)",
+    "",
+    "Front-to-rear stacks: [great, master], [great, common], [great, standard], [great, kitchen] \u2014 all four rear rooms are vertically behind the great room, enforcing the rear-band/front-band split.",
+    "",
+    "Carport: not declared in the base topology \u2014 NCP form. To add a side carport, add a building_void at front_left or front_right. For front-parallel carport, brief.carport_preference='front' bumps the front setback to 3 m. When brief.carport_preference='left', the runner mirrors the topology (kitchen ends up on left, master on right).",
+    "",
+    "No fallback declared. This is the simplest 2BR/1bath wide-shell topology \u2014 if it doesn't fit, the lot is too small and the brief should fail explicitly."
+  ]
+}
