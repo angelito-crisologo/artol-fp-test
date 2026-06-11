@@ -7,6 +7,11 @@ PH floor plan generator + validator. Single-detached mid-market houses. CP-SAT s
 **Naming convention locked:** `{storey}_{nbr}_{WxD}_{shape}_{strategy}_{bath_token}[_hall][_gr|_ld]_{carport}[_swap]`
 Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`, `l_wrap`, `z_wrap`, `split_wing` | Bath: `bath`, `baths_cl`, `baths_ds`, `baths_mix` | Carport: `ncp`, `fcp`, `ccp`
 
+**Carport type semantics (locked):**
+- `ncp` — no carport; building_void + carport setback element stripped; rectangular envelope.
+- `fcp` — full carport; entire side setback is 3 m throughout; building_void stripped; rectangular envelope (narrower shell than ccp). Set `carport_side` + `carport_type: fcp` in brief; explicit `setbacks.right/left: 3.0`.
+- `ccp` — claimed carport; 3 m for first 6 m of depth, 2 m beyond; L-notch via building_void. `setbacks` all 2.0, void creates cutout.
+
 **Wide 2BR topologies** (`floorplan_v1/topologies/1s/2br/wide/`):
 
 - `1s_2br_wd_side_split_bath_gr` — single bath, private column left
@@ -23,17 +28,18 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-All 25 test briefs pass. 1 known pre-existing error from an abandoned `rear_bedrooms_gr` brief.
+**Test suite status:** 28 pass, 0 fail, 1 pre-existing error (`wd_front_rear_bath_gr_ncp`).
 
-## Recently completed (commit feb677a)
+## Recently completed (commit e8e2b7e)
 
-- New adjacency kind `bedroom_to_public_wall` added to solver's `_NO_DOOR_KINDS` — geometry-only no-door wall (used in `single_bath_hall_gr` to align master east = great west).
-- Render fix in `_compute_walls` Pass B — wall thickness now classified by envelope membership (0.20 m exterior on env boundary, 0.10 m interior otherwise). Fixes T&B interior walls rendering as exterior thickness.
-- `single_bath_hall_gr` lot_adjustment pins: kitchen depth 2.0, hallway depth 1.0, standard 3×3 exactly, master 4.6×3.0 exactly. Eliminates the parallel-wall artifact at T&B's southeast corner by aligning all rear-band rooms at y=6.0.
+- `Brief` refactored: `carport_preference` → `carport_side` + `carport_type`.
+- `fcp` side carport wired through `run.py` (`_run_hand_authored` + `_try_realize`) — calls `_strip_carport_void_only` for left/right fcp; rectangular envelope, no L-notch.
+- 5 fcp test briefs: `13x11_sq_bath_gr`, `13x13_sq_baths_cl_gr`, `13x13_sq_baths_cl_hall_gr`, `14x11_wd_bath_gr` (depth=11 required), `16x11_wd_baths_cl_gr` (depth=11 required).
 
 ## Open / deferred
 
-- **Task #13 (deferred at user request):** Remove obsolete single-bath wide topologies, briefs, outputs. User asked not to remove yet.
+- **Door placement (requested, not started):** Default corner-preference for interior doors (swing against perpendicular wall). Add `door_placement` override on adjacency: `"low_corner" | "high_corner" | "center"`. Entry point: `architectural_plan.py::_door_for_adjacency` (~line 375) — `low_real`/`high_real` logic already exists, needs override field + center path.
+- **Task #13 (deferred at user request):** Remove obsolete single-bath wide topologies, briefs, outputs.
 - Wide-shell catalog plan in memory ([[wide-shell-catalog-plan]]) calls for 3BR wide-only topologies as Phase 2 (`1s_3br_wd_side_split_bath_hall_ld`, `1s_3br_wd_side_split_baths_cl_ld`). Not started.
 
 ## Key project conventions
