@@ -1,0 +1,22 @@
+{
+  "intent": "2BR / 1 bath — door-host override variant of the 12x12 ncp brief. The common T&B's door moves from its default great_room (south) wall onto the kitchen (east) wall via door_host, consolidating door traffic on the kitchen aisle that already serves the dirty-kitchen back door. The bath's south wall stays solid — the great_room gains furnishable wall + the floor in front of it. The wet_core plumbing wall keeps ≥1.2 m of solid run beside the door (min_solid_wall_m guard). Expected validator note: bath_door_into_kitchen soft warning.",
+  "lot_width": 12.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "single common bath between bedrooms",
+    "open-plan great room + kitchen",
+    "no carport",
+    "bath door consolidated on the kitchen aisle"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "door_host": { "common": "kitchen" },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_bath_gr.json"
+}

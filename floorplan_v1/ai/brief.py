@@ -36,6 +36,14 @@ class Brief:
     # topology file. See solver/topology.py::swap_master_standard_in_topology
     # for exactly what the transform changes.
     swap_master_standard: bool = False
+    # Optional door-host overrides: {room_id: neighbor_room_id}. For a room
+    # whose topology declares a door_host_group (alternate door-host walls),
+    # this picks WHICH neighbor's shared wall hosts the room's door — e.g.
+    # {"common": "kitchen"} moves the common T&B door from its default host
+    # (typically the great_room wall) onto the kitchen wall, freeing the
+    # default wall to stay solid. Invalid or geometrically un-honorable
+    # overrides fall back to the topology's default host.
+    door_host: Optional[Dict[str, str]] = None
 
     @property
     def lot_area(self) -> float:

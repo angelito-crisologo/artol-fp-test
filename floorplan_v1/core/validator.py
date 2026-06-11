@@ -295,6 +295,24 @@ def validate(layout: Layout, rules: Rules) -> Tuple[List[Issue], float]:
             issues.append(Issue("warning", "dirty_kitchen_adjacency",
                 "dirty kitchen is not adjacent to the kitchen's rear wall"))
 
+    # ---------- SOFT: bath door opening into the kitchen ----------
+    # PH sanitary practice discourages a toilet door opening directly into a
+    # food-prep area. Allowed (e.g., a door_host override consolidating doors
+    # on the kitchen circulation aisle), but flagged as a soft-rule trade-off.
+    if plan is not None:
+        _rid = {r.id: r for r in layout.rooms}
+        _BATH_T = {"common_bath", "bath_toilet", "powder_room", "ensuite_bath"}
+        for d in plan.doors:
+            da, db = _rid.get(d.room_a), _rid.get(d.room_b)
+            if da is None or db is None:
+                continue
+            t = {da.type, db.type}
+            if (t & _BATH_T) and "kitchen" in t:
+                issues.append(Issue("warning", "bath_door_into_kitchen",
+                    f"door {d.room_a}<->{d.room_b}: bath opens directly into "
+                    f"the kitchen — sanitary soft rule (accepted trade-off "
+                    f"for circulation consolidation)"))
+
     # ---------- HARD: setback elements must be uncovered & inside a setback ----------
     # `building_void_rects` are intentional carve-outs from the envelope
     # declared by a topology (e.g., a carport cut into the front-left). A

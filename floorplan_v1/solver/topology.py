@@ -30,6 +30,27 @@ class Adjacency:
     min_shared_wall_m: float  # minimum continuous shared-wall length (door-able)
     kind: str = "door"
     note: str = ""
+    # --- door-host groups (Phase 1 of door-host selection) -----------------
+    # Adjacencies sharing a door_host_group name are ALTERNATE door hosts for
+    # the same room: exactly one member of the group emits a door, the rest
+    # render as solid walls. The member authored with a door kind (bath_door,
+    # bedroom_door, ...) is the group's default; a brief-level door_host
+    # override can pick a different member. See architectural_plan.py Pass 1a.
+    door_host_group: Optional[str] = None
+    # For no-door-kind members (e.g. wet_core): True means a door MAY be
+    # placed on this edge when the group selection picks it. Without it, an
+    # override pointing at this member is rejected (falls back to default).
+    door_allowed: bool = False
+    # The door kind to use when this member is chosen but its declared kind
+    # is a no-door kind (e.g. wet_core edge hosting a bath door). Defaults
+    # to "bath_door" when omitted.
+    door_kind: Optional[str] = None
+    # Minimum CONTINUOUS solid wall (m) that must remain on the shared edge
+    # after the door + frames are placed — the plumbing-band guard for doors
+    # on wet_core walls. 0.0 disables the guard. If the realized geometry
+    # can't honor it, no door is emitted on this edge and the group falls
+    # back to its default host.
+    min_solid_wall_m: float = 0.0
 
 
 @dataclass

@@ -99,7 +99,7 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
                  "must_haves", "avoid", "carport_side", "carport_type", "setbacks",
-                 "occupancy_class", "swap_master_standard")
+                 "occupancy_class", "swap_master_standard", "door_host")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -631,7 +631,8 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # Build the architectural plan now (post-snap) so the validator's
     # window-area checks (W-H1, W-H2) can see the windows. Attach the plan
     # to the layout — downstream rendering reuses it instead of rebuilding.
-    plan = architecturalize(layout, topo)
+    plan = architecturalize(layout, topo,
+                            door_host=getattr(brief, "door_host", None))
     layout.archplan = plan
     if n_snaps:
         # Re-validate to refresh the score with the now-larger room areas.
@@ -727,7 +728,8 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     # the validator. Build the archplan post-snap and re-validate so the
     # final score reflects window-area compliance (W-H1, W-H2).
     layout, n_snaps = snap_gaps(layout, verbose=False, void_rects=void_rects)
-    plan = architecturalize(layout, topo)
+    plan = architecturalize(layout, topo,
+                            door_host=getattr(brief, "door_host", None))
     layout.archplan = plan
     issues, score = validate(layout, rules)
     hard = [i for i in issues if i.severity == "error"]

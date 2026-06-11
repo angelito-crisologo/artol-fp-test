@@ -27,17 +27,23 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-**Test suite status:** 28 pass, 0 fail, 0 error.
+**Test suite status:** 29 pass, 0 fail, 0 error.
 
-## Recently completed (commit e8e2b7e)
+## Recently completed
 
-- `Brief` refactored: `carport_preference` → `carport_side` + `carport_type`.
-- `fcp` side carport wired through `run.py` (`_run_hand_authored` + `_try_realize`) — calls `_strip_carport_void_only` for left/right fcp; rectangular envelope, no L-notch.
-- 5 fcp test briefs: `13x11_sq_bath_gr`, `13x13_sq_baths_cl_gr`, `13x13_sq_baths_cl_hall_gr`, `14x11_wd_bath_gr` (depth=11 required), `16x11_wd_baths_cl_gr` (depth=11 required).
+**Door-host selection, Phases 1+2 (2026-06-11):** WHICH wall hosts a room's door (a tier above where-on-the-wall placement).
+
+- `Adjacency` fields (`topology.py`): `door_host_group` (members = alternate hosts, exactly one emits a door), `door_allowed` (no-door-kind member may host), `door_kind` (kind when a wet_core edge hosts; default `bath_door`), `min_solid_wall_m` (plumbing-band guard — door refused unless shared wall ≥ clear + 0.20 + guard; falls back to default host).
+- `Brief.door_host` `{room_id: neighbor_id}` override — wins outright; also forces the default back (e.g. `{"common": "great"}`).
+- Auto scoring (`architectural_plan.py` Pass 1a, `_score_door_host`): + circulation-overlap (4.0 × approach-zone fraction vs front-door spine / dirty-kitchen aisle / halls) + freed furnishable public wall (1.0/m, ≥1.5 m, great/living/dining only) − sanitary bath→kitchen (2.0) − wet-wall (1.0). Non-default must STRICTLY beat default. Weights are module constants.
+- Validator soft flag `bath_door_into_kitchen` (warning, never hard block).
+- Wired: `1s_2br_sq_side_split_bath_gr` group `common_access` (great default, kitchen alternate, 1.2 m solid guard). Plain 12x12 ncp brief now auto-picks the kitchen wall; tighter shells keep great (guard refuses <2.1 m shared wall). Test brief: `..._12x12_..._ncp_kdoor` pins the override path.
+
+**fcp carports (commit e8e2b7e):** `carport_side` + `carport_type` Brief fields; fcp wired through `run.py`; 5 fcp test briefs.
 
 ## Open / deferred
 
-- **Door placement (requested, not started):** Default corner-preference for interior doors (swing against perpendicular wall). Add `door_placement` override on adjacency: `"low_corner" | "high_corner" | "center"`. Entry point: `architectural_plan.py::_door_for_adjacency` (~line 375) — `low_real`/`high_real` logic already exists, needs override field + center path.
+- **Door placement / corner-preference (requested, not started):** `door_placement` override on adjacency: `"low_corner" | "high_corner" | "center"`. Entry point: `architectural_plan.py::_door_for_adjacency` — `low_real`/`high_real` logic exists, needs override field + center path. (Different tier from door-HOST selection, which is done.)
 - **Task #13 (deferred at user request):** Remove obsolete single-bath wide topologies, briefs, outputs.
 - Wide-shell catalog plan in memory ([[wide-shell-catalog-plan]]) calls for 3BR wide-only topologies as Phase 2 (`1s_3br_wd_side_split_bath_hall_ld`, `1s_3br_wd_side_split_baths_cl_ld`). Not started.
 

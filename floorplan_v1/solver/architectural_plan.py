@@ -18,7 +18,7 @@ Coordinate convention (matches model.py):
   - y increases NORTH (rear / away from street)
   - Front of lot = SOUTH = smaller y
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dc_replace
 from typing import List, Optional, Tuple
 
 from model import Layout, Rect, Room
@@ -58,6 +58,10 @@ CORNER_OFFSET_M = 0.15
 #                            accesses circulation from the public side
 _NO_DOOR_KINDS = {"open_plan", "wet_core", "bath_to_bedroom_wall",
                   "bedroom_to_bedroom_wall",
+                  # wall_only — generic solid-wall adjacency. Used by the
+                  # door-host machinery for group members not selected to
+                  # host the door; usable directly in topologies too.
+                  "wall_only",
                   # bedroom_to_public_wall — shared wall between a bedroom
                   # and a public room (great_room / living_room / dining_room)
                   # used to pin the public room's boundary to the bedroom's
@@ -407,6 +411,13 @@ def _door_for_adjacency(adj, layout: Layout,
     side_a, coord, start, end, cell_a, cell_b = best
     shared_len = end - start
     clear = DOOR_CLEAR_WIDTH_M.get(adj.kind, 0.80)
+    # Plumbing-band guard (door-host edges on wet walls): the shared edge
+    # must keep `min_solid_wall_m` of continuous solid wall AFTER the door
+    # (clear width + 2x 0.10 m frame) is placed. If it can't, this edge
+    # refuses the door — the door-host group falls back to its default.
+    min_solid = getattr(adj, "min_solid_wall_m", 0.0) or 0.0
+    if min_solid > 0 and shared_len < clear + 0.20 + min_solid:
+        return None
     # If the shared wall isn't long enough for the door + 0.1 m frame, skip.
     if shared_len < clear + 0.10:
         # Best we can do: shrink the door to fit, but never below the min spec.
@@ -479,20 +490,24 @@ def _door_for_adjacency(adj, layout: Layout,
         prefer = "high"
     else:
         prefer = "low" if dist_low_to_corner <= dist_high_to_corner else "high"
+    # main_door (front entry) always snaps to a room corner — it should
+    # never float mid-wall. Other doors use the corner snap only when the
+    # shared edge already starts/ends at the wall corner.
+    force_corner = (kind == "main_door")
     if prefer == "low":
         hinge_at = "low"
-        if dist_low_to_corner < 0.01:
-            # Shared edge starts AT room_a's wall corner: push the door
-            # 150 mm in from that corner.
+        if dist_low_to_corner < 0.01 or force_corner:
+            # Shared edge starts AT room_a's wall corner (or front door):
+            # push the door 150 mm in from that corner.
             position_m = CORNER_OFFSET_M
         else:
             # Shared edge starts mid-wall — hinge at the LOW end of the edge.
             position_m = start - wall_origin
     else:
         hinge_at = "high"
-        if dist_high_to_corner < 0.01:
-            # Shared edge ends AT room_a's wall corner: push door 150 mm
-            # back from that corner.
+        if dist_high_to_corner < 0.01 or force_corner:
+            # Shared edge ends AT room_a's wall corner (or front door):
+            # push door 150 mm back from that corner.
             position_m = (end - wall_origin) - CORNER_OFFSET_M - clear
         else:
             # Shared edge ends mid-wall — anchor the door's HIGH end at the
@@ -819,12 +834,168 @@ def _wall_length_for_perp(room, side):
 
 
 # ----------------------------------------------------------------------------
+# Door-host scoring (Phase 2 of door-host selection)
+# ----------------------------------------------------------------------------
+# When a door_host_group offers more than one eligible host wall and the
+# brief doesn't pick one explicitly, the host is chosen by scoring. The
+# principle: a door sterilizes the floor in front of it (approach clearance)
+# and breaks a wall that could otherwise hold furniture — but that cost is
+# ~zero when the approach zone lands on floor that is ALREADY circulation
+# (e.g. the kitchen aisle serving the dirty-kitchen back door). Components:
+#
+#   + circulation overlap : fraction of the door's approach zone overlapping
+#                           a circulation corridor (front-door spine, the
+#                           dirty-kitchen door's aisle, hallway rooms)
+#   + freed wall          : furnishable wall length (>= 1.5 m) the LOSING
+#                           candidates keep solid in public rooms
+#   - sanitary penalty    : bath door opening into a kitchen (soft rule —
+#                           the validator additionally flags it)
+#   - wet-wall penalty    : door cut into a wet_core plumbing wall
+#
+# Ties (and everything short of a strict improvement) keep the topology's
+# authored default host, so renders only change when the gain is real.
+DOOR_HOST_W_CIRCULATION    = 4.0   # x overlap fraction (0..1)
+DOOR_HOST_W_FREED_WALL     = 1.0   # x meters of freed furnishable public wall
+DOOR_HOST_P_SANITARY       = 2.0   # bath door into kitchen
+DOOR_HOST_P_WET_WALL       = 1.0   # door on a wet_core plumbing wall
+DOOR_HOST_APPROACH_DEPTH_M = 1.2   # approach clearance in front of a door
+DOOR_HOST_FURNISHABLE_MIN_M = 1.5  # min solid run that counts as furnishable
+
+# Freed-wall credit only counts walls returned to PUBLIC rooms (where solid
+# wall = furniture placement); service rooms keep their walls busy anyway.
+_PUBLIC_FREED_TYPES = {"great_room", "living_room", "dining_room"}
+
+
+def _rect_intersection(a, b):
+    """Intersection of two (x0, y0, x1, y1) tuples, or None."""
+    x0, y0 = max(a[0], b[0]), max(a[1], b[1])
+    x1, y1 = min(a[2], b[2]), min(a[3], b[3])
+    if x1 <= x0 or y1 <= y0:
+        return None
+    return (x0, y0, x1, y1)
+
+
+def _rect_area(r) -> float:
+    return (r[2] - r[0]) * (r[3] - r[1])
+
+
+def _door_segment_abs(door: "Door", rooms_by_id: dict):
+    """Absolute geometry of a door's wall footprint as (side, wall_coord,
+    lo, hi). Interior doors are positioned in room_a's cell frame; exterior
+    doors (room_a not a room, e.g. 'exterior') in room_b's primary cell."""
+    if door.room_a in rooms_by_id:
+        room = rooms_by_id[door.room_a]
+        cells = room.cells
+        cell = cells[min(door.cell_idx, len(cells) - 1)]
+    else:
+        cell = rooms_by_id[door.room_b].cells[0]
+    s = door.wall
+    if s in ("N", "S"):
+        lo = cell.x0 + door.position_m
+        hi = lo + door.clear_width_m
+        coord = cell.y1 if s == "N" else cell.y0
+    else:
+        lo = cell.y0 + door.position_m
+        hi = lo + door.clear_width_m
+        coord = cell.x1 if s == "E" else cell.x0
+    return s, coord, lo, hi
+
+
+def _door_band(door: "Door", rooms_by_id: dict, depth: float):
+    """Band of `depth` to BOTH sides of the door's wall segment. Intersect
+    with a room's cells to get the approach zone on that room's side."""
+    s, coord, lo, hi = _door_segment_abs(door, rooms_by_id)
+    if s in ("N", "S"):
+        return (lo, coord - depth, hi, coord + depth)
+    return (coord - depth, lo, coord + depth, hi)
+
+
+def _door_corridor_zone(door: "Door", rooms_by_id: dict):
+    """Circulation corridor implied by an exterior door: its footprint
+    extruded across the host room's full depth — the walkway people cross
+    the room on to reach that door."""
+    cell = rooms_by_id[door.room_b].cells[0]
+    s, coord, lo, hi = _door_segment_abs(door, rooms_by_id)
+    if s in ("N", "S"):
+        return (lo, cell.y0, hi, cell.y1)
+    return (cell.x0, lo, cell.x1, hi)
+
+
+def _circulation_zones(topology: Topology, layout: Layout, env: Rect) -> list:
+    """Prospective circulation corridors used as scoring anchors: the
+    front-door spine, the dirty-kitchen door's aisle, and hallway rooms.
+    The exterior doors are computed prospectively (Pass 2/2b will recompute
+    them with full door context; positions are deterministic and match in
+    practice)."""
+    zones = []
+    rooms_by_id = {r.id: r for r in layout.rooms}
+    fd = _front_door(topology, layout, env)
+    if fd and fd.room_b in rooms_by_id:
+        zones.append(_door_corridor_zone(fd, rooms_by_id))
+    dk = _dirty_kitchen_door(topology, layout, env)
+    if dk and dk.room_b in rooms_by_id:
+        zones.append(_door_corridor_zone(dk, rooms_by_id))
+    for r in layout.rooms:
+        if r.type == "hallway":
+            for c in r.cells:
+                zones.append((c.x0, c.y0, c.x1, c.y1))
+    return zones
+
+
+def _score_door_host(member, door: "Door", group_room: Room, host_room: Room,
+                     members: list, zones: list, rooms_by_id: dict) -> float:
+    """Score one door-host candidate. Higher = better host wall."""
+    score = 0.0
+    # --- circulation overlap: approach zone ∩ circulation corridors -------
+    band = _door_band(door, rooms_by_id, DOOR_HOST_APPROACH_DEPTH_M)
+    approach = []
+    for c in host_room.cells:
+        r = _rect_intersection(band, (c.x0, c.y0, c.x1, c.y1))
+        if r:
+            approach.append(r)
+    a_area = sum(_rect_area(r) for r in approach)
+    if a_area > 1e-9:
+        overlap = 0.0
+        for ar in approach:
+            for z in zones:
+                hit = _rect_intersection(ar, z)
+                if hit:
+                    overlap += _rect_area(hit)
+        score += DOOR_HOST_W_CIRCULATION * min(overlap / a_area, 1.0)
+    # --- freed furnishable wall in public rooms ---------------------------
+    for m in members:
+        if m is member:
+            continue
+        other_id = m.b if m.a == group_room.id else m.a
+        other = rooms_by_id.get(other_id)
+        if other is None or other.type not in _PUBLIC_FREED_TYPES:
+            continue
+        best = _best_shared_edge_for_rooms(group_room, other)
+        if best:
+            length = best[3] - best[2]
+            if length >= DOOR_HOST_FURNISHABLE_MIN_M - 1e-9:
+                score += DOOR_HOST_W_FREED_WALL * length
+    # --- penalties ---------------------------------------------------------
+    if group_room.type in BATH_TYPES and host_room.type == "kitchen":
+        score -= DOOR_HOST_P_SANITARY
+    if member.kind == "wet_core":
+        score -= DOOR_HOST_P_WET_WALL
+    return score
+
+
+# ----------------------------------------------------------------------------
 # Public entrypoint
 # ----------------------------------------------------------------------------
 
-def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
+def architecturalize(layout: Layout, topology: Topology,
+                     door_host: Optional[dict] = None) -> ArchPlan:
     """Project the topology onto the (snapped) layout to produce doors,
-    windows, and open-plan-edge metadata."""
+    windows, and open-plan-edge metadata.
+
+    `door_host` ({room_id: neighbor_id}, usually from the brief) overrides
+    which member of a door_host_group hosts the room's door. Invalid or
+    geometrically un-honorable overrides fall back to the group's default
+    (the member authored with a door kind)."""
     plan = ArchPlan(layout=layout, topology=topology)
     env = layout.lot.envelope()
 
@@ -860,8 +1031,92 @@ def architecturalize(layout: Layout, topology: Topology) -> ArchPlan:
             b_local_end   = abs_end   - r_b.rect.y0
         _record_door(b_id, b_side, b_local_start, b_local_end)
 
+    # Pass 1a: door-host groups. Adjacencies sharing a door_host_group are
+    # alternate hosts for one room's door — exactly ONE member emits a door;
+    # the others render solid. Selection: brief override (door_host) if it
+    # names a valid member, else the member authored with a door kind. If
+    # the chosen edge refuses the door (e.g. the plumbing-band guard on a
+    # wet_core wall fails), fall back to the default member.
+    host_groups: dict = {}     # group name -> [adj, ...]
+    for adj in topology.adjacencies:
+        g = getattr(adj, "door_host_group", None)
+        if g:
+            host_groups.setdefault(g, []).append(adj)
+    grouped_ids = {id(a) for members in host_groups.values() for a in members}
+
+    def _door_emit_adj(member):
+        """The adjacency to actually emit a door for: members declared with
+        a no-door kind (wet_core etc.) get their kind swapped to door_kind
+        so _door_for_adjacency treats them as a door edge."""
+        if member.kind in _NO_DOOR_KINDS:
+            return dc_replace(member,
+                              kind=getattr(member, "door_kind", None) or "bath_door")
+        return member
+
+    circ_zones = None    # lazily computed — only when a group needs scoring
+    for gname, members in host_groups.items():
+        # The group's room = the room id common to all members.
+        common_ids = {members[0].a, members[0].b}
+        for m in members[1:]:
+            common_ids &= {m.a, m.b}
+        group_room_id = next(iter(common_ids)) if len(common_ids) == 1 else None
+
+        default = next((m for m in members if m.kind not in _NO_DOOR_KINDS),
+                       None)
+        # Eligible members + their prospective doors, default first so that
+        # scoring ties (strict-improvement rule) keep the authored default.
+        ordered = ([default] if default is not None else []) + \
+                  [m for m in members if m is not default]
+        cand = []   # [(member, prospective Door), ...]
+        for m in ordered:
+            if m.kind in _NO_DOOR_KINDS and not getattr(m, "door_allowed", False):
+                continue
+            emit_adj = _door_emit_adj(m)
+            if emit_adj.a not in rooms_by_id or emit_adj.b not in rooms_by_id:
+                continue
+            d = _door_for_adjacency(emit_adj, layout, topology=topology)
+            if d:
+                cand.append((m, d))
+        if not cand:
+            continue
+
+        chosen = None
+        # 1. Brief override wins outright (if its door is realizable).
+        if door_host:
+            for room_id, neighbor_id in door_host.items():
+                hit = next((c for c in cand
+                            if {c[0].a, c[0].b} == {room_id, neighbor_id}),
+                           None)
+                if hit:
+                    chosen = hit
+                    break
+        # 2. Auto selection: score every candidate; a non-default host must
+        #    STRICTLY beat the incumbent to win.
+        if chosen is None and len(cand) > 1 and group_room_id is not None:
+            if circ_zones is None:
+                circ_zones = _circulation_zones(topology, layout, env)
+            group_room = rooms_by_id[group_room_id]
+            best, best_score = None, None
+            for m, d in cand:
+                host_id = m.b if m.a == group_room_id else m.a
+                host_room = rooms_by_id.get(host_id)
+                if host_room is None:
+                    continue
+                s = _score_door_host(m, d, group_room, host_room, members,
+                                     circ_zones, rooms_by_id)
+                if best_score is None or s > best_score + 1e-9:
+                    best, best_score = (m, d), s
+            chosen = best
+        # 3. Single candidate / no scoring possible: default-first order.
+        if chosen is None:
+            chosen = cand[0]
+        plan.doors.append(chosen[1])
+        _record_interior_door(chosen[1])
+
     # Pass 1: doors and open-plan edges from topology adjacencies
     for adj in topology.adjacencies:
+        if id(adj) in grouped_ids:
+            continue   # handled in Pass 1a
         ra, rb = rooms_by_id.get(adj.a), rooms_by_id.get(adj.b)
         if ra is None or rb is None:
             continue
