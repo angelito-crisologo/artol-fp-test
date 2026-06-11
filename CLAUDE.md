@@ -17,7 +17,6 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_wd_side_split_bath_gr` — single bath, private column left
 - `1s_2br_wd_side_split_bath_hall_gr` — single bath, hall in private column
 - `1s_2br_wd_side_split_baths_cl_gr` — clustered baths at rear band
-- `1s_2br_wd_front_rear_bath_gr` — bedrooms at rear, great room front
 - `1s_2br_wd_l_wrap_bath_hall_gr` — L-wrap great room with mid-band hall
 
 **Square 2BR topologies** (`floorplan_v1/topologies/1s/2br/squarish/`):
@@ -28,7 +27,7 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-**Test suite status:** 28 pass, 0 fail, 1 pre-existing error (`wd_front_rear_bath_gr_ncp`).
+**Test suite status:** 28 pass, 0 fail, 0 error.
 
 ## Recently completed (commit e8e2b7e)
 
