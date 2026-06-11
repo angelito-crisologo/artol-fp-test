@@ -681,6 +681,12 @@ def _compute_walls(plan):
     open_set = {frozenset((e.room_a, e.room_b)) for e in plan.open_plan_edges}
     voids = _void_rects(plan)               # list of (id, Rect, consumed_by)
     walls = []
+    # Envelope edges — used by Pass B to decide whether an uncovered cell
+    # side faces the LOT EXTERIOR (truly outside the building → exterior
+    # thickness) or an INTERIOR GAP inside the envelope between rooms
+    # (visually still an interior wall → interior thickness).
+    env = plan.layout.lot.envelope()
+    env_eps = 1e-3
 
     # All (owning_room, cell) pairs. Iterating cells (not rooms) is what
     # makes L-shape composites render correctly.
@@ -718,6 +724,18 @@ def _compute_walls(plan):
     # Treat voids and ALL other cells (including same-room cells) as
     # coverage. This way the boundary between great's rect and great's
     # rect2 isn't drawn as an exterior wall.
+    #
+    # An uncovered side is EXTERIOR ONLY when it sits ON the envelope
+    # boundary (the cell wall is part of the building outline meeting the
+    # lot setback). When the uncovered side is INSIDE the envelope — i.e.,
+    # an interior gap between rooms that no room happens to cover — it
+    # should be drawn at INTERIOR thickness, because visually it's still
+    # an interior partition between two parts of the building interior,
+    # not a wall facing the lot exterior. Without this distinction, walls
+    # bounding a small gap between rooms render at exterior thickness and
+    # look inconsistent with the surrounding interior walls (e.g., T&B
+    # south wall east of hall when the rear band rooms have slightly
+    # different depths).
     void_rects_only = [vr for _vid, vr, _c in voids]
     for r in rooms:
         for c in r.cells:
@@ -729,9 +747,19 @@ def _compute_walls(plan):
                 elif side == "S": coord = c.y0
                 elif side == "E": coord = c.x1
                 else:             coord = c.x0
+                # Determine whether this wall edge sits on the envelope
+                # boundary (true exterior) or is inside (interior gap).
+                if side == "N":
+                    on_env = abs(coord - env.y1) <= env_eps
+                elif side == "S":
+                    on_env = abs(coord - env.y0) <= env_eps
+                elif side == "E":
+                    on_env = abs(coord - env.x1) <= env_eps
+                else:   # "W"
+                    on_env = abs(coord - env.x0) <= env_eps
+                thickness = WALL_THICKNESS_EXTERIOR if on_env else WALL_THICKNESS_INTERIOR
                 for s_, e_ in uncovered:
-                    walls.append(_wall_rect(side, coord, s_, e_,
-                                            WALL_THICKNESS_EXTERIOR))
+                    walls.append(_wall_rect(side, coord, s_, e_, thickness))
 
     return walls
 

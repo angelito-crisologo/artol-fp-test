@@ -57,7 +57,14 @@ CORNER_OFFSET_M = 0.15
 #                            never connect through a door — each bedroom
 #                            accesses circulation from the public side
 _NO_DOOR_KINDS = {"open_plan", "wet_core", "bath_to_bedroom_wall",
-                  "bedroom_to_bedroom_wall"}
+                  "bedroom_to_bedroom_wall",
+                  # bedroom_to_public_wall — shared wall between a bedroom
+                  # and a public room (great_room / living_room / dining_room)
+                  # used to pin the public room's boundary to the bedroom's
+                  # boundary WITHOUT emitting a door. The bedroom accesses
+                  # public space via a different adjacency (e.g. through a
+                  # hall). Geometry-only constraint.
+                  "bedroom_to_public_wall"}
 
 # Bedroom + common-bath pairs are ALWAYS wall-only regardless of the kind
 # declared in the topology. Common T&B is shared/public; access is from the

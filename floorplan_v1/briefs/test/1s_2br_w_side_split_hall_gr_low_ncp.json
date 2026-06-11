@@ -1,0 +1,23 @@
+{
+  "intent": "Wide-shell 2BR / 1 bath SINGLE BATH with mid-band HALL and combined GREAT ROOM — 14x10 m lot, NO CARPORT. Envelope 10x6 = 60 m² floor. Bedrooms stack front-to-rear on the left (master front, hall middle, standard rear). Single common bath at rear-middle. Great room + kitchen on the right column (gr style, open LDK). Hall threads between master south and common bath south, with bedroom doors to both bedrooms and a bath door to common; hall opens east into the great_room.",
+  "lot_width": 14.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "single common bath publicly accessible from hall",
+    "hall serves both bedrooms and the bath as the bedroom-wing circulation node",
+    "open-plan great_room + kitchen (gr style)",
+    "wet-stack between common bath and kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "carport_preference": "none",
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear":  2.0,
+    "left":  2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_w_side_split_hall_gr.json"
+}

@@ -1,0 +1,21 @@
+{
+  "intent": "2BR / 1 bath wide shell — upper band, no carport (14×11 lot, 70 m² buildable → ~65 m² floor). Master front-left, standard rear-left, common + kitchen rear-right. Open-plan great room facing street.",
+  "lot_width": 14.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "single common bath between bedrooms",
+    "open-plan great room + kitchen",
+    "wide shell"
+  ],
+  "avoid": [],
+  "carport_preference": "none",
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear":  2.0,
+    "left":  2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_w_side_split_gr.json"
+}
