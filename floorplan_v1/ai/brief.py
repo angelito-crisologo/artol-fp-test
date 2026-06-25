@@ -45,6 +45,45 @@ class Brief:
     # overrides fall back to the topology's default host.
     door_host: Optional[Dict[str, str]] = None
 
+    # ------------------------------------------------------------------ #
+    # Bedroom program                                                       #
+    # ------------------------------------------------------------------ #
+    # When False (default): bedroom_count > 1 → 1 master + (N-1) standard.
+    # When True: all bedrooms are standard (no master, no ensuite).
+    # Note: requires a topology variant that omits the master_bedroom room
+    # type; the solver will error if the chosen topology still has a master.
+    no_master: bool = False
+
+    # ------------------------------------------------------------------ #
+    # External / service spaces  (all opt-in except porch)                 #
+    # ------------------------------------------------------------------ #
+    # Porch: always on — uncovered landing in front of the living room,
+    # door leading into living room. Size and depth governed by the topology.
+    # (No field needed — porch is unconditional.)
+
+    # Dirty kitchen: open-air cooking area in rear setback. Default off.
+    dirty_kitchen: bool = False
+
+    # Service/laundry area: open-air wash area in rear setback. Default off.
+    # Note: PD 1096 Sec. 708(c) requires washing facilities; when False the
+    # validator will soft-warn unless a laundry area is present inside the plan.
+    service_area: bool = False
+
+    # Lanai: semi-outdoor living extension, typically rear or side. Default off.
+    lanai: bool = False
+
+    # Patio: outdoor paved area. Default off.
+    patio: bool = False
+
+    # ------------------------------------------------------------------ #
+    # Bath count                                                            #
+    # ------------------------------------------------------------------ #
+    # Explicit T&B count requirement. When None, the solver applies the
+    # default rule: if total floor area >= 65 m² → 2 baths; else → 1 bath.
+    # Powder room (half-bath) is counted separately and must be explicitly
+    # requested via must_haves or a future powder_room field.
+    num_baths: Optional[int] = None
+
     @property
     def lot_area(self) -> float:
         return round(self.lot_width * self.lot_depth, 2)

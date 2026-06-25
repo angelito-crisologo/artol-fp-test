@@ -9,22 +9,29 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _RULES_PATH = os.path.normpath(
     os.path.join(_HERE, "..", "..", "ph_floorplan_rules.json"))
 
-# Priority tier -> weight. Was (4, 3, 2, 1) which produced LDK-heavy plans
-# (LDK:private ≈ 1.7:1). Master is now STRICTLY highest so the solver has
-# a positive incentive to shrink LDK rectangles in favour of the master
-# bedroom when geometry allows; standard bedrooms moved up to tie with
-# LDK so they also get pulled above the preferred-low when there's slack.
-# Targets the PH mid-market norm of ~1.4:1 LDK:private.
+# Priority weights — protection priority (higher = shrinks last when envelope
+# is tight). Weights are read by size_priority() below and used in the solver
+# objective. Groups map to the size_priority field in ph_floorplan_rules.json.
 #
-# Note: master's tendency to grow past preferred-high (20 m²) is NOT
-# controlled by this weight — that growth happens in post-solve passes
-# (snap_gaps + claim_ensuite_alcove), which now respect per-room
-# max_area_sqm caps when set (see snap_gaps.py).
+# Order (high → low):
+#   private:  master_bedroom > bedroom_standard
+#   public:   living_room > kitchen > dining_room
+#   service:  service_baths > laundry > maids_room
+#   external: external (one tier; sub-order annotated in JSON only)
+#
+# Key behavioural note: bedroom_standard (5.0) now outweighs living_room (4.0).
+# On tight envelopes the solver will sacrifice living area before bedroom area.
+# This is intentional (client direction 2026-06-25, Option B protection priority).
 PRIORITY_WEIGHT = {
-    "public_LDK": 3.0,
-    "master_bedroom": 4.0,
-    "other_bedrooms": 3.0,
-    "service_and_baths": 1.0,
+    "master_bedroom":   6.0,
+    "bedroom_standard": 5.0,
+    "living_room":      4.0,   # also covers great_room, dk_nook
+    "kitchen":          3.5,
+    "dining_room":      3.0,
+    "service_baths":    2.5,   # common_bath, ensuite_bath, powder_room, maids_bath
+    "laundry":          2.0,   # service_area
+    "maids_room":       1.5,
+    "external":         1.0,   # carport, dirty_kitchen, lanai, patio, porch
 }
 
 
@@ -67,7 +74,7 @@ class Rules:
 
     def size_priority(self, room_type: str) -> str:
         r = self._catalog.get(room_type, {})
-        return r.get("size_priority", "service_and_baths")
+        return r.get("size_priority", "service_baths")
 
     def priority_weight(self, room_type: str) -> float:
         return PRIORITY_WEIGHT.get(self.size_priority(room_type), 1.0)
