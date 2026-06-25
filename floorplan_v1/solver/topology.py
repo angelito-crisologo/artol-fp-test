@@ -370,6 +370,99 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
     )
 
 
+def apply_no_master_transform(t: Topology) -> Topology:
+    """Return a copy of `t` with the master bedroom converted to a standard
+    bedroom and the ensuite bath removed.
+
+    Used when brief.no_master=True: all bedrooms in the plan become standard
+    bedrooms with no ensuite. The master room KEEPS its room id (e.g. "master")
+    so that all stack/anchor references remain valid — only its type and
+    size_priority change. The ensuite room and every adjacency edge referencing
+    it are dropped entirely.
+
+    What CHANGES:
+      - master_bedroom RoomSpec: type → "bedroom_standard",
+        size_priority → "bedroom_standard", zone stays "private"
+      - ensuite_bath RoomSpec: removed from rooms list
+      - adjacencies: any edge where a or b == ensuite_id is removed
+      - zone_split: ensuite_id removed from private_rooms / public_rooms
+      - front_to_rear_stacks: ensuite_id removed from all stacks
+      - {rear,left,right}_anchored: ensuite_id removed
+
+    What does NOT change:
+      - The master room's id — downstream references (stacks, anchors) keep
+        pointing at the same id, now representing a standard bedroom
+      - match_bedroom_widths, match_bath_widths, bedroom_band_fills_width,
+        ensuite_alcove_joins_master (set to False here since ensuite is gone)
+
+    No-op if the topology has no master_bedroom room.
+    """
+    master_room = next((r for r in t.rooms if r.type == "master_bedroom"), None)
+    ensuite_room = next((r for r in t.rooms if r.type == "ensuite_bath"), None)
+    if master_room is None:
+        return t  # nothing to transform
+
+    ensuite_id = ensuite_room.id if ensuite_room is not None else None
+
+    # Rebuild rooms: retype master, drop ensuite
+    new_rooms = []
+    for r in t.rooms:
+        if r.type == "master_bedroom":
+            new_rooms.append(RoomSpec(
+                id=r.id, type="bedroom_standard", zone="private",
+                size_priority="bedroom_standard",
+                hosts_entry=r.hosts_entry, mechanical_vent=r.mechanical_vent,
+            ))
+        elif r.type == "ensuite_bath":
+            pass  # drop
+        else:
+            new_rooms.append(r)
+
+    # Drop adjacency edges that reference the ensuite
+    new_adjs = [a for a in t.adjacencies
+                if ensuite_id is None or (a.a != ensuite_id and a.b != ensuite_id)]
+
+    # Strip ensuite from zone_split lists
+    new_zone_split = None
+    if t.zone_split is not None:
+        def _drop(lst):
+            return [x for x in lst if x != ensuite_id] if ensuite_id else list(lst)
+        new_zone_split = ZoneSplit(
+            axis=t.zone_split.axis,
+            private_side=t.zone_split.private_side,
+            private_rooms=_drop(t.zone_split.private_rooms),
+            public_rooms=_drop(t.zone_split.public_rooms),
+        )
+
+    def _drop_from_list(lst):
+        return [x for x in lst if x != ensuite_id] if ensuite_id else list(lst)
+
+    new_stacks = [_drop_from_list(s) for s in t.front_to_rear_stacks]
+    # Remove now-empty stacks (e.g. a stack that was just [ensuite])
+    new_stacks = [s for s in new_stacks if len(s) > 1]
+
+    return Topology(
+        id=t.id, label=t.label, target_shell=t.target_shell,
+        rooms=new_rooms, adjacencies=new_adjs,
+        entry_point=t.entry_point,
+        setback_elements=list(t.setback_elements),
+        soft_proximities=list(t.soft_proximities),
+        zone_split=new_zone_split,
+        notes=list(t.notes),
+        match_bedroom_widths=t.match_bedroom_widths,
+        match_bath_widths=t.match_bath_widths,
+        bedroom_band_fills_width=t.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=False,  # ensuite is gone
+        front_to_rear_stacks=new_stacks,
+        rear_anchored=_drop_from_list(t.rear_anchored),
+        left_anchored=_drop_from_list(t.left_anchored),
+        right_anchored=_drop_from_list(t.right_anchored),
+        lot_adjustment_profiles=list(t.lot_adjustment_profiles),
+        building_voids=list(t.building_voids or []),
+        fallback_topology=t.fallback_topology,
+    )
+
+
 def mirror_topology_x(t: Topology) -> Topology:
     """Return a copy of `t` with all x-axis (left/right) fields flipped.
 

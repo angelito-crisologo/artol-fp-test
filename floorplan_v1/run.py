@@ -48,7 +48,7 @@ from rules import Rules                                          # noqa: E402  (
 from validator import validate                                   # noqa: E402  (core)
 from render import layout_to_svg, archplan_to_svg                # noqa: E402  (core)
 
-from topology import load_topology, validate_topology, mirror_topology_x, swap_master_standard_in_topology  # noqa: E402  (solver)
+from topology import load_topology, validate_topology, mirror_topology_x, swap_master_standard_in_topology, apply_no_master_transform  # noqa: E402  (solver)
 from solver import solve, AdjustmentError                        # noqa: E402  (solver)
 from snap_gaps import snap_gaps, claim_void_alcoves              # noqa: E402  (solver)
 from architectural_plan import architecturalize                  # noqa: E402  (solver)
@@ -382,6 +382,40 @@ def _strip_carport_void_only(topo):
     )
 
 
+def _strip_setback_element(topo, element_type: str):
+    """Return a copy of `topo` with all setback elements of the given type
+    removed. Used for optional external spaces (dirty_kitchen, service_area,
+    lanai, patio) that are off by default and only included when the brief
+    explicitly enables them.
+
+    Unlike the carport strip, these rear/side elements have no building_void,
+    so only setback_elements needs filtering."""
+    from topology import Topology as _Topology  # type: ignore
+    etype = element_type.lower()
+    new_setbacks = [sb for sb in topo.setback_elements
+                    if (sb.type or "").lower() != etype]
+    return _Topology(
+        id=topo.id, label=topo.label, target_shell=topo.target_shell,
+        rooms=list(topo.rooms), adjacencies=list(topo.adjacencies),
+        entry_point=topo.entry_point,
+        setback_elements=new_setbacks,
+        soft_proximities=list(topo.soft_proximities),
+        zone_split=topo.zone_split,
+        notes=list(topo.notes),
+        match_bedroom_widths=topo.match_bedroom_widths,
+        match_bath_widths=topo.match_bath_widths,
+        bedroom_band_fills_width=topo.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
+        front_to_rear_stacks=list(topo.front_to_rear_stacks),
+        rear_anchored=list(topo.rear_anchored),
+        left_anchored=list(topo.left_anchored),
+        right_anchored=list(topo.right_anchored),
+        lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
+        building_voids=list(topo.building_voids or []),
+        fallback_topology=topo.fallback_topology,
+    )
+
+
 def _bump_lot_front(lot, min_front: float):
     """Return a Lot with `front` setback bumped to at least `min_front` (keeps
     other dims unchanged). Used by front-carport handling — the front-parallel
@@ -492,6 +526,13 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         if verbose:
             print(f"  swap_master_standard=true → master moves to standard's "
                   f"position (and vice versa)")
+    if getattr(brief, "no_master", False):
+        if getattr(brief, "swap_master_standard", False) and verbose:
+            print(f"  warning: swap_master_standard is ignored when no_master=true")
+        topo = apply_no_master_transform(topo)
+        if verbose:
+            print(f"  no_master=true → master_bedroom retyped to bedroom_standard, "
+                  f"ensuite_bath removed")
     # Carport-side mirroring: topology files are authored in the canonical
     # "carport on the right" form. When the brief asks for the carport on
     # the LEFT, mirror the topology's x-axis fields (anchored lists and
@@ -528,6 +569,35 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         kitchen_side = "right"
     else:                           # ccp right (default)
         kitchen_side = "right"
+    # Optional external spaces: strip setback elements not requested in brief.
+    # Default is off for all except porch (porch has no setback element yet —
+    # it is always rendered as a front-entry landing by the renderer).
+    for _ext_type, _enabled in (
+        ("dirty_kitchen", getattr(brief, "dirty_kitchen", False)),
+        ("service_area",  getattr(brief, "service_area",  False)),
+        ("lanai",         getattr(brief, "lanai",         False)),
+        ("patio",         getattr(brief, "patio",         False)),
+    ):
+        if not _enabled:
+            _had = any((sb.type or "").lower() == _ext_type
+                       for sb in topo.setback_elements)
+            topo = _strip_setback_element(topo, _ext_type)
+            if verbose and _had:
+                print(f"  {_ext_type} not in brief → stripped from topology")
+    # Bath-count check: resolve the required bath count (from brief or
+    # size-based default) and warn if the topology doesn't match.
+    # "Baths" here = common_bath + ensuite_bath rooms in the topology.
+    # Default rule: buildable floor area >= 65 m² → 2 baths, else 1.
+    _topo_bath_count = sum(
+        1 for r in topo.rooms if r.type in ("common_bath", "ensuite_bath"))
+    _required_baths = getattr(brief, "num_baths", None)
+    if _required_baths is None:
+        _floor_area = env.w * env.h
+        _required_baths = 2 if _floor_area >= 65.0 else 1
+    if _topo_bath_count != _required_baths and verbose:
+        print(f"  warning: brief requires {_required_baths} bath(s) "
+              f"(floor area {env.w * env.h:.1f} m²) but topology has "
+              f"{_topo_bath_count} — topology mismatch")
     base_adj, preferred_adj = _merge_lot_profile(
         topo, env.w, env.h, adjustments, verbose)
     # Tiered solve attempt: try with preferred_apply layered on top first
