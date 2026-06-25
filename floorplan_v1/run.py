@@ -99,7 +99,10 @@ AI_TEMPERATURE = 0.0   # set to None to use the API default (1.0)
 
 _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
                  "must_haves", "avoid", "carport_side", "carport_type", "setbacks",
-                 "occupancy_class", "swap_master_standard", "door_host")
+                 "occupancy_class", "swap_master_standard", "door_host",
+                 # Tier 1 additions (2026-06-25)
+                 "no_master", "dirty_kitchen", "service_area", "lanai", "patio",
+                 "num_baths")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
