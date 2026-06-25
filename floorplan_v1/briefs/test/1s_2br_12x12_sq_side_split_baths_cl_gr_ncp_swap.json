@@ -1,5 +1,5 @@
 {
-  "intent": "2BR / 2 baths clustered \u2014 SWAP variant of 12x12_ncp. Same 12x12 lot, same topology \u2014 master_bedroom and bedroom_standard placements swapped via brief flag. Expected: master at REAR (next to kitchen, wet-stack aligned), ensuite middle, standard at FRONT. Bath block remains between the two bedrooms.",
+  "intent": "2BR / 2 baths clustered — SWAP variant of 12x12_ncp. Same 12x12 lot, same topology — master_bedroom and bedroom_standard placements swapped via brief flag. Expected: master at REAR (next to kitchen, wet-stack aligned), ensuite middle, standard at FRONT. Bath block remains between the two bedrooms.",
   "lot_width": 12.0,
   "lot_depth": 12.0,
   "bedroom_count": 2,

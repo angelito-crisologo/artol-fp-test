@@ -1,5 +1,5 @@
 {
-  "intent": "2BR / 1 bath compact starter \u2014 SWAP variant of 10.5x11_ncp. Same 10.5x11 lot, same envelope, same topology \u2014 but master_bedroom and bedroom_standard placements are swapped via brief flag. Expected: master ends up at the REAR (next to common bath, garden side), standard at the FRONT. Tests the topology-load-time swap transform.",
+  "intent": "2BR / 1 bath compact starter — SWAP variant of 10.5x11_ncp. Same 10.5x11 lot, same envelope, same topology — but master_bedroom and bedroom_standard placements are swapped via brief flag. Expected: master ends up at the REAR (next to common bath, garden side), standard at the FRONT. Tests the topology-load-time swap transform.",
   "lot_width": 10.5,
   "lot_depth": 11.0,
   "bedroom_count": 2,

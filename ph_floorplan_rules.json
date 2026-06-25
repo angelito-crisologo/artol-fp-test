@@ -477,6 +477,22 @@
       "adjacency": { "prefer_near": ["front_yard", "living_room"], "cluster": "entry_service" }
     },
     {
+      "id": "porch",
+      "label": "Porch / entry landing (uncovered, front setback)",
+      "zone": "public",
+      "covered": false,
+      "setback_eligible": true,
+      "hard": { "note": "Uncovered entry landing in the front setback. Must remain uncovered to stay setback-eligible. Always present — not optional.", "source": "PD 1096 setback open-yard intent" },
+      "soft": {
+        "preferred_dimensions_m": [1.0, 1.5],
+        "preferred_area_sqm": [1.5, 1.5],
+        "rationale": "Provides a transition step between the street / carport approach and the living room entry door.",
+        "source": "PH residential practice"
+      },
+      "size_priority": "external",
+      "adjacency": { "prefer_near": ["living_room", "great_room"], "cluster": "entry_service" }
+    },
+    {
       "id": "hallway",
       "label": "Hallway / circulation corridor",
       "zone": "circulation",

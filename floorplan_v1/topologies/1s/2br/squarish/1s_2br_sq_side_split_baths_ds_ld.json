@@ -21,9 +21,12 @@
       "note": "ensuite north wall touches standard south — no door, acoustic+privacy buffer" },
 
     { "a": "common",   "b": "kitchen",  "min_shared_wall_m": 1.00, "kind": "wet_core",
-      "note": "shared plumbing wall between common bath and kitchen — wet stacks in one rear bay" },
+      "door_host_group": "common_access", "door_allowed": true,
+      "door_kind": "bath_door", "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall between common bath and kitchen — wet stacks in one rear bay. ALTERNATE host of the 'common_access' group: door placed here only when shared wall >= 1.5 m; falls back to dining on compact lots." },
     { "a": "common",   "b": "dining",   "min_shared_wall_m": 0.70, "kind": "bath_door",
-      "note": "common is publicly accessible — door on common south wall to dining. NOTE: standard↔common bath_door adjacency was removed (2026-06-05) to make this topology swap-friendly. Common bath is now reached only via dining (publicly), not from standard's bedroom. Trade-off: lose the bedroom-side private door; gain the ability to flip master/standard placement via brief swap_master_standard." },
+      "door_host_group": "common_access",
+      "note": "common is publicly accessible — door on common south wall to dining. DEFAULT host of the 'common_access' door-host group. NOTE: standard↔common bath_door adjacency was removed (2026-06-05) to make this topology swap-friendly. Common bath is now reached only via dining (publicly), not from standard's bedroom." },
 
     { "a": "master",   "b": "dining",   "min_shared_wall_m": 1.00, "kind": "bedroom_to_public",
       "note": "master door east into dining — placed on the L-extension (rect2) east wall, hinged at the HIGH (north) end via the bedroom stack-bias. This clusters master's door right next to standard's door at the bedroom-wing boundary." },

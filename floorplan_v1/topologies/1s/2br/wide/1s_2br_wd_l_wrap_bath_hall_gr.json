@@ -83,14 +83,17 @@
       "b": "hall",
       "min_shared_wall_m": 1.0,
       "kind": "bath_door",
-      "note": "common bath's south wall opens south into the hall \u2014 the single bath's only door. Both bedrooms reach the bath via the hall (master south door, around to hall east, north into bath; standard east door directly into hall, north into bath)."
+      "door_host_group": "common_access",
+      "note": "common bath's south wall opens south into the hall \u2014 the single bath's only door. Both bedrooms reach the bath via the hall. DEFAULT host of the 'common_access' door-host group."
     },
     {
       "a": "common",
       "b": "kitchen",
       "min_shared_wall_m": 1.0,
       "kind": "wet_core",
-      "note": "common bath shares its east wall with kitchen's west wall \u2014 wet stacks consolidate in one rear bay alongside the dirty kitchen."
+      "door_host_group": "common_access", "door_allowed": true,
+      "door_kind": "bath_door", "min_solid_wall_m": 0.5,
+      "note": "common bath shares its east wall with kitchen's west wall \u2014 wet stacks consolidate in one rear bay. ALTERNATE host of the 'common_access' group: door placed here only when shared wall >= 1.5 m; falls back to hall on compact lots."
     },
     {
       "a": "hall",

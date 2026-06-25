@@ -102,7 +102,9 @@ _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
                  "occupancy_class", "swap_master_standard", "door_host",
                  # Tier 1 additions (2026-06-25)
                  "no_master", "dirty_kitchen", "service_area", "lanai", "patio",
-                 "num_baths")
+                 "num_baths", "powder_room",
+                 # Tier 2 additions (2026-06-25)
+                 "kitchen_back_door")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -705,7 +707,8 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # window-area checks (W-H1, W-H2) can see the windows. Attach the plan
     # to the layout — downstream rendering reuses it instead of rebuilding.
     plan = architecturalize(layout, topo,
-                            door_host=getattr(brief, "door_host", None))
+                            door_host=getattr(brief, "door_host", None),
+                            kitchen_back_door=getattr(brief, "kitchen_back_door", True))
     layout.archplan = plan
     if n_snaps:
         # Re-validate to refresh the score with the now-larger room areas.
@@ -802,7 +805,8 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     # final score reflects window-area compliance (W-H1, W-H2).
     layout, n_snaps = snap_gaps(layout, verbose=False, void_rects=void_rects)
     plan = architecturalize(layout, topo,
-                            door_host=getattr(brief, "door_host", None))
+                            door_host=getattr(brief, "door_host", None),
+                            kitchen_back_door=getattr(brief, "kitchen_back_door", True))
     layout.archplan = plan
     issues, score = validate(layout, rules)
     hard = [i for i in issues if i.severity == "error"]

@@ -1,5 +1,5 @@
 {
-  "intent": "2BR / 2 baths clustered + mid-band HALL \u2014 SWAP variant of 13x12.5_ncp. Same 13x12.5 lot, same topology \u2014 master_bedroom and bedroom_standard placements swapped via brief flag. Expected: master at REAR, hall + clustered baths in middle, standard at FRONT. Hall still opens north into great_room (now between the standard bedroom and the bath block).",
+  "intent": "2BR / 2 baths clustered + mid-band HALL — SWAP variant of 13x12.5_ncp. Same 13x12.5 lot, same topology — master_bedroom and bedroom_standard placements swapped via brief flag. Expected: master at REAR, hall + clustered baths in middle, standard at FRONT. Hall still opens north into great_room (now between the standard bedroom and the bath block).",
   "lot_width": 13.0,
   "lot_depth": 12.5,
   "bedroom_count": 2,

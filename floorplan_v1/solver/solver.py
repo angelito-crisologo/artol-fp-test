@@ -853,6 +853,13 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # The carport's dimensions can be overridden per topology via the
     # SetbackElement's width_m / depth_m fields — used when a building_void
     # was sized for a non-default carport.
+    #
+    # include_dk / include_svc: driven by whether the element is still present
+    # in the topology after run.py's strip transforms. When brief.dirty_kitchen
+    # / brief.service_area is False, run.py strips the element before calling
+    # solve(), so these flags will be False and the elements won't be generated.
+    include_dk  = any(sb.type == "dirty_kitchen" for sb in topology.setback_elements)
+    include_svc = any(sb.type == "service_area"  for sb in topology.setback_elements)
     dk_at = "rear"
     cp_depth_m = 5.0
     cp_width_m = 2.6
@@ -893,6 +900,16 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
                                  service_at=svc_at,
                                  carport_depth_m=cp_depth_m,
                                  carport_width_m=cp_width_m)
+    # Filter out elements not requested by the brief (as signalled by the
+    # topology strip in run.py). Always preserve carport — it's controlled
+    # via brief.carport_side / carport_type, not the opt-in flags.
+    if not include_dk:
+        elements = [e for e in elements if e.type != "dirty_kitchen"]
+    if not include_svc:
+        elements = [e for e in elements if e.type != "service_area"]
+
+    # Porch is generated in architecturalize() (post-snap) so it uses the
+    # final snapped room positions rather than pre-snap solver values.
 
     layout = Layout(lot=lot, rooms=rooms, elements=elements,
                     carport_side=carport_side, genome={"template": "cpsat_solver"})

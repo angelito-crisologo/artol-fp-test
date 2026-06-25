@@ -654,20 +654,21 @@ def _windows_for_room(room: Room, env: Rect, bath: bool,
 
 
 def _dirty_kitchen_door(topology: Topology, layout: Layout,
-                        env: Rect) -> Optional[Door]:
-    """If the topology declares a dirty_kitchen setback element, emit a door
-    from the room it sits behind (typically the kitchen) to the exterior on
-    that room's rear wall. PH practice always has a kitchen-to-dirty-kitchen
-    pass-through; this generates it automatically rather than requiring every
-    topology to declare it as an adjacency."""
+                        env: Rect, force: bool = False) -> Optional[Door]:
+    """Emit a service door from the kitchen to the exterior on its rear wall.
+
+    When `force` is True (brief.kitchen_back_door = True, the default), the
+    door is generated unconditionally — PH practice always has a kitchen back
+    door, regardless of whether a dirty kitchen is present in the setback.
+    When `force` is False (legacy / explicit opt-out), the door is generated
+    only when the topology declares a dirty_kitchen setback element."""
     dk = next((sb for sb in topology.setback_elements
                if sb.type == "dirty_kitchen"), None)
-    if dk is None:
+    if dk is None and not force:
         return None
-    # Which room sits in front of the dirty kitchen? Default to 'kitchen'
-    # since that's the only room a dirty kitchen ever sits behind in PH
-    # practice.
-    behind_id = dk.behind or "kitchen"
+    # Which room sits in front of the dirty kitchen (or just the kitchen when
+    # no dirty kitchen is declared)? Default to 'kitchen'.
+    behind_id = (dk.behind if dk else None) or "kitchen"
     room = next((r for r in layout.rooms if r.id == behind_id), None)
     if room is None:
         return None
@@ -737,19 +738,12 @@ def _front_door(topology: Topology, layout: Layout, env: Rect,
     clear = DOOR_CLEAR_WIDTH_M["main_door"]
     if wall_len < clear + 0.30:
         clear = max(0.80, wall_len - 0.30)
-    # Front-door placement: centered ONLY when there's enough room for the
-    # door PLUS a centered window on either side (i.e., wall_len wide enough
-    # that a habitable-style 0.9 m window fits after subtracting door +
-    # clearances). On narrower facades (e.g., 2.4–2.6 m great_room in a
-    # firewall-compact layout), shove the front door into a corner so the
-    # other half of the wall is free for the room's 10% window.
-    space_for_centered = clear + 2 * (0.9 + 0.30) + 0.20  # door + window each side
-    if wall_len >= space_for_centered:
-        pos = (wall_len - clear) / 2.0
-        hinge_at = "low"
-    else:
-        pos = CORNER_OFFSET_M
-        hinge_at = "low"
+    # Front-door placement: always at the low corner (PH practice — entry
+    # door sits at one side of the living/great room facade, not centred).
+    # The corner-threat check below will push to high corner or, as a last
+    # resort, to centre if both corners are already occupied by interior doors.
+    pos = CORNER_OFFSET_M
+    hinge_at = "low"
 
     # Avoid placing the front door near a corner that's already occupied by
     # an interior door on a perpendicular wall of the entry-host room.
@@ -856,10 +850,10 @@ def _wall_length_for_perp(room, side):
 # authored default host, so renders only change when the gain is real.
 DOOR_HOST_W_CIRCULATION    = 4.0   # x overlap fraction (0..1)
 DOOR_HOST_W_FREED_WALL     = 1.0   # x meters of freed furnishable public wall
-DOOR_HOST_P_SANITARY       = 2.0   # bath door into kitchen
-DOOR_HOST_P_WET_WALL       = 1.0   # door on a wet_core plumbing wall
+DOOR_HOST_P_SANITARY       = 0.5   # bath door into kitchen (soft rule — validator already flags; was 2.0)
+DOOR_HOST_P_WET_WALL       = 0.5   # door on a wet_core plumbing wall (was 1.0)
 DOOR_HOST_APPROACH_DEPTH_M = 1.2   # approach clearance in front of a door
-DOOR_HOST_FURNISHABLE_MIN_M = 1.5  # min solid run that counts as furnishable
+DOOR_HOST_FURNISHABLE_MIN_M = 1.0  # min solid run that counts as furnishable (was 1.5)
 
 # Freed-wall credit only counts walls returned to PUBLIC rooms (where solid
 # wall = furniture placement); service rooms keep their walls busy anyway.
@@ -911,17 +905,30 @@ def _door_band(door: "Door", rooms_by_id: dict, depth: float):
 
 
 def _door_corridor_zone(door: "Door", rooms_by_id: dict):
-    """Circulation corridor implied by an exterior door: its footprint
-    extruded across the host room's full depth — the walkway people cross
-    the room on to reach that door."""
+    """Approach corridor of an exterior door: the door's wall footprint
+    extruded DOOR_HOST_APPROACH_DEPTH_M into the host room.
+
+    Previously used full room depth, which caused false circulation-overlap
+    credit: a bath door at the rear of a large room scored as if it shared
+    the same circulation path as the front door at the opposite end, because
+    the front-door corridor spanned the entire room. Capping at approach depth
+    means overlap is only awarded when the two door zones genuinely share floor.
+    """
     cell = rooms_by_id[door.room_b].cells[0]
     s, coord, lo, hi = _door_segment_abs(door, rooms_by_id)
-    if s in ("N", "S"):
-        return (lo, cell.y0, hi, cell.y1)
-    return (cell.x0, lo, cell.x1, hi)
+    D = DOOR_HOST_APPROACH_DEPTH_M
+    if s == "S":   # front door faces north into room
+        return (lo, coord, hi, min(coord + D, cell.y1))
+    elif s == "N": # rear door faces south into room
+        return (lo, max(coord - D, cell.y0), hi, coord)
+    elif s == "E": # east door faces west into room
+        return (max(coord - D, cell.x0), lo, coord, hi)
+    else:          # "W" — west door faces east into room
+        return (coord, lo, min(coord + D, cell.x1), hi)
 
 
-def _circulation_zones(topology: Topology, layout: Layout, env: Rect) -> list:
+def _circulation_zones(topology: Topology, layout: Layout, env: Rect,
+                       kitchen_back_door: bool = True) -> list:
     """Prospective circulation corridors used as scoring anchors: the
     front-door spine, the dirty-kitchen door's aisle, and hallway rooms.
     The exterior doors are computed prospectively (Pass 2/2b will recompute
@@ -932,7 +939,7 @@ def _circulation_zones(topology: Topology, layout: Layout, env: Rect) -> list:
     fd = _front_door(topology, layout, env)
     if fd and fd.room_b in rooms_by_id:
         zones.append(_door_corridor_zone(fd, rooms_by_id))
-    dk = _dirty_kitchen_door(topology, layout, env)
+    dk = _dirty_kitchen_door(topology, layout, env, force=kitchen_back_door)
     if dk and dk.room_b in rooms_by_id:
         zones.append(_door_corridor_zone(dk, rooms_by_id))
     for r in layout.rooms:
@@ -988,16 +995,49 @@ def _score_door_host(member, door: "Door", group_room: Room, host_room: Room,
 # ----------------------------------------------------------------------------
 
 def architecturalize(layout: Layout, topology: Topology,
-                     door_host: Optional[dict] = None) -> ArchPlan:
+                     door_host: Optional[dict] = None,
+                     kitchen_back_door: bool = True) -> ArchPlan:
     """Project the topology onto the (snapped) layout to produce doors,
     windows, and open-plan-edge metadata.
 
     `door_host` ({room_id: neighbor_id}, usually from the brief) overrides
     which member of a door_host_group hosts the room's door. Invalid or
     geometrically un-honorable overrides fall back to the group's default
-    (the member authored with a door kind)."""
+    (the member authored with a door kind).
+
+    `kitchen_back_door` (default True): when True, a service door is always
+    generated on the kitchen's rear exterior wall — even when no dirty kitchen
+    is present. Set False to seal the kitchen's rear wall entirely."""
     plan = ArchPlan(layout=layout, topology=topology)
     env = layout.lot.envelope()
+
+    # ------------------------------------------------------------------
+    # Porch — always-on uncovered landing in the front setback.
+    # Generated HERE (post-snap) so the width matches the final snapped
+    # entry-room position, not the pre-snap solver output.
+    # EXCEPTION: suppressed when carport_side == "front" (the carport
+    # occupies the front setback — no room for a porch landing).
+    # ------------------------------------------------------------------
+    if layout.carport_side != "front":
+        _ep_id = topology.entry_point
+        _entry_r = next((r for r in layout.rooms if r.id == _ep_id), None)
+        if _entry_r is None:
+            _entry_r = next(
+                (r for r in layout.rooms
+                 if r.type in ("living_room", "great_room")), None
+            )
+        if _entry_r is not None:
+            # Clamp only to lot boundary; rooms are always within the buildable
+            # envelope so this guard should never actually clip.
+            _px0 = max(0.0, _entry_r.rect.x0)
+            _px1 = min(layout.lot.width, _entry_r.rect.x1)
+            _py0 = round(layout.lot.front - 1.5, 3)
+            _py1 = layout.lot.front
+            # Replace any existing porch element (idempotent if called twice).
+            layout.elements = [e for e in layout.elements if e.type != "porch"]
+            layout.elements.append(Room("porch", "porch",
+                                        Rect(_px0, _py0, _px1, _py1),
+                                        "public", covered=False))
 
     # Track per-(room, side) door footprints (start, end in wall-local m)
     # so windows can coexist on the same wall as a door when there's room.
@@ -1094,7 +1134,8 @@ def architecturalize(layout: Layout, topology: Topology,
         #    STRICTLY beat the incumbent to win.
         if chosen is None and len(cand) > 1 and group_room_id is not None:
             if circ_zones is None:
-                circ_zones = _circulation_zones(topology, layout, env)
+                circ_zones = _circulation_zones(topology, layout, env,
+                                                kitchen_back_door=kitchen_back_door)
             group_room = rooms_by_id[group_room_id]
             best, best_score = None, None
             for m, d in cand:
@@ -1141,8 +1182,10 @@ def architecturalize(layout: Layout, topology: Topology,
         _record_door(fd.room_b, fd.wall,
                      fd.position_m, fd.position_m + fd.clear_width_m)
 
-    # Pass 2b: kitchen-to-dirty-kitchen back door (also exterior on the room side).
-    dk_door = _dirty_kitchen_door(topology, layout, env)
+    # Pass 2b: kitchen back door (service door to exterior / dirty kitchen).
+    # Generated whenever kitchen_back_door=True (the default), even when no
+    # dirty kitchen is present in the setback.
+    dk_door = _dirty_kitchen_door(topology, layout, env, force=kitchen_back_door)
     if dk_door:
         plan.doors.append(dk_door)
         _record_door(dk_door.room_b, dk_door.wall,

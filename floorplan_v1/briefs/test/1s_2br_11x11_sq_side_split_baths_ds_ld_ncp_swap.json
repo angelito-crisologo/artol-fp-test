@@ -1,5 +1,5 @@
 {
-  "intent": "2BR / 2 baths DISTRIBUTED \u2014 SWAP variant of 11x11_ncp. Same 11x11 lot, same topology \u2014 master_bedroom and bedroom_standard placements swapped via brief flag. Expected: master at REAR (next to common T&B and kitchen wet stack), ensuite middle, standard at FRONT. The 'common bath accessible from standard privately' adjacency now ties common to the front bedroom (which is the swapped standard).",
+  "intent": "2BR / 2 baths DISTRIBUTED — SWAP variant of 11x11_ncp. Same 11x11 lot, same topology — master_bedroom and bedroom_standard placements swapped via brief flag. Expected: master at REAR (next to common T&B and kitchen wet stack), ensuite middle, standard at FRONT. The 'common bath accessible from standard privately' adjacency now ties common to the front bedroom (which is the swapped standard).",
   "lot_width": 11.0,
   "lot_depth": 11.0,
   "bedroom_count": 2,

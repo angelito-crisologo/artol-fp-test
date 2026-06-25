@@ -36,6 +36,7 @@ LABELS = {
     "carport": "CARPORT",
     "dirty_kitchen": "DIRTY KITCHEN",
     "service_area": "SERVICE",
+    "porch": "PORCH",
 }
 
 # Compact fallbacks for room types whose preferred label may not fit a small

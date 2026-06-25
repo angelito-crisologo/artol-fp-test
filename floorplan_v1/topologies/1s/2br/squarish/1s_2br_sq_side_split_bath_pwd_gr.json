@@ -1,0 +1,95 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_side_split_bath_pwd_gr",
+  "label": "Squarish 2BR / 1 common bath + powder room — master front-left, standard rear-left, rear band right side has common bath then powder room then kitchen, open-plan great room takes the front-right. Powder room doors into the great room.",
+  "target_shell": "squarish",
+
+  "rooms": [
+    { "id": "master",      "type": "master_bedroom",   "zone": "private",     "size_priority": "master_bedroom" },
+    { "id": "standard",    "type": "bedroom_standard", "zone": "private",     "size_priority": "other_bedrooms" },
+    { "id": "common",      "type": "common_bath",      "zone": "service",     "size_priority": "service_and_baths" },
+    { "id": "powder_room", "type": "powder_room",      "zone": "service",     "size_priority": "service_and_baths" },
+    { "id": "great",       "type": "great_room",       "zone": "public",      "size_priority": "public_LDK", "hosts_entry": true },
+    { "id": "kitchen",     "type": "kitchen",          "zone": "public",      "size_priority": "public_LDK" }
+  ],
+
+  "adjacencies": [
+    { "a": "master",      "b": "standard",    "min_shared_wall_m": 2.0, "kind": "bedroom_to_bedroom_wall",
+      "note": "master (front) and standard (rear) stack vertically along the left wall. Shared wall only, no door." },
+    { "a": "master",      "b": "great",       "min_shared_wall_m": 0.8, "kind": "bedroom_to_public",
+      "note": "master's east wall faces great room — hosts master's bedroom door." },
+    { "a": "standard",    "b": "great",       "min_shared_wall_m": 1.2, "kind": "bedroom_to_public",
+      "note": "standard's east wall overlaps great room's west wall — hosts standard's door. 1.2 m floor gives 0.8 m clear door + 0.15 m frame each side." },
+    { "a": "standard",    "b": "common",      "min_shared_wall_m": 1.2, "kind": "bath_to_bedroom_wall",
+      "note": "common is just east of standard at the rear; shared wall only, no door." },
+    { "a": "common",      "b": "great",       "min_shared_wall_m": 0.7, "kind": "bath_door",
+      "note": "common's south wall faces great room — door into great for shared access by both bedrooms." },
+    { "a": "common",      "b": "powder_room", "min_shared_wall_m": 1.0, "kind": "wet_core",
+      "note": "common and powder_room share a plumbing wall — powder_room is east of common in the rear band. Stacks both wet rooms for a single rear service riser." },
+    { "a": "powder_room", "b": "great",       "min_shared_wall_m": 0.7, "kind": "bath_door",
+      "note": "powder_room's south wall faces great room — door into great for guest access. Powder room sits in the rear band east of common, so its south face touches the great room's north face." },
+    { "a": "powder_room", "b": "kitchen",     "min_shared_wall_m": 1.0, "kind": "wet_core",
+      "note": "powder_room and kitchen share a plumbing wall — kitchen is east of powder_room, right-anchored. Extends the rear wet-stack: common — powder_room — kitchen." },
+    { "a": "kitchen",     "b": "great",       "min_shared_wall_m": 1.5, "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style)." }
+  ],
+
+  "soft_proximities": [],
+
+  "entry_point": "great",
+
+  "match_bedroom_widths": false,
+
+  "left_anchored":  ["master", "standard"],
+  "right_anchored": ["kitchen"],
+  "rear_anchored":  ["standard", "common", "powder_room", "kitchen"],
+
+  "front_to_rear_stacks": [
+    ["master", "standard"],
+    ["great", "kitchen"]
+  ],
+
+  "lot_adjustment_profiles": [],
+
+  "setback_elements": [
+    { "type": "carport",       "location": "side_setback", "covered": false, "width_m": 3.0, "depth_m": 6.0 },
+    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" }
+  ],
+
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+
+  "notes": [
+    "Squarish 2BR topology with ONE common bath + ONE powder room (half-bath).",
+    "bath_token: 'bath_pwd' — extends the locked naming convention for single common bath + powder room.",
+    "",
+    "Layout intent (canonical form — brief.carport_side='right'):",
+    "  Front: [master         | great_room                          ]",
+    "  Rear:  [standard | common | powder_room | kitchen            ]",
+    "",
+    "The rear band has FOUR rooms west-to-east:",
+    "  standard (left) | common (centre-left) | powder_room (centre-right) | kitchen (right)",
+    "",
+    "Plumbing train: common — powder_room — kitchen all share rear wet walls,",
+    "collapsing three service points onto one rear riser.",
+    "",
+    "Doors from the great room's north (rear) wall:",
+    "  - Common bath door (south face of common overlaps great's north face)",
+    "  - Powder room door (south face of powder_room overlaps great's north face)",
+    "Both doors open directly into the great room — guest-accessible without",
+    "passing through the private zone.",
+    "",
+    "Recommended lot: 14×12 or similar (buildable ≥ 10×8 = 80 sqm). The four-room",
+    "rear band + private ≥ public zone floor means lots wider than ~11 m buildable",
+    "become infeasible (public zone dominates). Tested at 14×12 (buildable 10×8).",
+    "",
+    "Carport and dirty_kitchen behave identically to sq_side_split_bath_gr."
+  ]
+}

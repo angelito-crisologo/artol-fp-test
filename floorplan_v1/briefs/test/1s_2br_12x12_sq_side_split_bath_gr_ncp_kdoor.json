@@ -17,6 +17,8 @@
     "left": 2.0,
     "right": 2.0
   },
-  "door_host": { "common": "kitchen" },
+  "door_host": {
+    "common": "kitchen"
+  },
   "topology": "1s/2br/squarish/1s_2br_sq_side_split_bath_gr.json"
 }

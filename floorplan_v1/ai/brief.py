@@ -61,6 +61,11 @@ class Brief:
     # door leading into living room. Size and depth governed by the topology.
     # (No field needed — porch is unconditional.)
 
+    # Kitchen back door: service door from kitchen to exterior (rear setback /
+    # dirty kitchen). Default on — PH practice always has a kitchen back door.
+    # Set False only to explicitly seal the kitchen's rear wall.
+    kitchen_back_door: bool = True
+
     # Dirty kitchen: open-air cooking area in rear setback. Default off.
     dirty_kitchen: bool = False
 
@@ -80,9 +85,15 @@ class Brief:
     # ------------------------------------------------------------------ #
     # Explicit T&B count requirement. When None, the solver applies the
     # default rule: if total floor area >= 65 m² → 2 baths; else → 1 bath.
-    # Powder room (half-bath) is counted separately and must be explicitly
-    # requested via must_haves or a future powder_room field.
+    # Powder room (half-bath) is NOT counted toward num_baths — it is a
+    # separate opt-in addition to the full bath(s).
     num_baths: Optional[int] = None
+
+    # Powder room (half-bath: toilet + lavatory, no shower). Opt-in; default
+    # off. When True, the selected topology must include a powder_room room.
+    # bath_token in the topology name will be "bath_pwd" (single common bath +
+    # powder room) rather than "bath".
+    powder_room: bool = False
 
     @property
     def lot_area(self) -> float:

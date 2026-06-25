@@ -70,14 +70,17 @@
       "b": "great",
       "min_shared_wall_m": 0.7,
       "kind": "bath_door",
-      "note": "common's south wall faces great room \u2014 door faces great for shared access by both bedrooms."
+      "door_host_group": "common_access",
+      "note": "common's south wall faces great room \u2014 door faces great for shared access by both bedrooms. DEFAULT host of the 'common_access' door-host group; a brief door_host: {\"common\": \"kitchen\"} moves the door to the kitchen wall instead."
     },
     {
       "a": "common",
       "b": "kitchen",
       "min_shared_wall_m": 1.2,
       "kind": "wet_core",
-      "note": "shared plumbing wall \u2014 kitchen and common bath stack rear-right; bath west of kitchen."
+      "door_host_group": "common_access", "door_allowed": true,
+      "door_kind": "bath_door", "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall \u2014 kitchen and common bath stack rear-right; bath west of kitchen. ALTERNATE host of the 'common_access' group: door placed here when shared wall >= 1.40 m (clear 0.70 + frame 0.20 + guard 0.50); otherwise falls back to great."
     },
     {
       "a": "kitchen",

@@ -24,8 +24,8 @@
       "note": "common's south wall faces great_room — door faces great for shared access by both bedrooms. DEFAULT host of the 'common_access' door-host group; a brief door_host: {\"common\": \"kitchen\"} moves the door to the kitchen wall instead, leaving this wall solid. NOTE: standard↔common shared-wall adjacency was removed (2026-06-05) to make this topology swap-friendly. Common is still anchored to the rear via wet_core with kitchen + rear_anchored, but it no longer requires standard to be adjacent — letting master and standard freely swap front/rear placement per brief." },
     { "a": "common",   "b": "kitchen",  "min_shared_wall_m": 1.2, "kind": "wet_core",
       "door_host_group": "common_access", "door_allowed": true,
-      "door_kind": "bath_door", "min_solid_wall_m": 1.2,
-      "note": "shared plumbing wall — kitchen and common bath stack rear-right; bath west of kitchen. ALTERNATE host of the 'common_access' group: when the brief picks kitchen as common's door host, a 0.7 m bath door is cut here PROVIDED ≥1.2 m of solid plumbing wall remains (min_solid_wall_m guard); otherwise the door falls back to the great_room wall." },
+      "door_kind": "bath_door", "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall — kitchen and common bath stack rear-right; bath west of kitchen. ALTERNATE host of the 'common_access' group: door placed here when shared wall >= 1.40 m (clear 0.70 + frame 0.20 + guard 0.50); otherwise falls back to great_room." },
     { "a": "kitchen",  "b": "great",    "min_shared_wall_m": 1.5, "kind": "open_plan",
       "note": "great_room + kitchen form the open LDK (gr style)" }
   ],
