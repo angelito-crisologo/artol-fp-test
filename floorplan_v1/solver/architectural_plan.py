@@ -479,9 +479,48 @@ def _door_for_adjacency(adj, layout: Layout,
                 break
 
     # Hinge selection priority:
-    #   0. Stack-bias (bedroom in a bedroom-stack — hinge toward stack neighbor).
-    #   1. Exactly one corner has a real perpendicular wall — use that one.
-    #   2. Both real (or both fake) — fall back to nearer corner; ties LOW.
+    #   0. door_placement override on the adjacency (explicit author intent).
+    #   1. Stack-bias (bedroom in a bedroom-stack — hinge toward stack neighbor).
+    #   2. Exactly one corner has a real perpendicular wall — use that one.
+    #   3. Both real (or both fake) — fall back to nearer corner; ties LOW.
+    # Index of cell_a in room_a.cells — needed by the renderer so it can pick
+    # the right cell when the room is an L-shape composite.
+    cell_idx = 0
+    for i, c in enumerate(room_a.cells):
+        if c is cell_a:
+            cell_idx = i
+            break
+    placement = getattr(adj, "door_placement", None)
+    if placement == "center":
+        position_m = (start + end) / 2.0 - clear / 2.0
+        position_m = max(start - wall_origin, min(position_m, (end - wall_origin) - clear))
+        return Door(
+            room_a=adj.a, room_b=adj.b, wall=side_a,
+            position_m=round(position_m, 3),
+            clear_width_m=round(clear, 3),
+            swing_into=_swing_into(room_a, room_b, adj.kind),
+            kind=adj.kind,
+            hinge_at="low",
+            cell_idx=cell_idx,
+        )
+    elif placement in ("low_corner", "high_corner"):
+        prefer_forced = "low" if placement == "low_corner" else "high"
+        if prefer_forced == "low":
+            pos = start - wall_origin if dist_low_to_corner >= 0.01 else CORNER_OFFSET_M
+        else:
+            pos = ((end - wall_origin) - clear
+                   if dist_high_to_corner >= 0.01
+                   else (end - wall_origin) - CORNER_OFFSET_M - clear)
+        pos = max(start - wall_origin, min(pos, (end - wall_origin) - clear))
+        return Door(
+            room_a=adj.a, room_b=adj.b, wall=side_a,
+            position_m=round(pos, 3),
+            clear_width_m=round(clear, 3),
+            swing_into=_swing_into(room_a, room_b, adj.kind),
+            kind=adj.kind,
+            hinge_at=prefer_forced,
+            cell_idx=cell_idx,
+        )
     if stack_bias:
         prefer = stack_bias
     elif low_real and not high_real:
@@ -518,13 +557,6 @@ def _door_for_adjacency(adj, layout: Layout,
     max_pos = (end - wall_origin) - clear
     if position_m < min_pos: position_m = min_pos
     if position_m > max_pos: position_m = max_pos
-    # Index of cell_a in room_a.cells — needed by the renderer so it can pick
-    # the right cell when the room is an L-shape composite.
-    cell_idx = 0
-    for i, c in enumerate(room_a.cells):
-        if c is cell_a:
-            cell_idx = i
-            break
     return Door(
         room_a=adj.a, room_b=adj.b, wall=side_a,
         position_m=round(position_m, 3),

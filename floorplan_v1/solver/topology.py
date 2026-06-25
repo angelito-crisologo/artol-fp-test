@@ -51,6 +51,14 @@ class Adjacency:
     # can't honor it, no door is emitted on this edge and the group falls
     # back to its default host.
     min_solid_wall_m: float = 0.0
+    # --- door placement corner-preference ------------------------------------
+    # Optional override for WHERE on the shared edge the door sits.
+    # Wins over stack-bias and real-wall heuristics (highest priority).
+    #   "low_corner"  — hinge at the low end of the shared edge
+    #   "high_corner" — hinge at the high end of the shared edge
+    #   "center"      — center the door on the shared edge, hinge on left (low)
+    # Omit (or null) to use the automatic heuristic.
+    door_placement: Optional[str] = None
 
 
 @dataclass
