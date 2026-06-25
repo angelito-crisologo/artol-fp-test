@@ -190,11 +190,18 @@
 
   "sizing_policy": {
     "progression": ["preferred", "relaxed_minimum", "hard_minimum"],
-    "progression_note": "Size each room at its PREFERRED dimensions first; when the envelope is tight, relax toward the comfortable/relaxed minimum (soft.min_dimensions_m), and only down to the hard code minimum (hard.min_*) as a last resort.",
+    "progression_note": "Size each room at its PREFERRED dimensions first; when the envelope is tight, relax toward the comfortable/relaxed minimum (soft.min_dimensions_m / soft.min_area_sqm — set to client preferred minimums as of 2026-06-25), and only down to the hard code minimum (hard.min_*) as a last resort. Solver logic: guarantee hard_minimum as a hard constraint, then grow toward relaxed_minimum, then preferred.",
     "priority_order_high_to_low": ["public_LDK", "master_bedroom", "other_bedrooms", "service_and_baths"],
     "priority_note": "When space is contested, protect higher-priority spaces at higher tiers first. PH context: public/gathering spaces (Living-Dining-Kitchen) are prioritized in size OVER private bedrooms; the master bedroom is prioritized over other bedrooms.",
     "ldk_members": ["living_room", "dining_room", "kitchen"],
-    "source": "User direction (2026-05-24) + PH residential practice"
+    "bedroom_allocation_pct": {
+      "1br": 30,
+      "2br": 40,
+      "3br": 60,
+      "note": "Target percentage of total floor area allocated to all bedrooms combined (including master). Soft constraint — solver should aim for this allocation; may be exceeded or relaxed when envelope is tight.",
+      "source": "Client specification (2026-06-25)"
+    },
+    "source": "User direction (2026-05-24) + PH residential practice + client preferred minimums (2026-06-25)"
   },
 
   "room_catalog": [
@@ -217,10 +224,11 @@
       "covered": true,
       "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_exterior_window": true, "source": "PD 1096 Sec. 806(1), Sec. 808" },
       "soft": {
-        "min_dimensions_m": [2.5, 3.0],
+        "min_dimensions_m": [3.0, 3.5],
+        "min_area_sqm": 10.0,
         "preferred_dimensions_m": [3.0, 3.5],
         "preferred_area_sqm": [9.0, 12.0],
-        "source": "PH residential practice"
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
       },
       "size_priority": "other_bedrooms",
       "adjacency": { "prefer_near": ["common_bath", "hallway"], "avoid_near": ["dirty_kitchen", "carport", "main_entry"], "cluster": "sleeping_quarters" }
@@ -232,7 +240,8 @@
       "covered": true,
       "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_exterior_window": true, "source": "PD 1096 Sec. 806(1)" },
       "soft": {
-        "min_dimensions_m": [3.0, 3.5],
+        "min_dimensions_m": [3.5, 4.0],
+        "min_area_sqm": 12.0,
         "preferred_dimensions_m": [3.5, 4.5],
         "preferred_area_sqm": [12.0, 20.0],
         "typically_includes": ["ensuite_bath", "closet"],
@@ -250,10 +259,11 @@
       "covered": true,
       "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_natural_light_vent_or_artificial": true, "source": "PD 1096 Sec. 806(1), Sec. 808" },
       "soft": {
-        "min_dimensions_m": [3.5, 5.0],
+        "min_dimensions_m": [3.0, 3.5],
+        "min_area_sqm": 12.0,
         "preferred_dimensions_m": [4.5, 6.0],
         "preferred_area_sqm": [16.0, 22.0],
-        "source": "PH residential practice; upper bound tightened 27→22 to rebalance against bedrooms (was producing LDK-heavy plans)."
+        "source": "PH residential practice; upper bound tightened 27→22 to rebalance against bedrooms (was producing LDK-heavy plans). min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
       },
       "size_priority": "public_LDK",
       "adjacency": { "prefer_near": ["main_entry", "dining_room", "lanai"], "is_arrival_zone": true, "hosts_main_entry": true, "cluster": "public_living" }
@@ -280,9 +290,11 @@
       "covered": true,
       "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "source": "PD 1096 Sec. 806(1)" },
       "soft": {
+        "min_dimensions_m": [2.5, 3.0],
+        "min_area_sqm": 10.0,
         "preferred_dimensions_m": [3.0, 4.0],
         "preferred_area_sqm": [10.0, 14.0],
-        "source": "PH residential practice; upper bound tightened 16→14 to rebalance against bedrooms."
+        "source": "PH residential practice; upper bound tightened 16→14 to rebalance against bedrooms. min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
       },
       "size_priority": "public_LDK",
       "adjacency": { "prefer_near": ["kitchen", "living_room"], "cluster": "public_living" }
@@ -298,11 +310,12 @@
         "source": "PD 1096 Sec. 806(2)"
       },
       "soft": {
-        "min_dimensions_m": [2.0, 2.0],
+        "min_dimensions_m": [2.0, 3.0],
+        "min_area_sqm": 8.0,
         "preferred_dimensions_m": [2.5, 3.5],
         "preferred_area_sqm": [6.0, 12.0],
         "work_triangle": "Sink, stove, refrigerator in triangle; counter sum 3.6-7.9 m.",
-        "source": "PH residential practice"
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
       },
       "size_priority": "public_LDK",
       "placement_preference": { "prefer": "rear_wall", "rationale": "Must sit on the rear wall so its exit door opens onto the open dirty kitchen / service area in the rear setback." },
@@ -337,11 +350,12 @@
         "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
       },
       "soft": {
-        "min_dimensions_m": [1.0, 2.0],
+        "min_dimensions_m": [1.4, 2.2],
+        "min_area_sqm": 2.8,
         "preferred_dimensions_m": [1.8, 2.1],
         "preferred_area_sqm": [3.0, 4.5],
         "door_width_mm": 700,
-        "source": "PH residential practice"
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
       },
       "size_priority": "service_and_baths",
       "adjacency": { "access": "door connects ONLY to master_bedroom", "prefer_near": ["master_bedroom"], "may_be_interior_with_vent_shaft": true, "cluster": "sleeping_quarters" }
@@ -358,11 +372,12 @@
         "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
       },
       "soft": {
-        "min_dimensions_m": [1.0, 2.0],
+        "min_dimensions_m": [1.2, 2.0],
+        "min_area_sqm": 2.6,
         "preferred_dimensions_m": [1.8, 2.1],
         "preferred_area_sqm": [3.0, 4.5],
         "door_width_mm": 700,
-        "source": "PH residential practice"
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
       },
       "size_priority": "service_and_baths",
       "adjacency": { "access": "accessed from public space (hallway / living / dining), NOT through a bedroom", "prefer_near": ["hallway", "bedroom_standard", "dining_room"], "may_be_interior_with_vent_shaft": true, "cluster": "flexible" }
@@ -484,6 +499,52 @@
       "soft": { "preferred_dimensions_m": [1.5, 2.0], "source": "PH residential practice" },
       "note": "Optional; v1 front door opens directly into the living room.",
       "adjacency": { "prefer_near": ["main_entry", "living_room"], "is_arrival_zone": true, "cluster": "public_living" }
+    },
+    {
+      "id": "powder_room",
+      "label": "Powder room (toilet + sink, no shower)",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.2, 1.2],
+        "min_area_sqm": 1.4,
+        "preferred_dimensions_m": [1.2, 1.5],
+        "preferred_area_sqm": [1.4, 2.0],
+        "door_width_mm": 700,
+        "source": "Client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "service_and_baths",
+      "note": "Half-bath for guest use; toilet and lavatory only. Not in v1 program.",
+      "adjacency": { "access": "accessed from public space (hallway / living / dining)", "prefer_near": ["hallway", "living_room", "dining_room"], "may_be_interior_with_vent_shaft": true, "cluster": "flexible" }
+    },
+    {
+      "id": "maids_bath",
+      "label": "Maid's / helper's toilet & bath",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.0, 1.2],
+        "min_area_sqm": 1.4,
+        "preferred_dimensions_m": [1.2, 1.5],
+        "preferred_area_sqm": [1.4, 2.0],
+        "door_width_mm": 700,
+        "source": "Client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "service_and_baths",
+      "note": "Dedicated bath for maids_room; accessed only from maids_room or service area. Not in v1 program.",
+      "adjacency": { "prefer_near": ["maids_room", "service_area"], "may_be_interior_with_vent_shaft": true, "cluster": "service" }
     }
   ],
 
