@@ -2,10 +2,10 @@
 
 PH floor plan generator + validator. Single-detached mid-market houses. CP-SAT solver.
 
-## Current focus (as of 2026-06-11)
+## Current focus (as of 2026-06-25)
 
 **Naming convention locked:** `{storey}_{nbr}_{WxD}_{shape}_{strategy}_{bath_token}[_hall][_gr|_ld]_{carport}[_swap]`
-Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`, `l_wrap`, `z_wrap`, `split_wing` | Bath: `bath`, `baths_cl`, `baths_ds`, `baths_mix` | Carport: `ncp`, `fcp`, `ccp`
+Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`, `l_wrap`, `z_wrap`, `split_wing` | Bath: `bath`, `bath_pwd`, `baths_cl`, `baths_ds`, `baths_mix` | Carport: `ncp`, `fcp`, `ccp`
 
 **Carport type semantics (locked):**
 - `ncp` — no carport; building_void + carport setback element stripped; rectangular envelope.
@@ -22,12 +22,13 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 **Square 2BR topologies** (`floorplan_v1/topologies/1s/2br/squarish/`):
 
 - `1s_2br_sq_side_split_bath_gr` — single bath, private column left
+- `1s_2br_sq_side_split_bath_pwd_gr` — single bath + powder room, 4-room rear band; buildable width ≤ ~11 m
 - `1s_2br_sq_side_split_baths_cl_gr` — clustered baths (ensuite + common), private column
 - `1s_2br_sq_side_split_baths_cl_hall_gr` — clustered baths with hall
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-**Test suite status:** 29 pass, 0 fail, 0 error.
+**Test suite status:** 30 pass, 0 fail, 0 error.
 
 ## Recently completed
 
@@ -40,6 +41,8 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - Wired: `1s_2br_sq_side_split_bath_gr` group `common_access` (great default, kitchen alternate, 1.2 m solid guard). Plain 12x12 ncp brief now auto-picks the kitchen wall; tighter shells keep great (guard refuses <2.1 m shared wall). Test brief: `..._12x12_..._ncp_kdoor` pins the override path.
 
 **fcp carports (commit e8e2b7e):** `carport_side` + `carport_type` Brief fields; fcp wired through `run.py`; 5 fcp test briefs.
+
+**bath_pwd topology + dead zone fix (commit 02ab14f):** `powder_room: bool` Brief field; new squarish topology `1s_2br_sq_side_split_bath_pwd_gr` (4-room rear band, lot width ≤ ~11 m buildable). Removed `master_bedroom: max_area_sqm: 14.0` from wide-hall compact profile — was blocking master from filling west on 14×10 lots.
 
 ## Open / deferred
 
