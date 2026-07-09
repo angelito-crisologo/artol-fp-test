@@ -362,6 +362,29 @@ def build_brief_message(brief, error_feedback=None) -> str:
     """Format a brief as the user-turn message for Claude."""
     s = brief.summary()
     s += f"\nshell: {brief.lot_area:.0f} sqm lot"
+    side = (brief.carport_side or "").lower()
+    ctype = (brief.carport_type or "ccp").lower()
+    if side == "left" and ctype == "ccp":
+        s += (
+            "\n\nCARPORT-LEFT CCP — your topology MUST have ALL of these:\n"
+            "  building_voids: [{\"id\": \"carport_cut\", \"location\": \"front_left\","
+            " \"width_m\": 1.0, \"depth_m\": 4.0, \"consumed_by\": \"carport\"}]\n"
+            "  setback_elements includes: {\"type\": \"carport\","
+            " \"location\": \"side_setback\", \"covered\": false,"
+            " \"width_m\": 3.0, \"depth_m\": 6.0}\n"
+            "  zone_split.private_side: \"right\"\n"
+            "  Great room and kitchen on the LEFT; bedrooms and baths on the RIGHT."
+        )
+    elif side == "left" and ctype == "fcp":
+        s += (
+            "\n\nCARPORT-LEFT FCP — your topology MUST have:\n"
+            "  setback_elements includes: {\"type\": \"carport\","
+            " \"location\": \"side_setback\", \"covered\": false,"
+            " \"width_m\": 3.0, \"depth_m\": 6.0}\n"
+            "  NO building_voids (fcp has no L-notch)\n"
+            "  zone_split.private_side: \"right\"\n"
+            "  Great room and kitchen on the LEFT; bedrooms and baths on the RIGHT."
+        )
     if error_feedback:
         s += (f"\n\nYour previous topology attempt failed: {error_feedback}\n"
               f"Please revise the topology to address this and submit again.")
