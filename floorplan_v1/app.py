@@ -150,7 +150,6 @@ if parse_clicked:
             st.session_state["req_dirty_kitchen"] = bool(fields.get("dirty_kitchen", False))
             st.session_state["req_service_area"] = bool(fields.get("service_area", False))
             st.session_state["req_lanai"] = bool(fields.get("lanai", False))
-            st.session_state["req_patio"] = bool(fields.get("patio", False))
             st.session_state["req_kitchen_back_door"] = bool(fields.get("kitchen_back_door", True))
             st.session_state["req_must_haves"] = ", ".join(fields.get("must_haves", []))
             st.session_state["req_avoid"] = ", ".join(fields.get("avoid", []))
@@ -218,7 +217,6 @@ if st.session_state["extracted"]:
                                         value=bool(f.get("service_area", False)),
                                         key="req_service_area")
             lanai = st.checkbox("Lanai", value=bool(f.get("lanai", False)), key="req_lanai")
-            patio = st.checkbox("Patio", value=bool(f.get("patio", False)), key="req_patio")
             kitchen_back_door = st.checkbox("Kitchen back door",
                                              value=bool(f.get("kitchen_back_door", True)),
                                              key="req_kitchen_back_door")
@@ -248,7 +246,6 @@ if st.session_state["extracted"]:
             "dirty_kitchen": dirty_kitchen,
             "service_area": service_area,
             "lanai": lanai,
-            "patio": patio,
             "kitchen_back_door": kitchen_back_door,
             "must_haves": [s.strip() for s in must_haves_text.split(",") if s.strip()],
             "avoid": [s.strip() for s in avoid_text.split(",") if s.strip()],
@@ -270,7 +267,7 @@ if st.session_state["extracted"]:
             powder_room=powder_room,
             dirty_kitchen=dirty_kitchen,
             service_area=service_area,
-            lanai=lanai, patio=patio,
+            lanai=lanai, patio=False,
             kitchen_back_door=kitchen_back_door,
         )
         st.session_state["brief"] = brief
