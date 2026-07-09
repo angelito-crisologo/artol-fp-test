@@ -178,7 +178,7 @@ def build_few_shot_messages() -> List[Dict]:
         topo = _load(fname)
         # tool_use.id must match ^[a-zA-Z0-9_-]+$ — strip the .json extension
         # and replace any other punctuation to keep the regex happy.
-        slug = os.path.splitext(fname)[0].replace(".", "_")
+        slug = os.path.splitext(os.path.basename(fname))[0]
         tool_use_id = f"toolu_example_{slug}"
         brief_block = {"type": "text",
                        "text": f"Brief: {brief_text}\n"
