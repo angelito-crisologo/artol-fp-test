@@ -109,5 +109,5 @@ class Brief:
         if self.avoid:
             parts.append("avoid: " + ", ".join(self.avoid))
         if self.carport_side:
-            parts.append(f"carport: {self.carport_type or 'ccp'} on {self.carport_side}")
+            parts.append(f"carport: {self.carport_type or 'fcp'} on {self.carport_side}")
         return " | ".join(parts) + f"\nintent: {self.intent}"

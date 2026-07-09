@@ -61,7 +61,7 @@ REQUIREMENTS_SCHEMA = {
                 "type": "string", "enum": ["fcp", "ccp", "none"],
                 "description": "'fcp' (full carport, whole side setback) or "
                                "'ccp' (claimed carport, partial L-notch). "
-                               "Default 'ccp' if a carport is wanted but the "
+                               "Default 'fcp' if a carport is wanted but the "
                                "type isn't specified. 'none' if no carport.",
             },
             "occupancy_class": {
@@ -192,7 +192,7 @@ class StubExtractor:
                 carport_side = "right"
         carport_type = None
         if want_carport:
-            carport_type = "fcp" if any(k in text for k in ("full carport", "fcp", "whole setback")) else "ccp"
+            carport_type = "ccp" if any(k in text for k in ("claimed carport", "ccp", "l-notch", "partial")) else "fcp"
 
         occupancy_class = "R-1"
         if any(k in text for k in ("firewall", "party wall", "duplex")):
