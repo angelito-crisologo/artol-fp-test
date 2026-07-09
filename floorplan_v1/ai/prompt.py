@@ -67,14 +67,20 @@ You have five kinds of rules you can put in a topology:
    side-by-side, they are stacked depth-wise. This is how you avoid
    squeezing baths into leftover slivers.
 
-   Typical side-split layout has two stacks:
+   Typical side-split layout — 2-bath brief (ensuite + common):
      ["master", "ensuite", "standard"]  — private column, front-to-rear
      ["great", "kitchen"]               — public column, front-to-rear
    (or ["living", "dining", "kitchen"] for a traditional layout)
 
-   RULE: ensuite and common_bath must EACH appear in a front_to_rear_stack
-   with their associated bedroom. Never leave a bath as a horizontal
-   side-by-side sliver next to a bedroom — it will be too narrow.
+   1-bath brief (common only, no ensuite):
+     ["master", "standard"]  — private column (no ensuite in the stack)
+     ["great", "kitchen"]    — public column
+   The common_bath sits in the private column, accessible from the great_room.
+   Do NOT add an ensuite stack when the brief has 1 bath.
+
+   RULE: every bath must appear in a front_to_rear_stack. Never leave a bath
+   as a horizontal side-by-side sliver next to a bedroom — it will be too
+   narrow.
 
 5b. **left_anchored / right_anchored / rear_anchored** — lists of room IDs
    that the solver pins to that side of the envelope. Use these to anchor
@@ -102,7 +108,12 @@ You have five kinds of rules you can put in a topology:
 - Living room: MUST touch the front exterior wall (street-side entry).
 - Baths: min 1.2 sqm, least dim >= 0.9 m. We aim for >= 1.5 m least dim
   for comfort; the solver handles this automatically.
-- Ensuite must be adjacent to master.
+- **Bath program — follow the brief exactly:**
+  - 2 baths: include ensuite_bath (private, adjacent to master) + common_bath (publicly accessible).
+  - 1 bath: include common_bath ONLY. Do NOT add an ensuite_bath room. The master
+    bedroom shares the common bath like all other bedrooms.
+  - powder_room (half-bath): add a powder_room room when the brief requests one.
+    It is separate from the bath count above.
 - Bedrooms must be reachable from a living/dining/great_room/hallway.
 
 # PH design conventions
@@ -495,6 +506,21 @@ def build_brief_message(brief, error_feedback=None) -> str:
     """Format a brief as the user-turn message for Claude."""
     s = brief.summary()
     s += f"\nshell: {brief.lot_area:.0f} sqm lot"
+
+    # Resolve effective bath count (mirrors the logic in run.py::_run_hand_authored)
+    _num_baths = getattr(brief, "num_baths", None)
+    if _num_baths is None:
+        # Approximate buildable area with 2 m setbacks each side
+        _est_area = max(0.0, brief.lot_width - 4) * max(0.0, brief.lot_depth - 4)
+        _num_baths = 2 if _est_area >= 65.0 else 1
+    _powder = getattr(brief, "powder_room", False)
+    if _num_baths >= 2:
+        _bath_line = "2 baths — ensuite_bath (private, adjacent to master) + common_bath"
+    else:
+        _bath_line = "1 bath — common_bath ONLY, NO ensuite_bath"
+    if _powder:
+        _bath_line += " + powder_room (half-bath)"
+    s += f"\nbath program: {_bath_line}"
     side = (brief.carport_side or "").lower()
     ctype = (brief.carport_type or "ccp").lower()
     if side == "left" and ctype == "ccp":
