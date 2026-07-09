@@ -858,14 +858,18 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # in the topology after run.py's strip transforms. When brief.dirty_kitchen
     # / brief.service_area is False, run.py strips the element before calling
     # solve(), so these flags will be False and the elements won't be generated.
-    include_dk  = any(sb.type == "dirty_kitchen" for sb in topology.setback_elements)
-    include_svc = any(sb.type == "service_area"  for sb in topology.setback_elements)
+    include_dk    = any(sb.type == "dirty_kitchen" for sb in topology.setback_elements)
+    include_svc   = any(sb.type == "service_area"  for sb in topology.setback_elements)
+    include_lanai = any(sb.type == "lanai"          for sb in topology.setback_elements)
     dk_at = "rear"
+    lanai_at = "none"
     cp_depth_m = 5.0
     cp_width_m = 2.6
     for sb in topology.setback_elements:
         if sb.type == "dirty_kitchen" and sb.location == "side_setback":
             dk_at = "side"
+        if sb.type == "lanai":
+            lanai_at = "side" if sb.location == "side_setback" else "rear"
         if sb.type == "carport":
             if sb.depth_m is not None:
                 cp_depth_m = float(sb.depth_m)
@@ -895,11 +899,15 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             svc_at = "side"
             break
 
+    great_room_rect = next((r.rect for r in rooms if r.type == "great_room"), None)
+
     elements = _setback_elements(lot, carport_side, kitchen_rect, service_xspan,
                                  dirty_kitchen_at=dk_at,
                                  service_at=svc_at,
                                  carport_depth_m=cp_depth_m,
-                                 carport_width_m=cp_width_m)
+                                 carport_width_m=cp_width_m,
+                                 great_room=great_room_rect,
+                                 lanai_at=lanai_at if include_lanai else "none")
     # Filter out elements not requested by the brief (as signalled by the
     # topology strip in run.py). Always preserve carport — it's controlled
     # via brief.carport_side / carport_type, not the opt-in flags.
@@ -907,6 +915,8 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         elements = [e for e in elements if e.type != "dirty_kitchen"]
     if not include_svc:
         elements = [e for e in elements if e.type != "service_area"]
+    if not include_lanai:
+        elements = [e for e in elements if e.type != "lanai"]
 
     # Porch is generated in architecturalize() (post-snap) so it uses the
     # final snapped room positions rather than pre-snap solver values.

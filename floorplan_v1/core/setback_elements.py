@@ -12,7 +12,9 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
                       service_rect_xspan, dirty_kitchen_at: str = "rear",
                       service_at: str = "rear",
                       carport_depth_m: float = 5.0,
-                      carport_width_m: float = 2.6):
+                      carport_width_m: float = 2.6,
+                      great_room: Rect = None,
+                      lanai_at: str = "none"):
     """Place the three uncovered setback elements (carport, dirty kitchen,
     service area) around the buildable footprint.
 
@@ -43,6 +45,12 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
       sized for a non-default carport (e.g., a 5.5 m deep carport whose
       rear edge meets a void of matching depth). Front-parallel carports
       use a fixed 5.0 m width × 2.6 m depth and ignore these overrides.
+
+    `great_room` / `lanai_at`:
+      When `lanai_at` is "rear", a lanai is placed in the rear setback
+      spanning the great_room's x-range. When "side", it sits in the
+      non-carport side setback alongside the great_room's y-range.
+      "none" (default) suppresses lanai generation.
     """
     elements = []
     if carport_side == "none":
@@ -128,4 +136,31 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
         elements.append(Room("service_area", "service_area",
                              Rect(sx0, rear_y0, sx1, rear_y1),
                              "service", covered=False))
+
+    if great_room is not None and lanai_at == "rear":
+        elements.append(Room("lanai", "lanai",
+                             Rect(great_room.x0, rear_y0,
+                                  great_room.x1, rear_y1),
+                             "service", covered=False))
+    elif great_room is not None and lanai_at == "side":
+        # Non-carport side setback alongside the great_room's front-to-rear span.
+        if carport_side == "left":
+            la_x0 = lot.width - lot.right + 0.1
+            la_x1 = lot.width - 0.3
+        elif carport_side == "right":
+            la_x0 = 0.3
+            la_x1 = lot.left - 0.1
+        else:
+            # No carport (or front carport): pick the wider side setback.
+            if lot.right >= lot.left:
+                la_x0 = lot.width - lot.right + 0.1
+                la_x1 = lot.width - 0.3
+            else:
+                la_x0 = 0.3
+                la_x1 = lot.left - 0.1
+        elements.append(Room("lanai", "lanai",
+                             Rect(la_x0, great_room.y0,
+                                  la_x1, great_room.y1),
+                             "service", covered=False))
+
     return elements

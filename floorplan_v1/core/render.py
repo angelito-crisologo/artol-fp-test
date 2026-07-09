@@ -36,6 +36,7 @@ LABELS = {
     "carport": "CARPORT",
     "dirty_kitchen": "DIRTY KITCHEN",
     "service_area": "SERVICE",
+    "lanai": "LANAI",
     "porch": "PORCH",
 }
 

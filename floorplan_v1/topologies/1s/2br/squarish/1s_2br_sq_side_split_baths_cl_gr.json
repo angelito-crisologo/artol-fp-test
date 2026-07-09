@@ -1,67 +1,157 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
   "id": "1s_2br_sq_side_split_baths_cl_gr",
-  "label": "Squarish 2BR / 2 baths — ensuite + common share a plumbing wall; bath block sits BETWEEN master (front) and standard (rear). Open-plan great_room + kitchen.",
+  "label": "Squarish 2BR / 2 baths \u2014 ensuite + common share a plumbing wall; bath block sits BETWEEN master (front) and standard (rear). Open-plan great_room + kitchen.",
   "target_shell": "squarish",
-
   "rooms": [
-    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
-    { "id": "ensuite",  "type": "ensuite_bath",     "zone": "private", "size_priority": "service_and_baths" },
-    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
-    { "id": "common",   "type": "common_bath",      "zone": "private", "size_priority": "service_and_baths" },
-    { "id": "great",    "type": "great_room",       "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
-    { "id": "kitchen",  "type": "kitchen",          "zone": "public",  "size_priority": "public_LDK" }
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
   ],
-
   "adjacencies": [
-    { "a": "master",   "b": "ensuite",  "min_shared_wall_m": 0.80, "kind": "ensuite_door",
-      "note": "ensuite is master's exclusive — door opens from master, no other way in" },
-    { "a": "ensuite",  "b": "common",   "min_shared_wall_m": 1.20, "kind": "wet_core",
-      "note": "shared plumbing wall between the two baths — keeps all wet stacks in one bay" },
-    { "a": "common",   "b": "standard", "min_shared_wall_m": 0.80, "kind": "bath_to_bedroom_wall",
-      "note": "common touches standard's south face — the bath block acts as the acoustic buffer between bedrooms" },
-    { "a": "master",   "b": "great",    "min_shared_wall_m": 0.80, "kind": "bedroom_to_public",
-      "note": "master door faces the great_room" },
-    { "a": "standard", "b": "great",    "min_shared_wall_m": 1.20, "kind": "bedroom_to_public",
-      "note": "standard door — 1.2 m floor gives 0.8 m clear door + frame on each side" },
-    { "a": "common",   "b": "great",    "min_shared_wall_m": 0.70, "kind": "bath_door",
-      "note": "common is publicly accessible (used by standard via the great_room; also a guest WC)" },
-    { "a": "great",    "b": "kitchen",  "min_shared_wall_m": 1.50, "kind": "open_plan",
-      "note": "great_room + kitchen are one open LDK (gr style)" }
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 door opens from master, no other way in"
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "shared plumbing wall between the two baths \u2014 keeps all wet stacks in one bay"
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common touches standard's south face \u2014 the bath block acts as the acoustic buffer between bedrooms"
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 0.8,
+      "kind": "bedroom_to_public",
+      "note": "master door faces the great_room"
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard door \u2014 1.2 m floor gives 0.8 m clear door + frame on each side"
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common is publicly accessible (used by standard via the great_room; also a guest WC)"
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen are one open LDK (gr style)"
+    }
   ],
-
   "soft_proximities": [
-    { "a": "master", "b": "common", "weight": 20,
-      "note": "secondary pull — keeps the master-adjacent side of the wet core close to master" }
+    {
+      "a": "master",
+      "b": "common",
+      "weight": 20,
+      "note": "secondary pull \u2014 keeps the master-adjacent side of the wet core close to master"
+    }
   ],
-
   "entry_point": "great",
-
   "zone_split": {
     "axis": "vertical",
     "private_side": "left",
-    "private_rooms": ["master", "ensuite", "standard", "common"],
-    "public_rooms":  ["great", "kitchen"]
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "standard",
+      "common"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
   },
-
-  "match_bedroom_widths":      true,
-  "match_bath_widths":         true,
-  "bedroom_band_fills_width":  true,
-
-  "left_anchored":  ["master", "ensuite", "standard"],
-  "right_anchored": ["kitchen"],
-  "rear_anchored":  ["standard"],
-
-  "front_to_rear_stacks": [
-    ["master", "ensuite", "standard"],
-    ["master", "common",  "standard"],
-    ["great",  "kitchen"]
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "bedroom_band_fills_width": true,
+  "left_anchored": [
+    "master",
+    "ensuite",
+    "standard"
   ],
-
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "standard"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "ensuite",
+      "standard"
+    ],
+    [
+      "master",
+      "common",
+      "standard"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
   "lot_adjustment_profiles": [
     {
       "name": "compact_sq_side_split_baths_cl_gr",
-      "when": { "buildable_area_lt_sqm": 85 },
+      "when": {
+        "buildable_area_lt_sqm": 85
+      },
       "auto_apply": {
         "kitchen": {
           "min_least_dim_m": 1.8
@@ -78,15 +168,34 @@
           "min_least_dim_m": 2.0
         }
       },
-      "rationale": "Soft floors are tiered by priority. auto_apply (always): kitchen width floored at 1.8 m — still a usable galley (above PD 1096's 1.5 m hard minimum) and the lowest the solver may shrink kitchen to. preferred_apply (tried first, relaxed on infeasibility together as a group): baths at 3.0 m² preferred-low AND kitchen at 2.0 m generous galley width. On the tightest lots the runner relaxes the whole preferred group, surfacing a 'tiered_preferred_dropped' warning. Bath priority is implicit in this split: even when preferred relaxes, kitchen never drops below 1.8 m — but baths CAN drop toward the 1.2 m² hard min if absolutely necessary."
+      "rationale": "Soft floors are tiered by priority. auto_apply (always): kitchen width floored at 1.8 m \u2014 still a usable galley (above PD 1096's 1.5 m hard minimum) and the lowest the solver may shrink kitchen to. preferred_apply (tried first, relaxed on infeasibility together as a group): baths at 3.0 m\u00b2 preferred-low AND kitchen at 2.0 m generous galley width. On the tightest lots the runner relaxes the whole preferred group, surfacing a 'tiered_preferred_dropped' warning. Bath priority is implicit in this split: even when preferred relaxes, kitchen never drops below 1.8 m \u2014 but baths CAN drop toward the 1.2 m\u00b2 hard min if absolutely necessary."
     }
   ],
-
   "setback_elements": [
-    { "type": "carport",       "location": "side_setback", "covered": false, "width_m": 3.0, "depth_m": 6.0 },
-    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" }
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
   ],
-
   "building_voids": [
     {
       "id": "carport_cut",
@@ -96,18 +205,17 @@
       "consumed_by": "carport"
     }
   ],
-
   "notes": [
-    "v2 catalog topology #2 — 2BR / 2 baths CLUSTERED. Covers the 65-72 m² floor",
+    "v2 catalog topology #2 \u2014 2BR / 2 baths CLUSTERED. Covers the 65-72 m\u00b2 floor",
     "band (PH mid-market, one rung above single_bath_gr).",
     "",
     "Program: 2BR with master ensuite + common bath. Both baths share a plumbing",
     "wall (wet_core). The bath BLOCK sits between master (front) and standard",
-    "(rear) — it functions as the acoustic+privacy buffer between sleeping spaces.",
+    "(rear) \u2014 it functions as the acoustic+privacy buffer between sleeping spaces.",
     "Common bath is publicly accessible via a door to the great_room so guests",
     "and standard use it without going through master.",
     "",
-    "Layout intent (canonical form — brief.carport_side='right'):",
+    "Layout intent (canonical form \u2014 brief.carport_side='right'):",
     "  Front: [master              | great_room                          ]",
     "  Mid:   [ensuite | common    | great_room                          ]",
     "  Rear:  [standard            | kitchen                             ]",
@@ -119,13 +227,13 @@
     "wall (gives door clearance + frame on each side).",
     "",
     "Zone classification per v2 convention: both ensuite and common are 'private'",
-    "(spatially they sit inside the private wing — the wet core IS the bath",
+    "(spatially they sit inside the private wing \u2014 the wet core IS the bath",
     "block between bedrooms). Kitchen is 'public' (open-plan with great_room).",
     "The 55/45 private/public ratio constraint then balances the wing distribution.",
     "",
     "Carport: 3.0 m wide x 6.0 m deep (Item 2 default single carport). The 1 m",
     "width + 4 m depth that exceed the setbacks become a building_void on the",
-    "front-right corner — same L-shape pattern as topology #1.",
+    "front-right corner \u2014 same L-shape pattern as topology #1.",
     "",
     "When the brief sets carport_side='left', the runner mirrors the",
     "topology so the wet-core bay flips to the other side."

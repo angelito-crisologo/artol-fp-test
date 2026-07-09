@@ -1,67 +1,149 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
   "id": "1s_2br_sq_side_split_bath_gr",
-  "label": "Squarish 2BR / 1 bath — master front-left, standard rear-left, bath block + kitchen across the rear, open-plan great room takes the front-right.",
+  "label": "Squarish 2BR / 1 bath \u2014 master front-left, standard rear-left, bath block + kitchen across the rear, open-plan great room takes the front-right.",
   "target_shell": "squarish",
-
   "rooms": [
-    { "id": "master",   "type": "master_bedroom",   "zone": "private", "size_priority": "master_bedroom" },
-    { "id": "standard", "type": "bedroom_standard", "zone": "private", "size_priority": "other_bedrooms" },
-    { "id": "common",   "type": "common_bath",      "zone": "service", "size_priority": "service_and_baths" },
-    { "id": "great",    "type": "great_room",       "zone": "public",  "size_priority": "public_LDK", "hosts_entry": true },
-    { "id": "kitchen",  "type": "kitchen",          "zone": "public",  "size_priority": "public_LDK" }
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
   ],
-
   "adjacencies": [
-    { "a": "master",   "b": "standard", "min_shared_wall_m": 2.0, "kind": "bedroom_to_bedroom_wall",
-      "note": "master and standard stack vertically along the left wall — master at the front (street side), standard at the rear. Shared wall only, no door between them." },
-    { "a": "master",   "b": "great",    "min_shared_wall_m": 0.8, "kind": "bedroom_to_public",
-      "note": "master bedroom door faces the great_room (master's east wall faces great's west wall)" },
-    { "a": "standard", "b": "great",    "min_shared_wall_m": 1.2, "kind": "bedroom_to_public",
-      "note": "standard's east wall overlaps great_room's west wall — hosts standard's door to the great_room. The 1.2 m floor (vs the 0.8 m generic bedroom_to_public) gives room for a full 0.8 m clear door + 0.15 m frame on each side, AND keeps the door panel clear of T&B's south wall when it swings open." },
-    { "a": "common",   "b": "great",    "min_shared_wall_m": 0.7, "kind": "bath_door",
+    {
+      "a": "master",
+      "b": "standard",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master and standard stack vertically along the left wall \u2014 master at the front (street side), standard at the rear. Shared wall only, no door between them."
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 0.8,
+      "kind": "bedroom_to_public",
+      "note": "master bedroom door faces the great_room (master's east wall faces great's west wall)"
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's east wall overlaps great_room's west wall \u2014 hosts standard's door to the great_room. The 1.2 m floor (vs the 0.8 m generic bedroom_to_public) gives room for a full 0.8 m clear door + 0.15 m frame on each side, AND keeps the door panel clear of T&B's south wall when it swings open."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
       "door_host_group": "common_access",
-      "note": "common's south wall faces great_room — door faces great for shared access by both bedrooms. DEFAULT host of the 'common_access' door-host group; a brief door_host: {\"common\": \"kitchen\"} moves the door to the kitchen wall instead, leaving this wall solid. NOTE: standard↔common shared-wall adjacency was removed (2026-06-05) to make this topology swap-friendly. Common is still anchored to the rear via wet_core with kitchen + rear_anchored, but it no longer requires standard to be adjacent — letting master and standard freely swap front/rear placement per brief." },
-    { "a": "common",   "b": "kitchen",  "min_shared_wall_m": 1.2, "kind": "wet_core",
-      "door_host_group": "common_access", "door_allowed": true,
-      "door_kind": "bath_door", "min_solid_wall_m": 0.5,
-      "note": "shared plumbing wall — kitchen and common bath stack rear-right; bath west of kitchen. ALTERNATE host of the 'common_access' group: door placed here when shared wall >= 1.40 m (clear 0.70 + frame 0.20 + guard 0.50); otherwise falls back to great_room." },
-    { "a": "kitchen",  "b": "great",    "min_shared_wall_m": 1.5, "kind": "open_plan",
-      "note": "great_room + kitchen form the open LDK (gr style)" }
+      "note": "common's south wall faces great_room \u2014 door faces great for shared access by both bedrooms. DEFAULT host of the 'common_access' door-host group; a brief door_host: {\"common\": \"kitchen\"} moves the door to the kitchen wall instead, leaving this wall solid. NOTE: standard\u2194common shared-wall adjacency was removed (2026-06-05) to make this topology swap-friendly. Common is still anchored to the rear via wet_core with kitchen + rear_anchored, but it no longer requires standard to be adjacent \u2014 letting master and standard freely swap front/rear placement per brief."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "door_host_group": "common_access",
+      "door_allowed": true,
+      "door_kind": "bath_door",
+      "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall \u2014 kitchen and common bath stack rear-right; bath west of kitchen. ALTERNATE host of the 'common_access' group: door placed here when shared wall >= 1.40 m (clear 0.70 + frame 0.20 + guard 0.50); otherwise falls back to great_room."
+    },
+    {
+      "a": "kitchen",
+      "b": "great",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style)"
+    }
   ],
-
   "soft_proximities": [],
-
   "entry_point": "great",
-
   "match_bedroom_widths": false,
-
-  "left_anchored":  ["master", "standard"],
-  "right_anchored": ["kitchen"],
-  "rear_anchored":  ["standard", "common"],
-
-  "front_to_rear_stacks": [
-    ["master", "standard"]
+  "left_anchored": [
+    "master",
+    "standard"
   ],
-
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "standard",
+    "common"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "standard"
+    ]
+  ],
   "lot_adjustment_profiles": [
     {
       "name": "compact_sq_side_split_bath_gr",
-      "when": { "buildable_area_lt_sqm": 75 },
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
       "auto_apply": {
         "kitchen": {
           "min_least_dim_m": 2.0
         }
       },
-      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable. Bedroom width floors are no longer needed — the solver's zone-ratio constraint (55/45 target, 50/50 floor) keeps the private wing balanced automatically."
+      "rationale": "Floor kitchen width at 2.0 m on compact envelopes so the work triangle stays usable. Bedroom width floors are no longer needed \u2014 the solver's zone-ratio constraint (55/45 target, 50/50 floor) keeps the private wing balanced automatically."
     }
   ],
-
   "setback_elements": [
-    { "type": "carport",       "location": "side_setback", "covered": false, "width_m": 3.0, "depth_m": 6.0 },
-    { "type": "dirty_kitchen", "location": "rear_setback", "covered": false, "behind": "kitchen" }
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
   ],
-
   "building_voids": [
     {
       "id": "carport_cut",
@@ -71,22 +153,21 @@
       "consumed_by": "carport"
     }
   ],
-
   "notes": [
-    "v2 catalog topology #1 — smallest squarish 2BR. Covers the 45-65 m² floor band:",
+    "v2 catalog topology #1 \u2014 smallest squarish 2BR. Covers the 45-65 m\u00b2 floor band:",
     "Pag-IBIG-style starter homes, compact mid-market.",
     "",
     "Program: 2BR sharing ONE common bath. No ensuite. Both bedrooms reach the bath",
     "through the great_room (per the locked rule that no bedroom may be accessed",
     "through a bathroom, and the inverse: bedrooms don't access baths through bedrooms).",
     "",
-    "Layout intent (canonical form — brief.carport_side='right'):",
+    "Layout intent (canonical form \u2014 brief.carport_side='right'):",
     "  Front: [master    | great_room                     ]",
     "  Rear:  [standard  | common | kitchen               ]",
     "",
     "Master sits at the front-LEFT corner; standard stacks directly behind it at",
     "the rear-LEFT. Standard extends EAST of master by ~1 m so its south wall",
-    "overlaps the great_room's north wall — that overlap hosts standard's door to",
+    "overlaps the great_room's north wall \u2014 that overlap hosts standard's door to",
     "the great room (the only way to reach the common bath without going through",
     "the master bedroom or the bath itself).",
     "",

@@ -84,8 +84,10 @@
       "b": "kitchen",
       "min_shared_wall_m": 1.0,
       "kind": "wet_core",
-      "door_host_group": "common_access", "door_allowed": true,
-      "door_kind": "bath_door", "min_solid_wall_m": 0.5,
+      "door_host_group": "common_access",
+      "door_allowed": true,
+      "door_kind": "bath_door",
+      "min_solid_wall_m": 0.5,
       "note": "common bath shares plumbing wall with kitchen. ALTERNATE host of the 'common_access' group: door placed here only when shared wall >= 1.5 m (clear 0.80 + frame 0.20 + guard 0.5); falls back to hall on compact lots."
     },
     {
@@ -173,6 +175,16 @@
       "location": "rear_setback",
       "covered": false,
       "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
     }
   ],
   "building_voids": [],
