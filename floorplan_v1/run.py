@@ -748,7 +748,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
 
 
 def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
-                 adjustments: dict = None):
+                 adjustments: dict = None, deterministic: bool = False):
     """Run a topology dict through solve+validate. Returns (layout, topology,
     score) on success or raises with a human-readable reason."""
     topo = _topology_from_dict(topo_dict)
@@ -787,12 +787,14 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     try_adj = preferred_adj if preferred_adj is not None else base_adj
     try:
         layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                       adjustments=try_adj, kitchen_side=kitchen_side)
+                       adjustments=try_adj, kitchen_side=kitchen_side,
+                       deterministic=deterministic)
     except RuntimeError as e:
         if preferred_adj is None or "no feasible" not in str(e).lower():
             raise
         layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
-                       adjustments=base_adj, kitchen_side=kitchen_side)
+                       adjustments=base_adj, kitchen_side=kitchen_side,
+                       deterministic=deterministic)
     void_rects = _topology_void_rects(topo, lot)
     layout.building_void_rects = void_rects
     issues, score = validate(layout, rules)
@@ -817,7 +819,8 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
 
 
 def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
-                       adjustments: dict = None, verbose: bool = True):
+                       adjustments: dict = None, verbose: bool = True,
+                       deterministic: bool = False):
     """Cache → solver path. On cache miss (or `use_cache=False`), call Claude
     with the repair loop. Successful topologies are always written to the
     cache, even when use_cache=False — the flag only controls whether we
@@ -841,7 +844,7 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
     if cached is not None:
         topo_dict, cached_reason = cached
         try:
-            layout, topo, score, issues = _try_realize(topo_dict, brief, rules, adjustments)
+            layout, topo, score, issues = _try_realize(topo_dict, brief, rules, adjustments, deterministic=deterministic)
             warns = [i for i in issues if i.severity == "warning"]
             sugg = [i for i in issues if i.severity == "suggestion"]
             reason = f"[cache] {cached_reason}"
@@ -897,7 +900,7 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
         if verbose:
             print(f"  reasoning: {reason}")
         try:
-            layout, topo, score, issues = _try_realize(topo_dict, brief, rules, adjustments)
+            layout, topo, score, issues = _try_realize(topo_dict, brief, rules, adjustments, deterministic=deterministic)
         except AdjustmentError as e:
             # User-side error — Claude can't fix it by composing a new
             # topology. Bubble up immediately instead of burning repair attempts.

@@ -325,7 +325,8 @@ if st.session_state["candidates"] is not None:
             try:
                 if is_ai:
                     layout, topo, reason = _run_ai_with_cache(
-                        st.session_state["brief"], verbose=False)
+                        st.session_state["brief"], verbose=False,
+                        deterministic=True)
                     result_id = "ai-generated"
                 else:
                     layout, topo, reason = _run_hand_authored(
