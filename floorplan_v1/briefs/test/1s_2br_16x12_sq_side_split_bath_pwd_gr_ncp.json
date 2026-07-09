@@ -12,6 +12,7 @@
     "no carport"
   ],
   "avoid": [],
+  "kitchen_back_door": false,
   "occupancy_class": "R-1",
   "setbacks": {
     "front": 2.0,
