@@ -60,6 +60,29 @@ You have five kinds of rules you can put in a topology:
 5. **entry_point** — the room that hosts the main door from the street.
    Almost always the living room.
 
+5a. **front_to_rear_stacks** — the most important layout hint for preventing
+   narrow rooms. Each stack is an ordered list of room IDs that must sit
+   in the same column running front-to-rear (street → rear). Rooms inside
+   a stack each get the FULL WIDTH of their column — they are NOT
+   side-by-side, they are stacked depth-wise. This is how you avoid
+   squeezing baths into leftover slivers.
+
+   Typical side-split layout has two stacks:
+     ["master", "ensuite", "standard"]  — private column, front-to-rear
+     ["great", "kitchen"]               — public column, front-to-rear
+   (or ["living", "dining", "kitchen"] for a traditional layout)
+
+   RULE: ensuite and common_bath must EACH appear in a front_to_rear_stack
+   with their associated bedroom. Never leave a bath as a horizontal
+   side-by-side sliver next to a bedroom — it will be too narrow.
+
+5b. **left_anchored / right_anchored / rear_anchored** — lists of room IDs
+   that the solver pins to that side of the envelope. Use these to anchor
+   the two columns to their sides and ensure kitchen touches the rear wall:
+     left_anchored:  rooms in the public column (when public side is left)
+     right_anchored: rooms in the private column (when private side is right)
+     rear_anchored:  always include kitchen and the rear bedroom in a stack
+
 6. **building_voids** — rectangular cutouts carved from the buildable
    envelope BEFORE the solver places rooms. Rooms cannot overlap them.
    Each void has: id (string), location (front_right / front_left /
@@ -361,6 +384,21 @@ TOOL_SCHEMA = {
                 },
             },
             "entry_point": {"type": "string", "description": "id of the room hosting the main entry"},
+            "front_to_rear_stacks": {
+                "type": "array",
+                "description": "Each sub-array is an ordered list of room IDs that stack "
+                               "front-to-rear in the same column. Rooms in a stack each "
+                               "occupy the full column width — this prevents baths from "
+                               "being squeezed into narrow horizontal slivers.",
+                "items": {"type": "array", "items": {"type": "string"}},
+            },
+            "left_anchored":  {"type": "array", "items": {"type": "string"},
+                               "description": "Room IDs pinned to the left side of the envelope."},
+            "right_anchored": {"type": "array", "items": {"type": "string"},
+                               "description": "Room IDs pinned to the right side of the envelope."},
+            "rear_anchored":  {"type": "array", "items": {"type": "string"},
+                               "description": "Room IDs that must touch the rear exterior wall. "
+                                              "Always include kitchen and the rearmost bedroom."},
             "setback_elements": {
                 "type": "array",
                 "items": {
