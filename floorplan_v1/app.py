@@ -34,7 +34,7 @@ from brief import Brief                      # noqa: E402  (ai)
 from extract import extract_requirements     # noqa: E402  (ai)
 from match import match_topologies            # noqa: E402  (ai)
 from render import archplan_to_svg            # noqa: E402  (core)
-from run import _run_hand_authored, _run_ai_with_cache  # noqa: E402
+from run import _run_hand_authored, _run_ai  # noqa: E402
 
 # Carport type semantics per CLAUDE.md — spelled out here since "ccp"/"fcp"
 # mean nothing to a non-technical reviewer.
@@ -324,7 +324,7 @@ if st.session_state["candidates"] is not None:
             progress.progress(n / len(run_items), text=f"Solving {label}...")
             try:
                 if is_ai:
-                    layout, topo, reason = _run_ai_with_cache(
+                    layout, topo, reason = _run_ai(
                         st.session_state["brief"], verbose=False,
                         deterministic=True)
                     result_id = "ai-generated"

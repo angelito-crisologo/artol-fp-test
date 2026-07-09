@@ -1,25 +1,17 @@
-"""artol-ai entry point — hybrid pipeline with caching for the AI path.
+"""artol-ai entry point — hybrid pipeline.
 
 Two routes:
 
 1. **Hand-authored anchors.** Each brief maps to a topology JSON. We load it,
    run the solver, render. Deterministic, zero API calls.
 
-2. **AI-generated briefs.** Each brief is hashed into a cache key (intent +
-   structured fields). If the cache has a topology for that key, we replay it
-   through the solver — no API call. If not, we call Claude (temperature 0
-   for repeatability), validate that the topology actually realises, cache
-   the JSON, and render.
+2. **AI-generated briefs.** Claude composes a topology from scratch, validates
+   it realises on the given lot, and renders. Retries up to MAX_REPAIR times
+   on infeasibility. Every run calls the API — no caching.
 
-Edit the brief text or any requirement field and the cache key changes, so a
-fresh Claude call is triggered automatically. Anything else (prompt updates,
-solver tweaks, exemplar changes) doesn't invalidate the cache — runs against
-the cached topology pick up those improvements without spending a token.
-
-Outputs land in floorplan_v1/output/; cached topologies in floorplan_v1/cache/.
+Outputs land in floorplan_v1/output/.
 """
 import argparse
-import hashlib
 import json
 import os
 import sys
@@ -62,7 +54,6 @@ from pipeline import (                                           # noqa: E402  (
 
 _TOPOLOGIES_DIR = os.path.join(_HERE, "topologies")
 OUT = os.path.join(_HERE, "output")
-CACHE_DIR = os.path.join(_HERE, "cache")
 BRIEFS_DIR = os.path.join(_HERE, "briefs")
 HAND_AUTHORED_DIR = os.path.join(BRIEFS_DIR, "hand_authored")
 AI_DIR = os.path.join(BRIEFS_DIR, "ai")
@@ -75,7 +66,6 @@ TEST_BRIEFS_DIR    = os.path.join(BRIEFS_DIR, "test")
 TEST_OUT_DIR       = os.path.join(_HERE, "test_output")
 TEST_BASELINES_DIR = os.path.join(_HERE, "test_baselines")
 os.makedirs(OUT, exist_ok=True)
-os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(HAND_AUTHORED_DIR, exist_ok=True)
 os.makedirs(AI_DIR, exist_ok=True)
 os.makedirs(TEST_BRIEFS_DIR, exist_ok=True)
@@ -157,7 +147,7 @@ def _load_briefs_from(subdir: str, expect_topology: bool):
     sort by relative path, return a list of tuples.
 
     For hand_authored: (name, brief, topology_filename, adjustments, rel_dir).
-    For ai:           (name, brief, use_cache, adjustments, rel_dir).
+    For ai:           (name, brief, adjustments, rel_dir).
 
     `rel_dir` is the brief's location relative to `subdir` (e.g., "1s/2br/wide")
     used by the writer to mirror the same hierarchy in the output folder.
@@ -196,9 +186,7 @@ def _load_briefs_from(subdir: str, expect_topology: bool):
                                  f"floorplan_v1/topologies/")
             out.append((name, brief, data["topology"], adjustments, rel_dir))
         else:
-            # AI briefs accept an optional "use_cache" flag. Default true.
-            use_cache = bool(data.get("use_cache", True))
-            out.append((name, brief, use_cache, adjustments, rel_dir))
+            out.append((name, brief, adjustments, rel_dir))
     return out
 
 
@@ -216,54 +204,6 @@ def load_test_briefs():
     must reference an existing topology JSON via the `topology` field, same
     schema as the hand-authored anchors."""
     return _load_briefs_from(TEST_BRIEFS_DIR, expect_topology=True)
-
-
-# ---------- caching ----------
-
-def _brief_cache_key(brief: Brief) -> str:
-    """Stable hash over the requirement fields the user controls. Any change
-    to text or structured fields produces a different key and forces a fresh
-    Claude call; prompt/solver/exemplar changes do not."""
-    payload = {
-        "intent": brief.intent.strip(),
-        "lot_width": brief.lot_width,
-        "lot_depth": brief.lot_depth,
-        "bedroom_count": brief.bedroom_count,
-        "must_haves": list(brief.must_haves),
-        "avoid": list(brief.avoid),
-        "carport_side": brief.carport_side,
-        "carport_type": brief.carport_type,
-    }
-    blob = json.dumps(payload, sort_keys=True).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()[:16]
-
-
-def _cache_path(brief: Brief) -> str:
-    return os.path.join(CACHE_DIR, f"{_brief_cache_key(brief)}.json")
-
-
-def _load_cached(brief: Brief):
-    p = _cache_path(brief)
-    if not os.path.exists(p):
-        return None
-    with open(p, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return data["topology"], data.get("reason", "[cache] (no reason)")
-
-
-def _save_cache(brief: Brief, topology_dict: dict, reason: str):
-    with open(_cache_path(brief), "w", encoding="utf-8") as f:
-        json.dump({
-            "brief_summary": brief.summary(),
-            "reason": reason,
-            "topology": topology_dict,
-        }, f, indent=2)
-
-
-def _invalidate(brief: Brief):
-    p = _cache_path(brief)
-    if os.path.exists(p):
-        os.unlink(p)
 
 
 # ---------- AI client ----------
@@ -818,80 +758,21 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     return layout, topo, score, issues
 
 
-def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
-                       adjustments: dict = None, verbose: bool = True,
-                       deterministic: bool = False):
-    """Cache → solver path. On cache miss (or `use_cache=False`), call Claude
-    with the repair loop. Successful topologies are always written to the
-    cache, even when use_cache=False — the flag only controls whether we
-    READ from the cache.
-
-    `adjustments` is forwarded to the solver but NOT part of the cache key,
-    so re-running with new adjustments resolves geometry without re-calling
-    Claude."""
+def _run_ai(brief: Brief, adjustments: dict = None, verbose: bool = True,
+            deterministic: bool = False):
+    """Call Claude to compose a topology and run it through the solver.
+    Retries up to MAX_REPAIR times on infeasibility. Every call hits the API."""
     rules = Rules()
     lot = _make_default_lot(brief)
     env = lot.envelope()
     if verbose:
         print(brief.summary())
         print(f"shell category: {shell_category(lot)}  |  buildable {env.w:.1f}x{env.h:.1f} m")
-        print(f"cache key: {_brief_cache_key(brief)}  (use_cache={use_cache})")
         if adjustments:
             print(f"adjustments: {adjustments}")
 
-    # ----- cache hit attempt (only when use_cache=True) -----
-    cached = _load_cached(brief) if use_cache else None
-    if cached is not None:
-        topo_dict, cached_reason = cached
-        try:
-            layout, topo, score, issues = _try_realize(topo_dict, brief, rules, adjustments, deterministic=deterministic)
-            warns = [i for i in issues if i.severity == "warning"]
-            sugg = [i for i in issues if i.severity == "suggestion"]
-            reason = f"[cache] {cached_reason}"
-            if verbose:
-                print(f"\n[cache hit]  no API call")
-                print(f"  cached reason: {cached_reason}")
-                print(f"  COMPLIANT  score={score:.2f}  {len(warns)} warn  {len(sugg)} sugg")
-            return layout, topo, reason
-        except AdjustmentError as e:
-            # User-side mismatch between adjustments and the cached topology
-            # (e.g., adjusting `great_room` when the cached topology has no
-            # great_room). Preserve the cache, fail loud.
-            raise RuntimeError(
-                f"adjustments don't match the cached topology: {e}\n"
-                f"  the cached topology is preserved at {_cache_path(brief)}\n"
-                f"  options: (1) relax/edit the adjustments to use a room type "
-                f"that the cached topology contains; (2) set use_cache=false "
-                f"in the brief to let Claude compose a new topology."
-            )
-        except RuntimeError as e:
-            # use_cache=True is strict: NEVER silently invalidate the cache
-            # and regenerate. Most common cause when this hits is an over-
-            # constrained adjustment (solver returns INFEASIBLE). The user
-            # asked to preserve the topology — preserving means refusing to
-            # let it be silently replaced. They can either relax constraints
-            # or set use_cache=false to opt into regeneration.
-            raise RuntimeError(
-                f"cached topology can't realize the current constraints: {e}\n"
-                f"  the cached topology is preserved at {_cache_path(brief)}\n"
-                f"  options:\n"
-                f"    (1) relax the adjustments so the cached topology can fit them,\n"
-                f"    (2) set use_cache=false in the brief to let Claude compose "
-                f"a new topology,\n"
-                f"    (3) delete the cache file manually if you believe it is "
-                f"actually corrupted."
-            )
-
-    # ----- fresh call (cache miss, or use_cache=False forcing regeneration) -----
-    if verbose and not use_cache:
-        cached_exists = os.path.exists(_cache_path(brief))
-        msg = ("overriding existing cache entry" if cached_exists
-               else "no cache entry exists for this brief")
-        print(f"\n[use_cache=False]  {msg} — calling Claude fresh")
     client = _make_ai_client()
     error_feedback = None
-    last_topo_dict = None
-    last_reason = None
     for attempt in range(1 + MAX_REPAIR):
         if verbose:
             tag = "first attempt" if attempt == 0 else f"repair attempt {attempt}"
@@ -902,8 +783,6 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
         try:
             layout, topo, score, issues = _try_realize(topo_dict, brief, rules, adjustments, deterministic=deterministic)
         except AdjustmentError as e:
-            # User-side error — Claude can't fix it by composing a new
-            # topology. Bubble up immediately instead of burning repair attempts.
             raise RuntimeError(
                 f"adjustments don't match Claude's composed topology: {e}\n"
                 f"  fix the adjustments and re-run."
@@ -913,13 +792,10 @@ def _run_ai_with_cache(brief: Brief, use_cache: bool = True,
             if verbose:
                 print(f"  failed: {e}")
             continue
-        # success
-        _save_cache(brief, topo_dict, reason)
         warns = [i for i in issues if i.severity == "warning"]
         sugg = [i for i in issues if i.severity == "suggestion"]
         if verbose:
             print(f"  COMPLIANT  score={score:.2f}  {len(warns)} warn  {len(sugg)} sugg")
-            print(f"  cached to {_cache_path(brief)}")
         return layout, topo, reason
 
     raise RuntimeError(
@@ -1081,13 +957,11 @@ def main(argv=None):
             continue
         _write(name, layout, topo, reason, rel_dir=rel_dir)
 
-    # Section 2 — AI briefs (cache controlled per-brief by use_cache flag).
-    for name, brief, use_cache, adjustments, rel_dir in ai_briefs:
-        tag = "AI-generated, cached" if use_cache else "AI-generated, FRESH (cache disabled)"
-        print(f"\n{'=' * 70}\n=== {os.path.join(rel_dir, name) if rel_dir else name}   ({tag})\n{'=' * 70}")
+    # Section 2 — AI briefs.
+    for name, brief, adjustments, rel_dir in ai_briefs:
+        print(f"\n{'=' * 70}\n=== {os.path.join(rel_dir, name) if rel_dir else name}   (AI-generated)\n{'=' * 70}")
         try:
-            layout, topo, reason = _run_ai_with_cache(
-                brief, use_cache=use_cache, adjustments=adjustments, verbose=True)
+            layout, topo, reason = _run_ai(brief, adjustments=adjustments, verbose=True)
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
