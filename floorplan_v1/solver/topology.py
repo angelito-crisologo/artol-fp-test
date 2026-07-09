@@ -481,6 +481,7 @@ def mirror_topology_x(t: Topology) -> Topology:
 
       - left_anchored ↔ right_anchored (list swap)
       - building_voids[].location: front_left ↔ front_right, rear_left ↔ rear_right
+      - zone_split.private_side: left ↔ right (vertical splits only)
 
     y-axis fields (rear_anchored, front_to_rear_stacks) are NOT touched.
     Identity-preserving on rooms, adjacencies, soft_proximities, setback_elements
@@ -493,13 +494,22 @@ def mirror_topology_x(t: Topology) -> Topology:
             id=v.id, location=new_loc, width_m=v.width_m, depth_m=v.depth_m,
             consumed_by=v.consumed_by,
         ))
+    _LR = {"left": "right", "right": "left"}
+    zs = t.zone_split
+    if zs is not None and zs.axis == "vertical" and zs.private_side in _LR:
+        zs = ZoneSplit(
+            axis=zs.axis,
+            private_side=_LR[zs.private_side],
+            private_rooms=list(zs.private_rooms),
+            public_rooms=list(zs.public_rooms),
+        )
     return Topology(
         id=t.id, label=t.label, target_shell=t.target_shell,
         rooms=list(t.rooms), adjacencies=list(t.adjacencies),
         entry_point=t.entry_point,
         setback_elements=list(t.setback_elements),
         soft_proximities=list(t.soft_proximities),
-        zone_split=t.zone_split,
+        zone_split=zs,
         notes=list(t.notes),
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,

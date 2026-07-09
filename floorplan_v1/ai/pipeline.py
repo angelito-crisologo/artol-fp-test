@@ -75,14 +75,19 @@ def _make_default_lot(brief: Brief) -> Lot:
             occupancy_class=occupancy,
         )
     front, rear, left, right = 2.0, 2.0, 2.0, 2.0
-    side = (brief.carport_side or "").lower()
-    if side == "left":
-        left = 3.0
-    elif side == "front":
-        front = 3.0
-    elif side == "right":
-        right = 3.0
-    # else: ncp — all setbacks stay at 2.0
+    side  = (brief.carport_side  or "").lower()
+    ctype = (brief.carport_type  or "").lower()
+    # Only fcp widens the setback — 3 m for the full side depth.
+    # ccp keeps all setbacks at 2 m; the L-notch is a building_void in the
+    # topology, not a wider lot setback.
+    if ctype == "fcp":
+        if side == "left":
+            left = 3.0
+        elif side == "front":
+            front = 3.0
+        elif side == "right":
+            right = 3.0
+    # ncp and ccp: all setbacks stay at 2.0
     return Lot(
         width=brief.lot_width, depth=brief.lot_depth,
         front=front, rear=rear, left=left, right=right,
