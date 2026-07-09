@@ -1,0 +1,6 @@
+# Web front end (floorplan_v1/app.py) + the existing solver pipeline it drives.
+# cairosvg is intentionally NOT included: the app renders SVG directly in the
+# browser, so no server-side PNG conversion is needed.
+streamlit>=1.35
+anthropic>=0.34
+ortools>=9.9

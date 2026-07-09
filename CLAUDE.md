@@ -2,6 +2,35 @@
 
 PH floor plan generator + validator. Single-detached mid-market houses. CP-SAT solver.
 
+## Session handoff (2026-07-09) — read this first
+
+Switching from Cowork to Claude Code CLI mid-task. The interactive tester
+(`floorplan_v1/app.py`, see "Recently completed" below) is built and
+locally verified, but NOT yet deployed. Pick up from here:
+
+- **Git:** this repo has no remote configured (`git remote -v` is empty).
+  Working tree has uncommitted changes:
+  - New from this session: `floorplan_v1/app.py`, `floorplan_v1/ai/extract.py`,
+    `floorplan_v1/ai/match.py`, root `requirements.txt`, `DEPLOY.md`,
+    `.streamlit/secrets.toml.example`, a `.gitignore` edit (added
+    `.streamlit/secrets.toml`), and this file.
+  - Pre-existing and unrelated to the tester — review/commit separately:
+    `1s_2br_16x12_sq_side_split_bath_pwd_gr_ncp.svg` (modified),
+    `floorplan_v1/briefs/test/1s_2br_16x12_sq_side_split_bath_pwd_gr_ncp.json`
+    (modified), `1s_2br_12x12_sq_side_split_baths_cl_gr_ncp.svg` (untracked).
+    Small diffs (1-2 lines) — worth a quick look before folding into any commit.
+- **Not yet done:** push to GitHub, create the Streamlit Community Cloud app,
+  set secrets. Full steps in `DEPLOY.md`.
+- **Not yet verified:** `ai/extract.py`'s `ClaudeExtractor` (real Claude-based
+  NL→requirements extraction) — only `StubExtractor` (regex/keyword fallback,
+  no API key needed) was exercised, via `streamlit.testing.v1.AppTest`
+  simulating the full click-through (parse → edit fields → find topologies →
+  run selected, plus the empty-match path). Worth a real run with
+  `ANTHROPIC_API_KEY` set before this goes in front of the business partner.
+- **Local run:** `pip install -r requirements.txt` (repo root, `--break-system-packages`
+  if needed) then `streamlit run floorplan_v1/app.py` from repo root.
+- Remember [[ask-before-coding]] — this project's standing convention.
+
 ## Current focus (as of 2026-06-25)
 
 **Naming convention locked:** `{storey}_{nbr}_{WxD}_{shape}_{strategy}_{bath_token}[_hall][_gr|_ld]_{carport}[_swap]`
@@ -30,6 +59,8 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 **Test suite status:** 27 pass, 0 fail, 0 error.
 
 ## Recently completed
+
+**Streamlit tester + deployment (2026-07-09):** `floorplan_v1/app.py` — free text → Claude extraction (`ai/extract.py`, stub fallback when no API key) → editable requirements form → hard-filtered topology candidate checklist (`ai/match.py`, filters catalog by bedroom_count + shell category, reusing `shell_category`/`_make_default_lot`) → "Run selected" solves each checked topology via the existing `run.py::_run_hand_authored` and renders results (SVG + validator issues/score) in tabs. Root `requirements.txt` added (didn't exist before). `DEPLOY.md` covers pushing to GitHub + Streamlit Community Cloud + secrets (`ANTHROPIC_API_KEY`, `APP_PASSWORD`). Verified locally via `streamlit.testing.v1.AppTest` (parse → edit → match → run, plus the empty-match path) — no framework installed for automated UI testing yet beyond that.
 
 **Door-host selection, Phases 1+2 (2026-06-11):** WHICH wall hosts a room's door (a tier above where-on-the-wall placement).
 
@@ -65,3 +96,4 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - Renderer: `floorplan_v1/core/render.py`
 - Run tests: `cd floorplan_v1 && python3 run.py --test`
 - Run single brief: `python3 run.py --test --brief=<name>`
+- Interactive tester: `streamlit run floorplan_v1/app.py` (see `DEPLOY.md` for hosting it online)

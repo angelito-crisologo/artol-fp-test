@@ -23,6 +23,7 @@ floorplan_v1/cache/
 .env.local
 .anthropic_key
 .anthropic_key.txt
+.streamlit/secrets.toml
 
 # Editor / IDE
 .vscode/
