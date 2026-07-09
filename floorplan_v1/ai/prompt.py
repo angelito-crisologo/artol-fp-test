@@ -60,6 +60,15 @@ You have five kinds of rules you can put in a topology:
 5. **entry_point** — the room that hosts the main door from the street.
    Almost always the living room.
 
+6. **building_voids** — rectangular cutouts carved from the buildable
+   envelope BEFORE the solver places rooms. Rooms cannot overlap them.
+   Each void has: id (string), location (front_right / front_left /
+   rear_right / rear_left — corner of the envelope where the cut starts),
+   width_m (how deep the cut bites into the envelope measured across the
+   lot width), depth_m (how far the cut extends front-to-rear within the
+   envelope), consumed_by ("carport" for the CCP L-notch).
+   Only use building_voids for the CCP carport pattern (see below).
+
 # Hard PD 1096 rules (the solver enforces these automatically — you don't
 # repeat them, but your topology must be CONSISTENT with them)
 
@@ -78,9 +87,40 @@ You have five kinds of rules you can put in a topology:
 - Front door always opens into the living room.
 - Kitchen sits at the rear; dirty kitchen + service area live in the rear
   setback behind it.
-- Carport is uncovered, in a side or front setback (one side widens to
-  3 m to fit it). The runner tries multiple carport positions and picks
-  the best — you don't choose the side.
+- Carport: the brief tells you `carport_type` (ccp / fcp / ncp) and
+  `carport_side` (left / right / front). Encode it as follows.
+
+  **CANONICAL RULE: always place the carport on the RIGHT in your topology.**
+  If the brief says carport_side=left, the runner automatically mirrors the
+  topology — you never need to author a left-side variant.
+
+  **ncp** (no carport): omit the carport setback_element and building_void
+  entirely. The runner strips them automatically, but it's cleaner to omit.
+
+  **ccp** (claimed carport — the default when carport_type is omitted):
+  The carport occupies 3 m of the right side setback for the first 6 m
+  from the street, then the setback narrows back to 2 m. This creates an
+  L-shaped notch in the building footprint. Include BOTH:
+    setback_elements entry:
+      { "type": "carport", "location": "side_setback", "covered": false,
+        "width_m": 3.0, "depth_m": 6.0 }
+    building_voids entry (the L-notch itself):
+      { "id": "carport_cut", "location": "front_right",
+        "width_m": 1.0, "depth_m": 4.0, "consumed_by": "carport" }
+    (width_m 1.0 = the extra 1 m bite beyond the 2 m base setback;
+     depth_m 4.0 = 6 m carport depth − 2 m front setback = 4 m of
+     buildable area that the notch removes from the front-right corner)
+
+  **fcp** (full carport): full 3 m setback for the entire depth of the
+  lot on that side — no L-notch, the building envelope is a clean
+  rectangle (just narrower). Include only the setback_element, NO void:
+    setback_elements entry:
+      { "type": "carport", "location": "side_setback", "covered": false,
+        "width_m": 3.0, "depth_m": 6.0 }
+
+  Anchor rooms away from the carport void: put kitchen, rear rooms, and
+  the bathroom wet-core on the LEFT side (away from the right-side void)
+  so the L-notch doesn't collide with rooms that need the full depth.
 - Master bedroom usually larger than the standard bedroom.
 - Common T&B is typically publicly accessible (door off dining).
 - Prefer placing common T&B against an exterior wall (rear or side boundary)
@@ -287,6 +327,26 @@ TOOL_SCHEMA = {
                         "location": {"type": "string"},
                         "covered": {"type": "boolean"},
                         "behind": {"type": "string"},
+                        "width_m": {"type": "number"},
+                        "depth_m": {"type": "number"},
+                    },
+                },
+            },
+            "building_voids": {
+                "type": "array",
+                "description": "Rectangular cutouts from the buildable envelope. "
+                               "Use only for the CCP claimed-carport L-notch.",
+                "items": {
+                    "type": "object",
+                    "required": ["id", "location", "width_m", "depth_m", "consumed_by"],
+                    "properties": {
+                        "id": {"type": "string"},
+                        "location": {"type": "string",
+                                     "enum": ["front_right", "front_left",
+                                              "rear_right", "rear_left"]},
+                        "width_m": {"type": "number"},
+                        "depth_m": {"type": "number"},
+                        "consumed_by": {"type": "string"},
                     },
                 },
             },
