@@ -163,6 +163,47 @@ When the brief does ask for one:
 - It does not need (and should not have) a soft proximity to bedrooms, public
   rooms, or the master suite.
 
+# Room proportions — prevent long narrow rooms
+
+Always include a `lot_adjustment_profiles` entry in your topology. The solver
+enforces these as hard constraints during room placement and uses them to
+prevent long thin rooms. Use a single unconditional profile (omit `when` or
+set it to `{}`) with `auto_apply` for constraints that must always hold, and
+`preferred_apply` for softer targets that get relaxed on tight lots.
+
+Recommended minimum short-dimension floors (min_least_dim_m):
+  master_bedroom:   2.5 m  (comfortable double-bed width)
+  bedroom_standard: 2.5 m
+  great_room:       3.0 m  (needs width for sofa + circulation)
+  living_room:      2.5 m
+  dining_room:      2.0 m
+  kitchen:          1.8 m  (preferred); 1.5 m (auto — legal min)
+  common_bath:      1.5 m
+  ensuite_bath:     1.2 m
+
+Put the tighter values (kitchen 1.8 m, ensuite 1.5 m) in `preferred_apply`
+so they soften on small lots. Put the bedroom and great_room floors in
+`auto_apply` — they matter too much to ever relax.
+
+Example profile:
+{
+  "name": "default_proportions",
+  "auto_apply": {
+    "master_bedroom":   {"min_least_dim_m": 2.5},
+    "bedroom_standard": {"min_least_dim_m": 2.5},
+    "great_room":       {"min_least_dim_m": 3.0},
+    "living_room":      {"min_least_dim_m": 2.5},
+    "dining_room":      {"min_least_dim_m": 2.0},
+    "common_bath":      {"min_least_dim_m": 1.5},
+    "ensuite_bath":     {"min_least_dim_m": 1.2},
+    "kitchen":          {"min_least_dim_m": 1.5}
+  },
+  "preferred_apply": {
+    "kitchen":          {"min_least_dim_m": 1.8},
+    "ensuite_bath":     {"min_least_dim_m": 1.5}
+  }
+}
+
 # Your task
 
 Given a Brief, produce a topology JSON via the `submit_topology` tool. Use
@@ -349,6 +390,60 @@ TOOL_SCHEMA = {
                         "width_m": {"type": "number"},
                         "depth_m": {"type": "number"},
                         "consumed_by": {"type": "string"},
+                    },
+                },
+            },
+            "lot_adjustment_profiles": {
+                "type": "array",
+                "description": "Conditional room-size constraints enforced by the solver. "
+                               "Always include at least one profile to prevent narrow rooms.",
+                "items": {
+                    "type": "object",
+                    "required": ["name", "auto_apply"],
+                    "properties": {
+                        "name": {"type": "string"},
+                        "when": {
+                            "type": "object",
+                            "description": "Omit or use {} for unconditional profile.",
+                            "properties": {
+                                "buildable_area_lt_sqm":  {"type": "number"},
+                                "buildable_area_gte_sqm": {"type": "number"},
+                                "buildable_width_lt_m":   {"type": "number"},
+                                "buildable_width_gte_m":  {"type": "number"},
+                                "buildable_depth_lt_m":   {"type": "number"},
+                                "buildable_depth_gte_m":  {"type": "number"},
+                            },
+                        },
+                        "auto_apply": {
+                            "type": "object",
+                            "description": "Room type → knobs, always applied.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "min_area_sqm":       {"type": "number"},
+                                    "max_area_sqm":       {"type": "number"},
+                                    "min_least_dim_m":    {"type": "number"},
+                                    "max_least_dim_m":    {"type": "number"},
+                                    "min_greatest_dim_m": {"type": "number"},
+                                    "max_greatest_dim_m": {"type": "number"},
+                                },
+                            },
+                        },
+                        "preferred_apply": {
+                            "type": "object",
+                            "description": "Like auto_apply but relaxed on infeasibility.",
+                            "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                    "min_area_sqm":       {"type": "number"},
+                                    "max_area_sqm":       {"type": "number"},
+                                    "min_least_dim_m":    {"type": "number"},
+                                    "max_least_dim_m":    {"type": "number"},
+                                    "min_greatest_dim_m": {"type": "number"},
+                                    "max_greatest_dim_m": {"type": "number"},
+                                },
+                            },
+                        },
                     },
                 },
             },
