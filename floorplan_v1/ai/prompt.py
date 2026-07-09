@@ -136,31 +136,22 @@ the example briefs and their authored topologies below as guidance.
 EXEMPLARS = [
     ("Standard mid-market 2-bedroom open-plan home. Comfortable living and "
      "dining, bathrooms convenient to the bedrooms, nothing exotic. "
-     "Ensuite near master, common bath off the LDK — distributed (no shared "
-     "plumbing wall between the baths).",
-     "squarish_two_bedroom_distributed_baths.json"),
+     "Ensuite near master, common bath off the great room — distributed baths "
+     "(no shared plumbing wall between the two bathrooms). Open-plan great "
+     "room combines living, dining, and kitchen.",
+     "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_gr.json"),
     ("2-bedroom where the two bathrooms cluster together between the bedrooms "
      "and share a plumbing wall — the bath block sits BETWEEN master and the "
      "standard bedroom, acting as the acoustic buffer between sleeping spaces. "
      "Ensuite is on the master side, common on the standard-bedroom side with "
-     "a public door off dining.",
-     "squarish_two_bedroom_clustered_baths.json"),
-    ("2-bedroom with strict separation between the public side (LDK) and the "
-     "private side (bedrooms+baths). Traditional sala-comedor-kusina: LDK "
-     "column stacks living→dining→kitchen front-to-rear; sleeping column "
-     "stacks standard → ensuite+common bath bar → master front-to-rear. "
-     "Public/private wall partitions the envelope; each bedroom has its own "
-     "cross-wall door to the LDK. Use when the brief calls for a more formal "
-     "or traditional layout where dining buffers living from kitchen.",
-     "squarish_two_bedroom_split_stacked.json"),
-    ("2-bedroom with strict public/private split AND an open-plan LDK feel — "
-     "the cook is integrated with the dining/living area rather than tucked "
-     "at the back. Same private sleeping column as the stacked split (standard "
-     "→ bath bar → master), but dining and kitchen sit side-by-side at the "
-     "rear of the public column rather than stacked. Use when the brief calls "
-     "for a casual / modern open-plan feel inside an otherwise strict "
-     "public/private zone separation.",
-     "squarish_two_bedroom_split_openplan.json"),
+     "a public door off the great room.",
+     "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json"),
+    ("2-bedroom with strict separation between the public side and the private "
+     "side (bedrooms+baths). Traditional sala-comedor-kusina: separate living, "
+     "dining, and kitchen rooms rather than a combined great room. Distributed "
+     "baths — ensuite off master, common bath accessible from the living/dining "
+     "area. Use when the brief calls for a formal or traditional layout.",
+     "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json"),
 ]
 
 
