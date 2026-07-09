@@ -28,6 +28,7 @@ for _sub in ("core", "solver"):
 from model import shell_category  # noqa: E402
 
 _BEDROOM_TYPES = {"master_bedroom", "bedroom_standard"}
+_BATH_TYPES = {"common_bath", "ensuite_bath"}
 
 
 @dataclass
@@ -37,6 +38,7 @@ class Candidate:
     filename: str          # relative to topologies/, e.g. "1s/2br/squarish/x.json"
     target_shell: str
     bedroom_count: int
+    bath_count: int
     notes: List[str]
 
 
@@ -53,10 +55,11 @@ def _load_candidate(rel_path: str, full_path: str) -> Candidate:
     with open(full_path, "r", encoding="utf-8") as f:
         d = json.load(f)
     bedroom_count = sum(1 for r in d.get("rooms", []) if r.get("type") in _BEDROOM_TYPES)
+    bath_count = sum(1 for r in d.get("rooms", []) if r.get("type") in _BATH_TYPES)
     return Candidate(
         id=d["id"], label=d["label"], filename=rel_path,
         target_shell=d["target_shell"], bedroom_count=bedroom_count,
-        notes=d.get("notes", []),
+        bath_count=bath_count, notes=d.get("notes", []),
     )
 
 
@@ -77,7 +80,12 @@ def match_topologies(brief) -> List[Candidate]:
 
     lot = _make_default_lot(brief)
     shell = shell_category(lot)
-    out = [c for c in all_topologies()
-           if c.target_shell == shell and c.bedroom_count == brief.bedroom_count]
+    required_baths = getattr(brief, "num_baths", None) or None
+    out = [
+        c for c in all_topologies()
+        if c.target_shell == shell
+        and c.bedroom_count == brief.bedroom_count
+        and (required_baths is None or c.bath_count == required_baths)
+    ]
     out.sort(key=lambda c: c.id)
     return out, shell

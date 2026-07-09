@@ -84,8 +84,12 @@ REQUIREMENTS_SCHEMA = {
             },
             "num_baths": {
                 "type": "integer",
-                "description": "Explicit full-bathroom count if stated; 0 to "
-                               "use the size-based default instead.",
+                "description": "Number of full bathrooms required. Set to 2 "
+                               "when the buyer requests a private/ensuite bath "
+                               "for the master bedroom (phrases like 'own t&b', "
+                               "'private bathroom', 'ensuite', 'master bath', "
+                               "'sariling CR'). Set to 0 to use the size-based "
+                               "default instead.",
             },
             "powder_room": {
                 "type": "boolean",
@@ -172,6 +176,10 @@ class StubExtractor:
 
         baths = re.search(r"(\d+)\s*[- ]?\s*(?:full )?bath", text)
         num_baths = int(baths.group(1)) if baths else None
+        if num_baths is None and any(k in text for k in (
+                "own t&b", "own tb", "private bath", "ensuite", "sariling cr",
+                "master bath", "master bedroom.*bath", "own bathroom")):
+            num_baths = 2
 
         want_carport = any(k in text for k in ("carport", "garage"))
         carport_side = None
