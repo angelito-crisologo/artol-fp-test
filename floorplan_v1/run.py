@@ -757,11 +757,11 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
         raise RuntimeError("structural topology errors: " + "; ".join(errs))
     lot = _make_default_lot(brief)
     env = lot.envelope()
-    # Same carport-side rules as _run_hand_authored — see note there.
+    # AI-generated topologies are authored for the exact carport side in the
+    # brief — no mirroring. Only strip/adjust for ncp, fcp, and front carports.
     side  = (brief.carport_side or "").lower()
     ctype = (brief.carport_type  or "").lower()
     if side == "left":
-        topo = mirror_topology_x(topo)
         if ctype == "fcp":
             topo = _strip_carport_void_only(topo)
         kitchen_side = "left"

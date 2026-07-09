@@ -90,37 +90,39 @@ You have five kinds of rules you can put in a topology:
 - Carport: the brief tells you `carport_type` (ccp / fcp / ncp) and
   `carport_side` (left / right / front). Encode it as follows.
 
-  **CANONICAL RULE: always place the carport on the RIGHT in your topology.**
-  If the brief says carport_side=left, the runner automatically mirrors the
-  topology — you never need to author a left-side variant.
+  Generate the topology for the ACTUAL carport side in the brief — do not
+  use a canonical side. If the brief says carport_side=left, put the carport
+  on the left; if carport_side=right, put it on the right.
 
-  **ncp** (no carport): omit the carport setback_element and building_void
-  entirely. The runner strips them automatically, but it's cleaner to omit.
+  **ncp** (no carport): omit the carport setback_element and building_void.
 
-  **ccp** (claimed carport — the default when carport_type is omitted):
-  The carport occupies 3 m of the right side setback for the first 6 m
-  from the street, then the setback narrows back to 2 m. This creates an
-  L-shaped notch in the building footprint. Include BOTH:
+  **ccp** (claimed carport — default when carport_type is omitted):
+  The carport occupies 3 m of the specified side setback for the first 6 m
+  from the street, then the setback narrows back to 2 m, creating an L-notch
+  in the building footprint. Include BOTH:
     setback_elements entry:
       { "type": "carport", "location": "side_setback", "covered": false,
         "width_m": 3.0, "depth_m": 6.0 }
-    building_voids entry (the L-notch itself):
-      { "id": "carport_cut", "location": "front_right",
+    building_voids entry — location depends on carport_side:
+      carport_side=left  → "location": "front_left"
+      carport_side=right → "location": "front_right"
+      { "id": "carport_cut", "location": "front_left",
         "width_m": 1.0, "depth_m": 4.0, "consumed_by": "carport" }
-    (width_m 1.0 = the extra 1 m bite beyond the 2 m base setback;
-     depth_m 4.0 = 6 m carport depth − 2 m front setback = 4 m of
-     buildable area that the notch removes from the front-right corner)
+    (width_m 1.0 = extra 1 m beyond the 2 m base setback;
+     depth_m 4.0 = 6 m carport depth − 2 m front setback)
 
-  **fcp** (full carport): full 3 m setback for the entire depth of the
-  lot on that side — no L-notch, the building envelope is a clean
-  rectangle (just narrower). Include only the setback_element, NO void:
-    setback_elements entry:
-      { "type": "carport", "location": "side_setback", "covered": false,
-        "width_m": 3.0, "depth_m": 6.0 }
+  **fcp** (full carport): full 3 m setback entire depth — no L-notch.
+  Include only the setback_element, NO building_void:
+    { "type": "carport", "location": "side_setback", "covered": false,
+      "width_m": 3.0, "depth_m": 6.0 }
 
-  Anchor rooms away from the carport void: put kitchen, rear rooms, and
-  the bathroom wet-core on the LEFT side (away from the right-side void)
-  so the L-notch doesn't collide with rooms that need the full depth.
+  Room placement relative to the carport side:
+  - Public column (great_room / kitchen) goes on the SAME side as the carport.
+    Kitchen anchors to the rear of the carport side.
+  - Private column (bedrooms + baths) goes on the OPPOSITE side.
+  - zone_split.private_side = the side OPPOSITE the carport.
+  Example: carport_side=left → public column left, private column right,
+    zone_split private_side="right", building_void location="front_left".
 - Master bedroom usually larger than the standard bedroom.
 - Common T&B is typically publicly accessible (door off dining).
 - Prefer placing common T&B against an exterior wall (rear or side boundary)
