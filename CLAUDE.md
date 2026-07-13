@@ -2,33 +2,46 @@
 
 PH floor plan generator + validator. Single-detached mid-market houses. CP-SAT solver.
 
-## Session handoff (2026-07-09) — read this first
+## Session handoff (2026-07-13) — read this first
 
-Switching from Cowork to Claude Code CLI mid-task. The interactive tester
-(`floorplan_v1/app.py`, see "Recently completed" below) is built and
-locally verified, but NOT yet deployed. Pick up from here:
+Mac was reset since the last session; environment was rebuilt (`brew install
+python@3.12`, fresh `.venv`, `pip install -r requirements.txt`) and verified
+— 46/47+ tests passing, GitHub remote intact and pushed
+(`github.com/angelito-crisologo/artol-fp-test`), Streamlit Cloud deployment
+at `https://artol-fp.streamlit.app/` confirmed still live. See
+[[deployment-status]] memory for details.
 
-- **Git:** this repo has no remote configured (`git remote -v` is empty).
-  Working tree has uncommitted changes:
-  - New from this session: `floorplan_v1/app.py`, `floorplan_v1/ai/extract.py`,
-    `floorplan_v1/ai/match.py`, root `requirements.txt`, `DEPLOY.md`,
-    `.streamlit/secrets.toml.example`, a `.gitignore` edit (added
-    `.streamlit/secrets.toml`), and this file.
-  - Pre-existing and unrelated to the tester — review/commit separately:
-    `1s_2br_16x12_sq_side_split_bath_pwd_gr_ncp.svg` (modified),
-    `floorplan_v1/briefs/test/1s_2br_16x12_sq_side_split_bath_pwd_gr_ncp.json`
-    (modified), `1s_2br_12x12_sq_side_split_baths_cl_gr_ncp.svg` (untracked).
-    Small diffs (1-2 lines) — worth a quick look before folding into any commit.
-- **Not yet done:** push to GitHub, create the Streamlit Community Cloud app,
-  set secrets. Full steps in `DEPLOY.md`.
-- **Not yet verified:** `ai/extract.py`'s `ClaudeExtractor` (real Claude-based
-  NL→requirements extraction) — only `StubExtractor` (regex/keyword fallback,
-  no API key needed) was exercised, via `streamlit.testing.v1.AppTest`
-  simulating the full click-through (parse → edit fields → find topologies →
-  run selected, plus the empty-match path). Worth a real run with
-  `ANTHROPIC_API_KEY` set before this goes in front of the business partner.
-- **Local run:** `pip install -r requirements.txt` (repo root, `--break-system-packages`
-  if needed) then `streamlit run floorplan_v1/app.py` from repo root.
+This session's work, in order:
+
+1. **Door-hinge bug fix** (`solver/architectural_plan.py`) — L-shaped
+   bedrooms (ensuite-alcove claim) combined with the `stack_bias` heuristic
+   could hinge a door against a non-existent wall, or leave two stacked
+   bedrooms' doors far apart instead of mirroring at their real shared
+   corner. Fixed + regression-tested (46/46 pass, zero baseline drift).
+   Also added a lot-size feasibility sweep (`lot_size_sweep.py`,
+   `LOT_SIZE_SWEEP_FINDINGS.md`) and 17 minimum-boundary test briefs under
+   `briefs/test/test_mins/`. **Committed and pushed** (`71fb163`).
+2. **Wide topology `baths_ds_hall_gr` → `baths_ds_gr`** — removed the hall
+   per request; both bedrooms now door directly into the great room,
+   mirroring the squarish `baths_ds_gr` sibling. New test brief
+   `1s_2br_14x11_wd_side_split_baths_ds_gr_ncp` passes cleanly. **Not yet
+   committed** — do so along with everything below in one commit.
+3. **New topology `1s_2br_sq_front_back_split_baths_ds_lk.json`** (added by
+   Angelito, filed under `wide/` despite squarish `target_shell`) — a novel
+   "front-back split" design (one wall divides an all-public front band from
+   an all-private rear band, vs. every other topology's vertical column
+   split). **STILL BROKEN — read [[front-back-split-topology-solver-bug]]
+   before touching this file.** Two authoring contradictions were found and
+   fixed (a room forced to touch the rear wall while another room was
+   stacked behind it, twice over — once via `rear_anchored`, once via
+   kitchen's hardcoded rear-pin in `solver.py`). Per Angelito's request, the
+   private band was reworked into one row — `master | ensuite | common |
+   standard` (baths clustered in the middle) — which eliminates both of
+   those. **Still infeasible at every lot size tried (12x12 up to 34x34).**
+   Isolated to `left_anchored=["living"]` alone being infeasible even on a
+   huge lot with nothing else constraining anything — a genuine `solver.py`
+   bug, not a topology-authoring issue, not yet root-caused. This is the
+   next thing to pick up.
 - Remember [[ask-before-coding]] — this project's standing convention.
 
 ## Current focus (as of 2026-06-25)
@@ -46,6 +59,13 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_wd_side_split_bath_hall_gr` — single bath, hall in private column
 - `1s_2br_wd_side_split_baths_cl_gr` — clustered baths at rear band
 - `1s_2br_wd_l_wrap_bath_hall_gr` — L-wrap great room with mid-band hall
+- `1s_2br_wd_side_split_baths_ds_gr` — distributed baths, no hall, both
+  bedrooms direct-to-great (renamed 2026-07-13 from `..._ds_hall_gr` after
+  removing the hall)
+- `1s_2br_sq_front_back_split_baths_ds_lk` — **BROKEN, do not rely on this
+  one yet.** Front-back split (not vertical column split like everything
+  else); `target_shell` is actually `squarish` despite living in this
+  folder. See [[front-back-split-topology-solver-bug]].
 
 **Square 2BR topologies** (`floorplan_v1/topologies/1s/2br/squarish/`):
 
@@ -56,7 +76,8 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-**Test suite status:** 29 pass, 0 fail, 0 error.
+**Test suite status:** 47 pass, 0 fail, 0 error (includes 17 minimum-boundary
+briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]]).
 
 ## Recently completed
 
@@ -80,6 +101,12 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 
 ## Open / deferred
 
+- **`solver.py` bug blocking `1s_2br_sq_front_back_split_baths_ds_lk`
+  (found 2026-07-13, not yet root-caused):** `left_anchored=["living"]`
+  alone is infeasible even on a 34x34 m lot with every other constraint
+  stripped away. Not a topology-authoring issue — needs a read-through of
+  `solver.py`'s full constraint-building function. See
+  [[front-back-split-topology-solver-bug]].
 - **Door placement / corner-preference (requested, not started):** `door_placement` override on adjacency: `"low_corner" | "high_corner" | "center"`. Entry point: `architectural_plan.py::_door_for_adjacency` — `low_real`/`high_real` logic exists, needs override field + center path. (Different tier from door-HOST selection, which is done.)
 - **Task #13 (deferred at user request):** Remove obsolete single-bath wide topologies, briefs, outputs.
 - Wide-shell catalog plan in memory ([[wide-shell-catalog-plan]]) calls for 3BR wide-only topologies as Phase 2 (`1s_3br_wd_side_split_bath_hall_ld`, `1s_3br_wd_side_split_baths_cl_ld`). Not started.

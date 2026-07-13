@@ -1,0 +1,23 @@
+{
+  "intent": "Wide-shell 2BR / 2 baths DISTRIBUTED, no hall, both bedrooms direct-to-great — 14x11 lot, NO CARPORT. Envelope 10x7 = 70 m² floor, within the topology's 65-85 m² buildable band. Bedroom column (left): master front, ensuite mid (sandwiched, master's exclusive), standard rear. Both master and standard door directly east into the great room. Common bath's only door opens onto the great room (bedroom<->common-bath is always wall-only per the codebase's generic rule). Common bath and kitchen share a rear wet-stack. Great_room + kitchen form one open LDK on the right.",
+  "lot_width": 14.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "master ensuite sandwiched between master and standard (distributed, not clustered)",
+    "both master and standard door directly into the great room, no hall",
+    "common bath accessible from the great room",
+    "open-plan great_room + kitchen (gr style)",
+    "wet-stack between common bath and kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_baths_ds_gr.json"
+}
