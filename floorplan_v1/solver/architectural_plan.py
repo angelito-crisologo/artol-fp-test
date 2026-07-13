@@ -312,42 +312,60 @@ def _opposite(side: str) -> str:
     return {"N": "S", "S": "N", "E": "W", "W": "E"}[side]
 
 
-def _perpendicular_walls_real(room: Room, wall: str, env: Rect,
+def _perpendicular_walls_real(room: Room, cell: Rect, wall: str, env: Rect,
                               all_rooms) -> Tuple[bool, bool]:
-    """For `room`'s `wall`, classify each end of the wall by whether the
-    perpendicular wall at that corner is ACTUALLY DRAWN.
+    """For `room`'s `cell` (its rect, or rect2 for a composite/L-shaped room
+    — whichever cell's wall is actually being evaluated, NOT always the
+    primary rect), classify each end of `wall` by whether the perpendicular
+    wall at that corner is ACTUALLY DRAWN.
 
     Returns (low_real, high_real) where:
       * "low"  end of the wall = west endpoint (N/S walls) or south endpoint
-              (E/W walls). The perpendicular wall is the room's W or S side.
+              (E/W walls). The perpendicular wall is the cell's W or S side.
       * "high" end = east / north endpoint. The perpendicular wall is the
-              room's E or N side.
+              cell's E or N side.
 
     A perpendicular wall is "real" if it's either exterior (touches the
     buildable envelope edge) OR shared with a neighbor whose room-type pair
-    with `room` is NOT in _OPEN_PLAN_TYPE_PAIRS. Open-plan boundaries get
+    with `room` is NOT in _OPEN_PLAN_TYPE_PAIRS, AND that neighbor's shared
+    segment actually reaches the corner in question — a neighbor touching
+    some OTHER part of the perpendicular wall doesn't make THIS corner real
+    (e.g., a different cell of the SAME composite room, or of a composite
+    neighbor, can occupy the far end of a wall that another neighbor only
+    partially covers near the other end — every cell of every other room is
+    checked, not just each room's primary rect). Open-plan boundaries get
     erased at render time, so a door hinged there has nothing to swing
     against — the corner is invisible."""
     if wall in ("N", "S"):
         low_perp_side, high_perp_side = "W", "E"
+        corner_coord = cell.y1 if wall == "N" else cell.y0
     else:
         low_perp_side, high_perp_side = "S", "N"
+        corner_coord = cell.x1 if wall == "E" else cell.x0
 
     def _real(perp_side: str) -> bool:
-        if _touches_exterior(room.rect, env, perp_side):
+        if _touches_exterior(cell, env, perp_side):
             return True
         for other in all_rooms:
             if other.id == room.id:
                 continue
-            edge = _shared_edge(room.rect, other.rect)
-            if edge is None or edge[0] != perp_side:
-                continue
-            if frozenset({room.type, other.type}) in _OPEN_PLAN_TYPE_PAIRS:
-                return False
-            return True
-        # No neighbor on that perpendicular side and not exterior — could be a
-        # building-void boundary. Treat as not-real so we avoid pinning a door
-        # to a corner that has no perpendicular wall to swing against.
+            # Check every cell of `other` — for a composite (L-shaped)
+            # neighbor, the cell actually touching this corner may be its
+            # secondary cell (e.g. an alcove), not its primary rect.
+            for other_cell in other.cells:
+                edge = _shared_edge(cell, other_cell)
+                if edge is None or edge[0] != perp_side:
+                    continue
+                _, _, seg_start, seg_end = edge
+                if not (seg_start - 1e-3 <= corner_coord <= seg_end + 1e-3):
+                    continue   # this cell doesn't reach the corner being tested
+                if frozenset({room.type, other.type}) in _OPEN_PLAN_TYPE_PAIRS:
+                    return False
+                return True
+        # No neighbor reaching that corner and not exterior — could be a
+        # building-void boundary, or the room's own other cell. Treat as
+        # not-real so we avoid pinning a door to a corner that has no
+        # perpendicular wall to swing against.
         return False
 
     return (_real(low_perp_side), _real(high_perp_side))
@@ -400,50 +418,23 @@ def _door_for_adjacency(adj, layout: Layout,
     types = {room_a.type, room_b.type}
     if types & _BEDROOM_TYPES and types & _COMMON_BATH_TYPES:
         return None
-    # Scan all (cell_a, cell_b) pairs and pick the LONGEST shared edge.
-    # This is what handles L-shape composites correctly: e.g., when master
-    # has a rect2 alcove that touches dining, the door goes on rect2's
+    # Scan all (cell_a, cell_b) pairs and pick the LONGEST shared edge as the
+    # default. This is what handles L-shape composites correctly: e.g., when
+    # master has a rect2 alcove that touches dining, the door goes on rect2's
     # east wall (the long shared edge) rather than master.rect's east wall
     # (which might have a tiny or zero overlap with dining).
     best = _best_shared_edge_for_rooms(room_a, room_b)
     if best is None:
         return None
     side_a, coord, start, end, cell_a, cell_b = best
-    shared_len = end - start
-    clear = DOOR_CLEAR_WIDTH_M.get(adj.kind, 0.80)
-    # Plumbing-band guard (door-host edges on wet walls): the shared edge
-    # must keep `min_solid_wall_m` of continuous solid wall AFTER the door
-    # (clear width + 2x 0.10 m frame) is placed. If it can't, this edge
-    # refuses the door — the door-host group falls back to its default.
-    min_solid = getattr(adj, "min_solid_wall_m", 0.0) or 0.0
-    if min_solid > 0 and shared_len < clear + 0.20 + min_solid:
-        return None
-    # If the shared wall isn't long enough for the door + 0.1 m frame, skip.
-    if shared_len < clear + 0.10:
-        # Best we can do: shrink the door to fit, but never below the min spec.
-        clear = max(0.60, shared_len - 0.10)
-    # Door position & hinge orientation: PH "swing-against-nearest-wall" rule.
-    # We pick whichever end of the SHARED EDGE has a REAL perpendicular wall
-    # (exterior or non-open-plan neighbor) — open-plan boundaries get erased
-    # at render time, so hinging against them is wrong. The hinge sits at
-    # that corner so the panel swings open against that perpendicular wall
-    # at 180°. If both corners are real (or both fake), fall back to the
-    # nearer-corner rule; ties go LOW for consistency.
     env = layout.lot.envelope()
-    # wall geometry uses the CELL that's actually sharing the edge with room_b
-    # (not room_a.rect) — important for L-shape composites where the door
-    # lives on rect2's wall, not rect's wall.
-    wall_origin = _wall_origin(cell_a, side_a)
-    wall_end = wall_origin + _wall_length(cell_a, side_a)
-    dist_low_to_corner  = start - wall_origin       # how far the shared edge's
-    dist_high_to_corner = wall_end - end            # ends are from cell_a's
-                                                    # perpendicular walls
-    low_real, high_real = _perpendicular_walls_real(
-        room_a, side_a, env, layout.rooms)
+
     # Stack-bias for bedroom doors: if this is a bedroom-to-public door AND
     # the bedroom is in a front_to_rear_stack with another bedroom, prefer
     # to hinge TOWARD the stack neighbor so the two bedroom doors cluster
     # at the shared horizontal boundary (a clean 'bedroom-wing entry').
+    # Computed from stack membership only (not from which cell ends up
+    # hosting the door), so it's safe to resolve before final cell selection.
     stack_bias = None
     if topology is not None and side_a in ("E", "W"):
         # The "bedroom" side of this adjacency is room_a iff it's a bedroom
@@ -477,6 +468,62 @@ def _door_for_adjacency(adj, layout: Layout,
                 elif has_front_bedroom and not has_rear_bedroom:
                     stack_bias = "low"
                 break
+
+    # If a stack bias applies but the DEFAULT (longest-edge) cell doesn't
+    # have a real corner in the biased direction, look for an alternate cell
+    # of room_a that does — even if its shared edge with room_b is shorter.
+    # E.g. an L-shaped bedroom's main rect may be the longest edge against
+    # the great room, but its alcove cell (the shorter edge) is the one that
+    # actually sits next to a stacked sibling bedroom's door — using the
+    # longest edge there would put the two "clustered" doors far apart.
+    if stack_bias:
+        def _bias_real(ca: Rect) -> bool:
+            lr, hr = _perpendicular_walls_real(room_a, ca, side_a, env, layout.rooms)
+            return lr if stack_bias == "low" else hr
+        if not _bias_real(cell_a):
+            for ca in room_a.cells:
+                if ca is cell_a or not _bias_real(ca):
+                    continue
+                for cb in room_b.cells:
+                    cand = _shared_edge(ca, cb)
+                    if cand is not None and cand[0] == side_a:
+                        side_a, coord, start, end = cand
+                        cell_a, cell_b = ca, cb
+                        break
+                else:
+                    continue
+                break
+
+    shared_len = end - start
+    clear = DOOR_CLEAR_WIDTH_M.get(adj.kind, 0.80)
+    # Plumbing-band guard (door-host edges on wet walls): the shared edge
+    # must keep `min_solid_wall_m` of continuous solid wall AFTER the door
+    # (clear width + 2x 0.10 m frame) is placed. If it can't, this edge
+    # refuses the door — the door-host group falls back to its default.
+    min_solid = getattr(adj, "min_solid_wall_m", 0.0) or 0.0
+    if min_solid > 0 and shared_len < clear + 0.20 + min_solid:
+        return None
+    # If the shared wall isn't long enough for the door + 0.1 m frame, skip.
+    if shared_len < clear + 0.10:
+        # Best we can do: shrink the door to fit, but never below the min spec.
+        clear = max(0.60, shared_len - 0.10)
+    # Door position & hinge orientation: PH "swing-against-nearest-wall" rule.
+    # We pick whichever end of the SHARED EDGE has a REAL perpendicular wall
+    # (exterior or non-open-plan neighbor) — open-plan boundaries get erased
+    # at render time, so hinging against them is wrong. The hinge sits at
+    # that corner so the panel swings open against that perpendicular wall
+    # at 180°. If both corners are real (or both fake), fall back to the
+    # nearer-corner rule; ties go LOW for consistency.
+    # wall geometry uses the CELL that's actually sharing the edge with room_b
+    # (not room_a.rect) — important for L-shape composites where the door
+    # lives on rect2's wall, not rect's wall.
+    wall_origin = _wall_origin(cell_a, side_a)
+    wall_end = wall_origin + _wall_length(cell_a, side_a)
+    dist_low_to_corner  = start - wall_origin       # how far the shared edge's
+    dist_high_to_corner = wall_end - end            # ends are from cell_a's
+                                                    # perpendicular walls
+    low_real, high_real = _perpendicular_walls_real(
+        room_a, cell_a, side_a, env, layout.rooms)
 
     # Hinge selection priority:
     #   0. door_placement override on the adjacency (explicit author intent).
@@ -521,7 +568,13 @@ def _door_for_adjacency(adj, layout: Layout,
             hinge_at=prefer_forced,
             cell_idx=cell_idx,
         )
-    if stack_bias:
+    # stack_bias is an aesthetic preference (cluster bedroom doors at their
+    # shared boundary) — it only wins when the biased corner is actually a
+    # real wall to hinge against. Otherwise it falls through to the normal
+    # real/fake corner logic below (e.g. an L-shaped bedroom's alcove can
+    # put a fake corner exactly where the stack neighbor "should" be).
+    stack_bias_real = stack_bias == "low" and low_real or stack_bias == "high" and high_real
+    if stack_bias and stack_bias_real:
         prefer = stack_bias
     elif low_real and not high_real:
         prefer = "low"
@@ -720,7 +773,7 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     # Pick the side with a real perpendicular wall (exterior or non-open-plan
     # neighbor). If both qualify, default to LOW (west).
     low_real, high_real = _perpendicular_walls_real(
-        room, "N", env, layout.rooms)
+        room, room.rect, "N", env, layout.rooms)
     if high_real and not low_real:
         pos = wall_len - CORNER_OFFSET_M - clear
         hinge_at = "high"

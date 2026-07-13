@@ -1,0 +1,16 @@
+{
+  "intent": "Minimum-feasible boundary test (wide-of-square (ratio 1.15) lot) for bath_pwd_gr from the 2026-07-13 lot-size sweep (see floorplan_v1/LOT_SIZE_SWEEP_FINDINGS.md). 11.5x10.0 lot, 45.0 m2 floor -- smallest size in the tested grid that still solves + validates cleanly at this ratio. No carport.",
+  "lot_width": 11.5,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_bath_pwd_gr.json"
+}
