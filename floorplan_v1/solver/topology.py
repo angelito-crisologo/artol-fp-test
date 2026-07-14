@@ -165,6 +165,16 @@ class Topology:
     # handles the actual L-shape assignment.
     ensuite_alcove_joins_master: bool = False
 
+    # When True, disables the solver's hardcoded LDK vertical-stacking rules
+    # (kitchen+great_room must stack, kitchen+dining_room must stack when no
+    # living_room, living_room must be in front of both dining+kitchen) and
+    # the kitchen left/right symmetry-break. Those rules assume every LDK is
+    # laid out as a front-to-rear column (the whole catalog's default); a
+    # topology whose LDK is arranged horizontally instead (e.g. a front-back
+    # split where great_room/kitchen sit side-by-side across the full front
+    # band) needs them off, or they force a contradictory stack order.
+    ldk_horizontal: bool = False
+
     # Optional ordering hints. Each entry is a list of room ids that must
     # stack front-to-rear (room[0] in front, room[-1] at rear). The solver
     # adds hard constraints: room[i].y_end <= room[i+1].y for each pair.
@@ -250,6 +260,7 @@ def load_topology(path: str) -> Topology:
         match_bath_widths=bool(d.get("match_bath_widths", False)),
         bedroom_band_fills_width=bool(d.get("bedroom_band_fills_width", False)),
         ensuite_alcove_joins_master=bool(d.get("ensuite_alcove_joins_master", False)),
+        ldk_horizontal=bool(d.get("ldk_horizontal", False)),
         front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
         rear_anchored=list(d.get("rear_anchored", []) or []),
         left_anchored=list(d.get("left_anchored", []) or []),
@@ -368,6 +379,7 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         match_bath_widths=t.match_bath_widths,
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
+        ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=new_stacks,
         rear_anchored=[_swap_token(x) for x in t.rear_anchored],
         left_anchored=[_swap_token(x) for x in t.left_anchored],
@@ -461,6 +473,7 @@ def apply_no_master_transform(t: Topology) -> Topology:
         match_bath_widths=t.match_bath_widths,
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=False,  # ensuite is gone
+        ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=new_stacks,
         rear_anchored=_drop_from_list(t.rear_anchored),
         left_anchored=_drop_from_list(t.left_anchored),
@@ -515,6 +528,7 @@ def mirror_topology_x(t: Topology) -> Topology:
         match_bath_widths=t.match_bath_widths,
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
+        ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=list(t.front_to_rear_stacks),
         rear_anchored=list(t.rear_anchored),
         # x-axis fields swap:

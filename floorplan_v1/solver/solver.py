@@ -441,9 +441,29 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # rear setback is genuinely adjacent ("kitchen opens out to dirty kitchen").
     # Living room must touch the FRONT exterior wall — so the main entry is on
     # the street side ("living room accessible from the front").
+    #
+    # EXCEPTION: a topology can explicitly flip the kitchen rule via
+    # zone_split — when axis="horizontal", private_side="rear", and kitchen
+    # is declared in public_rooms, the topology is explicitly saying kitchen
+    # belongs in the FRONT band ("front-back split" designs, public band at
+    # the street side). That directly contradicts the default rear-pin: the
+    # zone_split constraint would force kitchen's own split-line boundary to
+    # coincide exactly with the envelope's rear edge, which then makes it
+    # geometrically impossible for any private (rear) room to have positive
+    # depth. Skip the pin in that specific, self-declared case. Every other
+    # topology (no zone_split, vertical zone_split, or kitchen not listed in
+    # public_rooms) is unaffected — this is a no-op for the rest of the
+    # catalog.
+    zs = topology.zone_split
+    kitchen_front_override = (
+        zs is not None and zs.axis == "horizontal" and zs.private_side == "rear"
+    )
     for r in topology.rooms:
         if r.type == "kitchen":
-            model.Add(ry_end[r.id] == ey1)
+            if kitchen_front_override and r.id in zs.public_rooms:
+                pass   # topology explicitly wants kitchen in the front band
+            else:
+                model.Add(ry_end[r.id] == ey1)
         if r.type == "living_room":
             model.Add(ry[r.id] == ey0)
 
@@ -593,35 +613,40 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     #   - kitchen + dining_room (NO living_room): must stack front-to-rear.
     # Enforced globally so any topology — hand-authored or AI-generated —
     # respects these layout rules without having to declare them explicitly.
+    # SKIPPED ENTIRELY when topology.ldk_horizontal is True: these rules
+    # assume the LDK is a front-to-rear column (the catalog's default) and
+    # actively contradict a topology whose LDK is meant to sit side-by-side
+    # across a horizontal band instead (e.g. a front-back-split design).
     def _room_id_of_type(rt):
         return next((r.id for r in topology.rooms if r.type == rt), None)
     kitchen_id_g = _room_id_of_type("kitchen")
     great_id     = _room_id_of_type("great_room")
     dining_id    = _room_id_of_type("dining_room")
     living_id    = _room_id_of_type("living_room")
-    if kitchen_id_g is not None and great_id is not None:
-        # Disjoint in y: either great.y_end <= kitchen.y OR kitchen.y_end <= great.y.
-        # Translation: they share a horizontal wall (stack), not a vertical one.
-        ks_g_front = model.NewBoolVar("ldk_great_in_front")
-        ks_g_rear  = model.NewBoolVar("ldk_great_in_rear")
-        model.Add(ry_end[great_id]   <= ry[kitchen_id_g]).OnlyEnforceIf(ks_g_front)
-        model.Add(ry_end[kitchen_id_g] <= ry[great_id]).OnlyEnforceIf(ks_g_rear)
-        model.AddBoolOr([ks_g_front, ks_g_rear])
-    if kitchen_id_g is not None and dining_id is not None and living_id is None:
-        # No living_room — kitchen+dining must stack (mirror of the great_room rule)
-        ks_d_front = model.NewBoolVar("ldk_dining_in_front")
-        ks_d_rear  = model.NewBoolVar("ldk_dining_in_rear")
-        model.Add(ry_end[dining_id]   <= ry[kitchen_id_g]).OnlyEnforceIf(ks_d_front)
-        model.Add(ry_end[kitchen_id_g] <= ry[dining_id]).OnlyEnforceIf(ks_d_rear)
-        model.AddBoolOr([ks_d_front, ks_d_rear])
-    if (kitchen_id_g is not None and dining_id is not None and
-            living_id is not None):
-        # Living must be in front of BOTH dining and kitchen, so that if dining
-        # and kitchen sit side-by-side at the rear they have living above them.
-        # (If the solver chooses dining behind kitchen or vice versa, this still
-        # holds — living is just in front of all the other LDK rooms.)
-        model.Add(ry_end[living_id] <= ry[dining_id])
-        model.Add(ry_end[living_id] <= ry[kitchen_id_g])
+    if not topology.ldk_horizontal:
+        if kitchen_id_g is not None and great_id is not None:
+            # Disjoint in y: either great.y_end <= kitchen.y OR kitchen.y_end <= great.y.
+            # Translation: they share a horizontal wall (stack), not a vertical one.
+            ks_g_front = model.NewBoolVar("ldk_great_in_front")
+            ks_g_rear  = model.NewBoolVar("ldk_great_in_rear")
+            model.Add(ry_end[great_id]   <= ry[kitchen_id_g]).OnlyEnforceIf(ks_g_front)
+            model.Add(ry_end[kitchen_id_g] <= ry[great_id]).OnlyEnforceIf(ks_g_rear)
+            model.AddBoolOr([ks_g_front, ks_g_rear])
+        if kitchen_id_g is not None and dining_id is not None and living_id is None:
+            # No living_room — kitchen+dining must stack (mirror of the great_room rule)
+            ks_d_front = model.NewBoolVar("ldk_dining_in_front")
+            ks_d_rear  = model.NewBoolVar("ldk_dining_in_rear")
+            model.Add(ry_end[dining_id]   <= ry[kitchen_id_g]).OnlyEnforceIf(ks_d_front)
+            model.Add(ry_end[kitchen_id_g] <= ry[dining_id]).OnlyEnforceIf(ks_d_rear)
+            model.AddBoolOr([ks_d_front, ks_d_rear])
+        if (kitchen_id_g is not None and dining_id is not None and
+                living_id is not None):
+            # Living must be in front of BOTH dining and kitchen, so that if dining
+            # and kitchen sit side-by-side at the rear they have living above them.
+            # (If the solver chooses dining behind kitchen or vice versa, this still
+            # holds — living is just in front of all the other LDK rooms.)
+            model.Add(ry_end[living_id] <= ry[dining_id])
+            model.Add(ry_end[living_id] <= ry[kitchen_id_g])
 
     # ---------- rear-anchored rooms ----------
     # Kitchen is already pinned to the rear wall via a hard solver rule.
@@ -654,8 +679,12 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # passes `kitchen_side` derived from brief.carport_side/carport_type — "right"
     # for the canonical case and "left" when the brief asks for a mirrored
     # layout (carport on the left, public LDK alongside it).
+    # Skipped when topology.ldk_horizontal is True: a horizontal-LDK topology
+    # typically pins kitchen's side explicitly via left_anchored/right_anchored
+    # or zone_split instead, and this hard left/right-half split can directly
+    # conflict with that self-declared placement.
     kitchen_id = next((r.id for r in topology.rooms if r.type == "kitchen"), None)
-    if kitchen_id is not None:
+    if kitchen_id is not None and not topology.ldk_horizontal:
         if kitchen_side == "right":
             # 2 * center_x(kitchen) >= 2 * center_x(envelope)
             model.Add(rx[kitchen_id] + rx_end[kitchen_id] >= ex0 + ex1)

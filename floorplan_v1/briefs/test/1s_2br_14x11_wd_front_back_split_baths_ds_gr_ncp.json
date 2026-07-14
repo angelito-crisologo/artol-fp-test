@@ -1,0 +1,22 @@
+{
+  "intent": "Wide-shell 2BR / 2 baths CLUSTERED, genuine FRONT-BACK split, GR style — 14x11 lot, NO CARPORT. Envelope 10x7 = 70 m² floor. One wall spans the full width, dividing the front public band (great_room + kitchen, side-by-side) from the rear private row (master | ensuite | common | standard, baths clustered in the middle). Solves via ldk_horizontal=true (relaxes the solver's default LDK vertical-stacking rules) and master-only left anchoring (great_room is NOT left-anchored, letting it span freely to reach every private-row room it must share a wall with).",
+  "lot_width": 14.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "one wall spans the full width dividing public front from private rear",
+    "great_room and kitchen sit side-by-side across the front, not stacked",
+    "master and standard each door directly into the great room, no hall",
+    "ensuite and common bath clustered together in the middle of the private row",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_front_back_split_baths_ds_gr.json"
+}
