@@ -837,27 +837,34 @@ def _front_door(topology: Topology, layout: Layout, env: Rect,
     clear = DOOR_CLEAR_WIDTH_M["main_door"]
     if wall_len < clear + 0.30:
         clear = max(0.80, wall_len - 0.30)
-    # Front-door placement: always at the low corner (PH practice — entry
-    # door sits at one side of the living/great room facade, not centred).
-    # The corner-threat check below will push to high corner or, as a last
-    # resort, to centre if both corners are already occupied by interior doors.
-    pos = CORNER_OFFSET_M
-    hinge_at = "low"
+    # Front-door placement: hinge toward whichever end of entry_room's own
+    # wall is a REAL building corner (exterior wall, or a neighbor that
+    # isn't open-plan with entry_room) rather than defaulting to "low"
+    # unconditionally. When the entry-host room shares its street wall with
+    # a sibling public room open-plan (e.g. kitchen + great_room side by
+    # side), entry_room's own "low" end may just be that open seam — which
+    # reads as the middle of the whole facade, not a corner, even though
+    # it's technically the corner of entry_room's own rectangle. Falls back
+    # to PH-practice default (low) when both ends are equally real/fake.
+    low_real, high_real = _perpendicular_walls_real(
+        entry_room, entry_room.rect, chosen, env, layout.rooms)
+    preferred = "high" if (high_real and not low_real) else "low"
+    low_pos = CORNER_OFFSET_M
+    high_pos = wall_len - CORNER_OFFSET_M - clear
+    pos, hinge_at = (low_pos, "low") if preferred == "low" else (high_pos, "high")
 
     # Avoid placing the front door near a corner that's already occupied by
     # an interior door on a perpendicular wall of the entry-host room.
     threatened = _entry_wall_threatened_corners(
         entry_room, chosen, existing_doors or [])
-    low_pos = CORNER_OFFSET_M
-    high_pos = wall_len - CORNER_OFFSET_M - clear
-    if threatened == {"low"}:
-        pos, hinge_at = high_pos, "high"
-    elif threatened == {"high"}:
-        pos, hinge_at = low_pos, "low"
-    elif threatened == {"low", "high"}:
-        # Both corners taken — centered is the best of the bad options.
-        pos = (wall_len - clear) / 2.0
-        hinge_at = "low"
+    if preferred in threatened:
+        other = "low" if preferred == "high" else "high"
+        if other not in threatened:
+            pos, hinge_at = (low_pos, "low") if other == "low" else (high_pos, "high")
+        else:
+            # Both corners taken — centered is the best of the bad options.
+            pos = (wall_len - clear) / 2.0
+            hinge_at = "low"
 
     return Door(
         room_a="exterior", room_b=entry_id, wall=chosen,

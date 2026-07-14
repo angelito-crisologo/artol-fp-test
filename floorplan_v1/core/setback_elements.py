@@ -92,10 +92,13 @@ def _setback_elements(lot: Lot, carport_side: str, kitchen: Rect,
     rear_y1 = lot.depth - 0.3
 
     if dirty_kitchen_at == "side":
-        # Side placement — alongside the kitchen in the kitchen-side setback
-        # (the wider side, by canonical orientation the right). Past the
-        # carport's y range so they don't overlap.
-        if lot.right >= lot.left:
+        # Side placement — alongside whichever side the kitchen room itself
+        # actually sits on. Determined from kitchen's own rect (not a
+        # setback-width comparison — that heuristic assumed kitchen is
+        # always on the "wider" side, which breaks for topologies like the
+        # narrow side-corridor family where kitchen is explicitly
+        # left-anchored and hall/great sit on the right).
+        if (kitchen.x0 + kitchen.x1) / 2.0 >= lot.width / 2.0:
             dk_x1 = lot.width - 0.3
             dk_x0 = lot.width - lot.right + 0.1
         else:

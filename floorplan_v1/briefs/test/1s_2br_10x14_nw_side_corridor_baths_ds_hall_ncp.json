@@ -1,0 +1,24 @@
+{
+  "intent": "Narrow-shell 2BR / 2 baths DISTRIBUTED, SIDE-CORRIDOR — 10x14 lot, NO CARPORT. A single hallway serves master, common bath, and standard; master (full width at the rear) reaches the hall via a normal front-back stack adjacency at its front wall. Kitchen and great_room sit side by side at the front.",
+  "lot_width": 10.0,
+  "lot_depth": 14.0,
+  "bedroom_count": 2,
+  "dirty_kitchen": true,
+  "must_haves": [
+    "master ensuite, master's private door is to ensuite",
+    "master's second door onto the hall is on its front wall",
+    "standard and common bath both door onto the hall",
+    "kitchen and great_room side by side at the front, no hall column between them",
+    "dirty kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/narrow/1s_2br_nw_side_corridor_baths_ds_hall.json"
+}
