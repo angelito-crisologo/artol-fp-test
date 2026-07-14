@@ -23,28 +23,51 @@ This session's work, in order:
    `briefs/test/test_mins/`. **Committed and pushed** (`71fb163`).
 2. **Wide topology `baths_ds_hall_gr` → `baths_ds_gr`** — removed the hall
    per request; both bedrooms now door directly into the great room,
-   mirroring the squarish `baths_ds_gr` sibling. New test brief
-   `1s_2br_14x11_wd_side_split_baths_ds_gr_ncp` passes cleanly. **Not yet
-   committed** — do so along with everything below in one commit.
+   mirroring the squarish `baths_ds_gr` sibling. Test brief
+   `1s_2br_14x11_wd_side_split_baths_ds_gr_ncp`. Committed.
 3. **New topology `1s_2br_wd_front_back_split_baths_ds_gr.json`** — a novel
    "front-back split" design (one wall spans the full width, dividing an
    all-public front band from an all-private rear band, vs. every other
    topology's vertical column split). Went through several revisions
    (originally `1s_2br_sq_front_back_split_baths_ds_lk.json`, squarish and
    misfiled under `wide/`, then a `living_room` version, then `great_room`)
-   and a deep multi-session diagnosis — **now WORKING**, verified at 14x11 m
-   (COMPLIANT, score 23.50, 0 warnings, no fallback). Front band:
+   and a deep multi-session diagnosis — **WORKING**, verified at both
+   14x11 and 14x10 m (COMPLIANT, 0 warnings, no fallback). Front band:
    `great_room` | `kitchen` genuinely side-by-side. Rear band, one row:
    `master | ensuite | common | standard` (baths clustered in the middle).
-   Five separate fixes were needed — full trail in
+   Also got a side-setback dirty-kitchen door (`_dirty_kitchen_door` in
+   `architectural_plan.py` was hardcoded to only check a room's rear wall —
+   extended to try E/W walls when the topology's dirty_kitchen setback
+   element declares `location: "side_setback"`). Five separate fixes were
+   needed to get it solving — full trail in
    [[front-back-split-topology-solver-bug]] — the two reusable ones are a
    `solver.py` fix (kitchen's hardcoded rear-pin now skips itself when
    `zone_split` explicitly puts kitchen in the front/public zone) and a new
    topology-level `ldk_horizontal` flag (disables the solver's hardcoded
    LDK vertical-stacking rules for topologies that want a horizontal/
    side-by-side LDK instead — default `False`, zero effect on the rest of
-   the catalog). New test brief:
-   `1s_2br_14x11_wd_front_back_split_baths_ds_gr_ncp`.
+   the catalog). Test briefs: `1s_2br_14x11_wd_front_back_split_baths_ds_gr_ncp`,
+   `1s_2br_14x10_wd_front_back_split_baths_ds_gr_ncp`. Committed and pushed.
+4. **New topology `1s_2br_wd_quadrant_split_baths_ds_ld.json`** — private
+   and public occupy diagonal corners instead of a single axis. Front band:
+   `great_room` (left, entry) + `standard` (right). Rear band: `master` +
+   `ensuite` (left), `hall` + `common` T&B stacked (hall in front) in the
+   middle, `kitchen` (right) — `hall` is the circulation hinge, open to
+   both `great_room` and `kitchen`. Original draft (with separate
+   `living_room` + `dining_room` instead of one `great_room`) had a 3-way
+   mutual adjacency (`hall`↔`kitchen`↔`dining` all touching) that was
+   unsolvable even at 34x34 m with every room's caps relaxed — merging into
+   `great_room` per Angelito's redesign eliminated that hub entirely and
+   it now solves clean on the first try (no snapping). Also had the same
+   `hall`-rear-anchored-while-`common`-stacked-behind-it authoring bug
+   fixed on the other two topologies, and the same `right_anchored`
+   edge-collision pattern (`kitchen` + `standard` sharing the same wall —
+   removed `standard`). Verified at 14x11 and 14x10 m, COMPLIANT, 0
+   warnings, no fallback, uses `ldk_horizontal` is NOT needed here (great
+   and kitchen aren't directly adjacent, so the hardcoded LDK stacking rule
+   doesn't conflict). Test briefs:
+   `1s_2br_14x11_wd_quadrant_split_baths_ds_ld_ncp`,
+   `1s_2br_14x10_wd_quadrant_split_baths_ds_ld_ncp`.
 - Remember [[ask-before-coding]] — this project's standing convention.
 
 ## Current focus (as of 2026-06-25)
@@ -70,6 +93,9 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
   front, master|ensuite|common|standard in one row at rear. See
   [[front-back-split-topology-solver-bug]] for how it was made to work —
   uses the new `ldk_horizontal` topology flag.
+- `1s_2br_wd_quadrant_split_baths_ds_ld` — private/public in diagonal
+  quadrants; great_room+standard up front, master+ensuite | hall/common
+  (stacked) | kitchen at rear. hall is the circulation hinge.
 
 **Square 2BR topologies** (`floorplan_v1/topologies/1s/2br/squarish/`):
 
@@ -80,7 +106,7 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-**Test suite status:** 48 pass, 0 fail, 0 error (includes 17 minimum-boundary
+**Test suite status:** 50 pass, 0 fail, 0 error (includes 17 minimum-boundary
 briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]]).
 
 ## Recently completed

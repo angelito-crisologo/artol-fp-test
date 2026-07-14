@@ -1,0 +1,22 @@
+{
+  "intent": "Wide-shell 2BR / 2 baths DISTRIBUTED, QUADRANT split, GR style — 14x11 lot, NO CARPORT. Envelope 10x7 = 70 m² floor. Private and public occupy diagonal corners rather than a clean vertical or horizontal split. Front band: great_room (left, hosts entry) + standard bedroom (right). Rear band: master + ensuite (left), hall + common T&B stacked (hall in front, T&B behind) in the middle, kitchen (right). Hall is the circulation hinge — open to great_room and to kitchen, hosts master's and common's only doors. Standard's only door is to great_room; standard<->kitchen is a geometry-only wall, no door.",
+  "lot_width": 14.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "private and public in diagonal quadrants, not a single-axis split",
+    "master ensuite, master's only door is via the hall",
+    "hall stacked in front of common T&B, open to great_room and kitchen",
+    "standard bedroom's only door is into great_room",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_quadrant_split_baths_ds_ld.json"
+}
