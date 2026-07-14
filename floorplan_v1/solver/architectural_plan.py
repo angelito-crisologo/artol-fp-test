@@ -740,7 +740,8 @@ def _windows_for_room(room: Room, env: Rect, bath: bool,
 
 def _dirty_kitchen_door(topology: Topology, layout: Layout,
                         env: Rect, force: bool = False) -> Optional[Door]:
-    """Emit a service door from the kitchen to the exterior on its rear wall.
+    """Emit a service door from the kitchen to the exterior, on whichever
+    wall actually touches the dirty kitchen's setback.
 
     When `force` is True (brief.kitchen_back_door = True, the default), the
     door is generated unconditionally — PH practice always has a kitchen back
@@ -757,23 +758,36 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     room = next((r for r in layout.rooms if r.id == behind_id), None)
     if room is None:
         return None
-    # The dirty kitchen sits at the REAR setback (per the topology field
-    # location='rear_setback'), so the door is on the room's NORTH wall —
-    # which is also the wall that touches the buildable envelope rear edge.
-    if not _touches_exterior(room.rect, env, "N"):
-        return None
-    wall_len = _wall_length(room.rect, "N")
+    # Default: the dirty kitchen sits at the REAR setback, so the door is on
+    # the room's NORTH wall — the wall that touches the buildable envelope
+    # rear edge. EXCEPTION: a topology can declare
+    # setback_elements[type=dirty_kitchen].location == "side_setback" (e.g.
+    # a front-back-split design where kitchen sits at the FRONT of the house
+    # and has no rear wall at all) — in that case the dirty kitchen sits
+    # beside kitchen instead, so try the E/W walls, whichever actually
+    # touches the envelope boundary.
+    side_placement = dk is not None and (dk.location or "").lower() == "side_setback"
+    if side_placement:
+        wall = next((w for w in ("E", "W")
+                    if _touches_exterior(room.rect, env, w)), None)
+        if wall is None:
+            return None
+    else:
+        wall = "N"
+        if not _touches_exterior(room.rect, env, wall):
+            return None
+    wall_len = _wall_length(room.rect, wall)
     clear = 0.80   # standard service door clear opening
     if wall_len < clear + 0.20:
         clear = max(0.60, wall_len - 0.20)
     # PH practice: doors from the kitchen always sit at a CORNER, against a
-    # REAL perpendicular wall. The kitchen's west and east sides may include
+    # REAL perpendicular wall. The kitchen's other sides may include
     # open-plan boundaries (e.g., kitchen↔great_room) that don't get drawn —
     # hinging the door at such a "corner" leaves it swinging against nothing.
     # Pick the side with a real perpendicular wall (exterior or non-open-plan
-    # neighbor). If both qualify, default to LOW (west).
+    # neighbor). If both qualify, default to LOW.
     low_real, high_real = _perpendicular_walls_real(
-        room, room.rect, "N", env, layout.rooms)
+        room, room.rect, wall, env, layout.rooms)
     if high_real and not low_real:
         pos = wall_len - CORNER_OFFSET_M - clear
         hinge_at = "high"
@@ -786,7 +800,7 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     if pos < 0.0:
         pos = 0.0
     return Door(
-        room_a="exterior", room_b=behind_id, wall="N",
+        room_a="exterior", room_b=behind_id, wall=wall,
         position_m=round(pos, 3),
         clear_width_m=round(clear, 3),
         swing_into=behind_id,
