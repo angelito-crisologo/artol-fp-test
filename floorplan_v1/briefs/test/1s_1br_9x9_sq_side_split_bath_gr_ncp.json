@@ -1,0 +1,21 @@
+{
+  "intent": "1BR / 1 bath squarish smoke test, no carport. 9x9 lot gives a true 5x5 envelope = 25 m2 floor, reproducing the reference '25 Sqm' tiny-house layout (square-topology.png): one straight vertical cut, bedroom+bath column left, great+kitchen column right, 25.0/25 tiled.",
+  "lot_width": 9.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 1,
+  "must_haves": [
+    "single common bath",
+    "bath door opens into kitchen, not great_room",
+    "open-plan great room + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json"
+}

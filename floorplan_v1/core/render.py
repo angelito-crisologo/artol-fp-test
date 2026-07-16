@@ -1295,6 +1295,48 @@ def _open_plan_svg(edge, layout, other_endpoints=None) -> str:
         p1s[0], p1s[1], p2s[0], p2s[1], edge.wall, _fill(a), _fill(b))
 
 
+def _counter_svg(ctr, layout) -> str:
+    """Dining counter (breakfast bar) on an open-plan kitchen edge: a 0.6 m
+    millwork band inside the kitchen along the shared boundary, plus stool
+    circles on the living side. Drawn fixture-weight (thin stroke, light
+    fill) so it reads as cabinetry, not a wall — the open-plan erase
+    underneath stays visible at the walk-through gap."""
+    lot = layout.lot
+    d = ctr.depth_m
+    s0, s1 = ctr.start_m, ctr.start_m + ctr.length_m
+    mid = (s0 + s1) / 2.0
+    # `inward` = unit direction from the shared edge INTO the band-host room
+    # (the wall letter is the side of the host room the edge sits on).
+    inward = {"S": +1, "N": -1, "W": +1, "E": -1}[ctr.wall]
+    # Stools sit across the seam in the facing room (default), or inside the
+    # host room beyond the band (stools_with_band — living room hosts both).
+    if getattr(ctr, "stools_with_band", False):
+        stool_off = ctr.coord + (d + 0.25) * inward
+    else:
+        stool_off = ctr.coord - 0.25 * inward
+    if ctr.wall in ("N", "S"):
+        x0, x1 = s0, s1
+        y0, y1 = sorted((ctr.coord, ctr.coord + d * inward))
+        stool_pts = [(mid - 0.35, stool_off), (mid + 0.35, stool_off)]
+    else:
+        y0, y1 = s0, s1
+        x0, x1 = sorted((ctr.coord, ctr.coord + d * inward))
+        stool_pts = [(stool_off, mid - 0.35), (stool_off, mid + 0.35)]
+    px = MARGIN + x0 * SCALE
+    py = _y(lot, y1)
+    w = (x1 - x0) * SCALE
+    h = (y1 - y0) * SCALE
+    parts = [f'<rect x="{px:.1f}" y="{py:.1f}" width="{w:.1f}" height="{h:.1f}" '
+             f'fill="#e9e2d4" stroke="#7a6a52" stroke-width="1"/>']
+    r_px = 0.175 * SCALE
+    for sx, sy in stool_pts[:ctr.stools]:
+        cx = MARGIN + sx * SCALE
+        cy = _y(lot, sy)
+        parts.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r_px:.1f}" '
+                     f'fill="#ffffff" stroke="#7a6a52" stroke-width="1"/>')
+    return "".join(parts)
+
+
 def archplan_to_svg(plan) -> str:
     """Render the full architectural plan: room fills, walls of finite
     thickness (exterior 0.20 m, interior 0.10 m), open-plan transitions
@@ -1362,6 +1404,10 @@ def archplan_to_svg(plan) -> str:
         overlays.append(_door_svg(d, plan.layout))
     for w in plan.windows:
         overlays.append(_window_svg(w, plan.layout))
+    # Dining counters (counter_divider adjacencies) — drawn last so the
+    # millwork band and stools sit on top of the open-plan erase.
+    for c in getattr(plan, "counters", []):
+        overlays.append(_counter_svg(c, plan.layout))
     inject = "".join(overlays)
     return base.replace("</svg>", inject + "</svg>")
 

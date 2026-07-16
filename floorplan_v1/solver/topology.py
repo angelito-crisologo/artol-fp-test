@@ -59,6 +59,20 @@ class Adjacency:
     #   "center"      — center the door on the shared edge, hinge on left (low)
     # Omit (or null) to use the automatic heuristic.
     door_placement: Optional[str] = None
+    # --- dining counter divider ----------------------------------------------
+    # When True on an OPEN-PLAN kitchen edge, the architectural plan draws a
+    # dining counter (breakfast bar) along the shared edge: a 0.6 m band on
+    # the kitchen side with a >= 0.9 m walk-through gap at one end and 2
+    # stools on the living side. Render-only — the solver never sees it; the
+    # topology should raise this edge's min_shared_wall_m to >= 2.1 m
+    # (2 x 0.6 m seats + 0.9 m pass) so the counter always fits. If the
+    # realized edge is still too short, the counter is skipped gracefully.
+    counter_divider: bool = False
+    # Which room hosts the counter band (a room id from this adjacency).
+    # Default None = the kitchen-side room (band eats into the kitchen's
+    # aisle). Set to the living-side room id to keep the kitchen's full
+    # width and let the band + stools live in the living/great room instead.
+    counter_side: Optional[str] = None
 
 
 @dataclass
@@ -142,6 +156,50 @@ class Topology:
     # (e.g., between a with-carport L-shape and a no-carport rectangle, the
     # private wing reads identically — only the L-cut at front-right differs).
     match_bath_widths: bool = False
+
+    # Generic pairwise width-matching: list of [room_id_a, room_id_b] pairs.
+    # The solver constrains width(room_id_a) == width(room_id_b) for each
+    # pair. Use this when two SPECIFIC rooms (identified by topology-local
+    # id, not type) need matching widths to make a straight shared wall
+    # possible — e.g. a zone_split boundary that's only geometrically
+    # satisfiable when both of a private room's public neighbors (reached
+    # via separate adjacencies) touch it at the same x. Unlike
+    # match_bedroom_widths / match_bath_widths (hardcoded to specific room
+    # TYPES), this works for any id pair, including cross-type ones like a
+    # single bedroom + its bath.
+    match_widths: List[List[str]] = field(default_factory=list)
+
+    # When False, the solver skips the private/public zone-ratio block
+    # entirely (both the hard "private total >= public total" floor and the
+    # soft 55/45 bias). The default True preserves the catalog-wide PH
+    # mid-market convention; set False on topologies whose room program is
+    # legitimately public-heavy — e.g. a 1BR tiny house where the single
+    # bedroom can never outweigh the LDK the way a 2-3 bedroom wing does.
+    private_area_floor: bool = True
+
+    # Optional override of WHICH rooms count on each side of the zone-ratio
+    # rule, keyed "private" / "public" with lists of topology-local room ids.
+    # When set, it fully replaces the default zone-attribute scan (rooms not
+    # listed count on neither side). Lets e.g. a bath keep zone: "service"
+    # (correct for door-swing/validator semantics) while still counting
+    # toward the private wing for area balance, because it physically sits
+    # in the private column.
+    zone_balance_rooms: Optional[Dict[str, List[str]]] = None
+
+    # When False, the solver skips the hardcoded "kitchen touches the REAR
+    # exterior wall" pin. The default True preserves the PH dirty-kitchen
+    # convention (kitchen opens to the rear setback); set False on
+    # topologies whose kitchen legitimately sits elsewhere — e.g. a
+    # front-band galley kitchen with the bath stacked behind it. Unlike the
+    # zone_split horizontal escape (which needs a single straight
+    # front/rear split line), this works for stepped layouts too.
+    kitchen_rear_pin: bool = True
+
+    # Optional per-room aspect-ratio cap override: {room_id_or_type: ratio}.
+    # Looked up by room id first, then room type. When set for a room, the
+    # flat ratio cap (long side / short side <= ratio) replaces BOTH the
+    # hardcoded ASPECT_CAPS entry and its ASPECT_RELAX two-tier relaxation.
+    aspect_overrides: Dict[str, float] = field(default_factory=dict)
 
     # When True the solver constrains the rooms in the bedroom-band (the
     # middle band between master and standard — typically ensuite + common,
@@ -258,6 +316,11 @@ def load_topology(path: str) -> Topology:
         notes=d.get("notes", []),
         match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
         match_bath_widths=bool(d.get("match_bath_widths", False)),
+        match_widths=list(d.get("match_widths", [])),
+        private_area_floor=bool(d.get("private_area_floor", True)),
+        zone_balance_rooms=d.get("zone_balance_rooms"),
+        kitchen_rear_pin=bool(d.get("kitchen_rear_pin", True)),
+        aspect_overrides=dict(d.get("aspect_overrides", {})),
         bedroom_band_fills_width=bool(d.get("bedroom_band_fills_width", False)),
         ensuite_alcove_joins_master=bool(d.get("ensuite_alcove_joins_master", False)),
         ldk_horizontal=bool(d.get("ldk_horizontal", False)),
@@ -377,6 +440,11 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         notes=list(t.notes),
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,
+        match_widths=t.match_widths,
+        private_area_floor=t.private_area_floor,
+        zone_balance_rooms=t.zone_balance_rooms,
+        kitchen_rear_pin=t.kitchen_rear_pin,
+        aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
@@ -471,6 +539,11 @@ def apply_no_master_transform(t: Topology) -> Topology:
         notes=list(t.notes),
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,
+        match_widths=t.match_widths,
+        private_area_floor=t.private_area_floor,
+        zone_balance_rooms=t.zone_balance_rooms,
+        kitchen_rear_pin=t.kitchen_rear_pin,
+        aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=False,  # ensuite is gone
         ldk_horizontal=t.ldk_horizontal,
@@ -526,6 +599,11 @@ def mirror_topology_x(t: Topology) -> Topology:
         notes=list(t.notes),
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,
+        match_widths=t.match_widths,
+        private_area_floor=t.private_area_floor,
+        zone_balance_rooms=t.zone_balance_rooms,
+        kitchen_rear_pin=t.kitchen_rear_pin,
+        aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,

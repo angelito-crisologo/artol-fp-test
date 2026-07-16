@@ -225,6 +225,12 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
                 min_least_m = max(min_least_m, float(adj["min_least_dim_m"]))
             if "max_area_sqm" in adj:
                 cap_m = min(cap_m, float(adj["max_area_sqm"]))
+            # set_max_area_sqm REPLACES the cap outright — the only knob that
+            # can RAISE a room past its catalog type's preferred-high ceiling
+            # (max_area_sqm above can only lower it). Wins over max_area_sqm
+            # when both are present.
+            if "set_max_area_sqm" in adj:
+                cap_m = float(adj["set_max_area_sqm"])
             if "max_greatest_dim_m" in adj:
                 max_greatest_dim_m = float(adj["max_greatest_dim_m"])
             if "max_least_dim_m" in adj:
@@ -293,8 +299,16 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         # when both sides are >= threshold_m the relaxed cap binds; otherwise
         # the strict ASPECT_CAPS value binds. Rationale: a corridor feeling
         # comes from a narrow short side, not from a long long side.
+        # A topology-level aspect_overrides entry (looked up by room id, then
+        # type) REPLACES both tiers with one flat ratio cap — an explicit
+        # per-topology design decision needs no chunky-relax second tier.
         ar_num, ar_den = ASPECT_CAPS.get(r.type, DEFAULT_ASPECT)
         relax = ASPECT_RELAX.get(r.type)
+        aspect_ov = topology.aspect_overrides.get(r.id,
+                    topology.aspect_overrides.get(r.type))
+        if aspect_ov is not None:
+            ar_num, ar_den = int(round(float(aspect_ov) * 20)), 20
+            relax = None
         if relax is None:
             # Unconditional: just the strict cap on both orientations.
             model.Add(rw[r.id] * ar_den <= rh[r.id] * ar_num)
@@ -462,6 +476,13 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         if r.type == "kitchen":
             if kitchen_front_override and r.id in zs.public_rooms:
                 pass   # topology explicitly wants kitchen in the front band
+            elif not topology.kitchen_rear_pin:
+                # Topology opted out of the rear pin entirely
+                # (kitchen_rear_pin: false) — e.g. a front-band galley
+                # kitchen with the bath stacked behind it. Unlike the
+                # zone_split escape above, this needs no straight
+                # front/rear split line, so stepped layouts work too.
+                pass
             else:
                 model.Add(ry_end[r.id] == ey1)
         if r.type == "living_room":
@@ -534,6 +555,20 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         common_id  = next((r.id for r in topology.rooms if r.type == "common_bath"), None)
         if ensuite_id is not None and common_id is not None:
             model.Add(rw[ensuite_id] == rw[common_id])
+
+    # ---------- match widths (generic id-pair) ----------
+    # Unlike match_bedroom_widths / match_bath_widths (hardcoded to specific
+    # room TYPES), this constrains width(a) == width(b) for any topology-
+    # local id pair. Needed e.g. when a zone_split boundary is only
+    # geometrically satisfiable if two rooms on the same side (reached via
+    # separate adjacencies to different rooms on the other side) share the
+    # same width, so their shared-wall touch points land on the same x.
+    for pair in topology.match_widths:
+        if len(pair) != 2:
+            continue
+        a_id, b_id = pair
+        if a_id in rw and b_id in rw:
+            model.Add(rw[a_id] == rw[b_id])
 
     # ---------- bedroom-band fills bedroom width ----------
     # Force the rooms in the middle band (any room sandwiched between master
@@ -780,9 +815,24 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # 'service' / 'circulation' rooms are excluded from both sides — they are
     # neutral overhead (baths, dirty kitchen, hallways) that take envelope
     # space but don't bias the wing-balance ratio.
-    private_ids = [r.id for r in topology.rooms if r.zone == "private"]
-    public_ids  = [r.id for r in topology.rooms if r.zone == "public"]
-    if private_ids and public_ids:
+    #
+    # Topology escapes:
+    #   - private_area_floor: false  -> skip this whole block (hard floor AND
+    #     soft bias). For room programs that are legitimately public-heavy,
+    #     e.g. a 1BR tiny house whose single bedroom can never outweigh the
+    #     LDK the way a multi-bedroom private wing does.
+    #   - zone_balance_rooms: {"private": [...], "public": [...]}  -> counts
+    #     those exact room ids on each side instead of scanning room.zone,
+    #     so e.g. a service-zoned bath that physically sits in the private
+    #     column can be counted toward the private wing.
+    zbr = topology.zone_balance_rooms
+    if zbr is not None:
+        private_ids = [rid for rid in zbr.get("private", []) if rid in area]
+        public_ids  = [rid for rid in zbr.get("public", [])  if rid in area]
+    else:
+        private_ids = [r.id for r in topology.rooms if r.zone == "private"]
+        public_ids  = [r.id for r in topology.rooms if r.zone == "public"]
+    if topology.private_area_floor and private_ids and public_ids:
         max_sum = (EW * EH) * len(topology.rooms)
         priv_total = model.NewIntVar(0, max_sum, "priv_total")
         pub_total  = model.NewIntVar(0, max_sum, "pub_total")

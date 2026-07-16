@@ -1,0 +1,232 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_sq_side_split_bath_gr",
+  "label": "Squarish 1BR / 1 bath — shell is split vertically first (left = private: bedroom + bath, right = public: great room + kitchen), then each half splits horizontally (bedroom front / bath rear on the left; great room front / kitchen rear on the right). Bath reached only via the kitchen, never through the bedroom.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "bedroom",
+      "b": "bath",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "bedroom (front) and bath (rear) stack vertically along the left wall — shared wall only, no door between them. Keeps the bath from being accessible only through the bedroom, per the locked no-bedroom-through-bath / no-bath-through-bedroom rule."
+    },
+    {
+      "a": "bedroom",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "bedroom_to_public",
+      "note": "bedroom's only door opens east into the great_room — the one occupant's sole route in and out. Sized 0.9 m (vs the 0.8 m generic bedroom_to_public floor) to give a slightly more generous door for the single, larger bedroom this topology carries."
+    },
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_door",
+      "note": "bath's only door opens onto the kitchen — bath and kitchen sit rear-left/rear-right across the straight zone-split seam, sharing the plumbing wall AND the door. Bath never touches great_room (they sit in diagonal quadrants), so it's reached via the kitchen — still guest-accessible without walking through the bedroom."
+    },
+    {
+      "a": "kitchen",
+      "b": "great",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "counter_divider": true,
+      "note": "great_room + kitchen form the open LDK (gr style). counter_divider: a 0.6 m dining counter (breakfast bar) renders along this open edge on the kitchen side, with 2 stools on the great_room side and a >= 0.9 m walk-through gap — dining happens at the counter in this compact plan. min_shared_wall_m raised 1.5 -> 2.1 (2 x 0.6 m seats + 0.9 m pass) so the counter always fits the realized edge."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["bedroom", "bath"],
+    "public_rooms": ["great", "kitchen"]
+  },
+  "private_area_floor": false,
+  "match_bedroom_widths": false,
+  "match_widths": [
+    ["bedroom", "bath"],
+    ["great", "kitchen"]
+  ],
+  "left_anchored": [
+    "bedroom",
+    "bath"
+  ],
+  "right_anchored": [
+    "kitchen",
+    "great"
+  ],
+  "rear_anchored": [
+    "bath",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "bedroom",
+      "bath"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "ultra_compact_sq_side_split_bath_gr",
+      "when": {
+        "buildable_area_lt_sqm": 30
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 2.8,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 9.5
+        }
+      },
+      "rationale": "At true 5x5 m envelopes (~25 sqm), the bedroom's top priority weight lets it balloon past 11 sqm, crowding kitchen down to its bare hard minimum and leaving no room for great_room to absorb any freed space. Capping bedroom at 9.5 sqm (close to the reference '25 Sqm' tiny-house layout's 8.75 sqm bedroom) lets snap_gaps() redistribute the freed area into great_room instead. This cap is WRONG for larger lots (it blocked the 40-90 sqm range entirely when tested at buildable_area_lt_sqm=100) so it's scoped to only this ultra-compact tier, below the broader compact_sq_side_split_bath_gr profile's 100 sqm threshold."
+    },
+    {
+      "name": "compact_sq_side_split_bath_gr",
+      "when": {
+        "buildable_area_lt_sqm": 100
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 2.8,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "set_max_area_sqm": 20.0
+        }
+      },
+      "rationale": "1BR footprints run smaller than the 2BR catalog's compact band, so the threshold drops to 40 sqm buildable -- widened to 100 sqm (2026-07-16) so the common_bath max_area_sqm cap covers the whole practical 1BR range (matches the 2BR baths_ds_ld precedent's 100 sqm threshold). Kitchen floors at 1.8 m least-dim for a usable single-run galley; bath floors at 2.8 sqm and caps at 4.5 sqm (matches the room_catalog's soft preferred_area_sqm upper bound) -- without the cap, snap_gaps() was dumping leftover envelope area into the bath uncapped (e.g. 10.8 sqm on a 10x10 m lot, ~30% of the whole house) since no other room absorbed the gap on some lot sizes. Below 30 sqm, the ultra_compact_sq_side_split_bath_gr profile above matches first and additionally caps bedroom_standard tighter (9.5 sqm). bedroom_standard set_max_area_sqm=20.0 (2026-07-16): restores the headroom this room had when it was typed master_bedroom (catalog ceiling 20.0 vs bedroom_standard's 12.0). Uses set_max_area_sqm -- the cap-REPLACING knob added for exactly this case -- because plain max_area_sqm can only lower a type's catalog ceiling, never raise it."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 2.5,
+      "depth_m": 5.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "First 1BR entry in the squarish catalog. Floor band: roughly 24-36 sqm buildable —",
+    "the natural footprint for a single-occupant or couple's starter home on a 60-72 sqm",
+    "lot (typical socialized/economic PH subdivision cut) after setbacks.",
+    "",
+    "Program: 1 bedroom, 1 common bath (no ensuite by design — a single ensuite bath",
+    "would force guests to walk through the bedroom to use it, which the rest of the",
+    "catalog's access rules already forbid for multi-bedroom units and which is just as",
+    "poor practice here). The bath instead doors off the kitchen (per the reference",
+    "'25 Sqm' plan -- bath and great_room sit in diagonal quadrants and never touch),",
+    "so it works for the occupant and visitors alike without crossing the bedroom.",
+    "",
+    "Layout intent (canonical form — brief.carport_side='right'):",
+    "  Front: [bedroom | great_room          ]",
+    "  Rear:  [bath     | kitchen             ]",
+    "",
+    "Bedroom sits front-left with its only door opening onto the great_room. Bath sits",
+    "directly behind it at rear-left, sharing its plumbing wall AND its door with the",
+    "kitchen (rear-right). This is the smallest-footprint pattern in the 1BR catalog —",
+    "a clean 2x2 room grid split by one straight vertical wall, no hallway, since a",
+    "single bedroom and single bath don't need one to avoid cross-traffic.",
+    "",
+    "Carport: modest 2.5 x 5.0 m single bay (vs. the 2BR catalog's 3.0 x 6.0 m) — sized",
+    "for a compact car or motorcycle, reflecting the smaller lot this unit typically",
+    "sits on. Declared as a setback element only; no building_void needed unless the",
+    "specific lot's side setback is narrower than 2.5 m, in which case a void follows",
+    "the same pattern as the 2BR sq topology.",
+    "",
+    "When brief.carport_side='left', the runner mirrors the topology so bedroom/bath",
+    "end up front-right/rear-right and kitchen sits rear-left.",
+    "",
+    "BUGFIX (2026-07-16): left_anchored originally listed both 'bedroom' and 'bath',",
+    "forcing both to the same left wall AND (via their separate required adjacencies",
+    "to great_room and kitchen) implicitly forcing bedroom and bath to the exact same",
+    "width -- combined with the solver's hardcoded kitchen/great_room front-to-rear",
+    "stacking rule, this over-constrained the 4-room grid so no layout existed at ANY",
+    "lot size (confirmed via CP-SAT infeasibility across a full sweep, 4-121 sqm floor).",
+    "Fixed by dropping 'bath' from left_anchored -- bath's position is now driven",
+    "purely by its own adjacencies (bath_door to great, wet_core to kitchen), same",
+    "pattern the working 2BR squarish sibling already uses for its common bath.",
+    "(Superseded by the STRAIGHT-CUT redesign below, which reinstates the double",
+    "left-anchor now that the true root blocker is fixed.)",
+    "",
+    "REDESIGN (2026-07-16): matched to a reference '25 Sqm' tiny-house floor plan",
+    "(square-topology.png) at a true 5x5 m buildable envelope (9x9 m lot, standard",
+    "2 m setbacks -- NOT 1m setbacks, which fail PD 1096's 2.0 m window-yard minimum",
+    "on the bedroom/bath). In that reference bath never reaches great_room's wall,",
+    "so bath's door goes through kitchen exclusively; the old 'bath_access'",
+    "door_host_group (default=great_room, alternate=kitchen) required bath to always",
+    "reach great_room, which made 5x5 infeasible. Fixed by removing the bath<->great",
+    "adjacency entirely and making bath<->kitchen kind='bath_door' directly.",
+    "",
+    "STRAIGHT-CUT (2026-07-16): the envelope is now split by ONE straight vertical",
+    "wall -- private column left (bedroom front / bath rear), public column right",
+    "(great_room front / kitchen rear) -- via zone_split + match_widths",
+    "[bedroom,bath] and [great,kitchen] + double left/right anchors. The true",
+    "blocker for this layout was the solver's hard 'private total >= public total'",
+    "area rule: the reference plan is public-heavy (bedroom 8.75 vs LDK 12.5 sqm),",
+    "which no 1BR program can satisfy -- a single bedroom can't outweigh the LDK",
+    "the way a multi-bedroom wing does. Disabled per-topology with the new",
+    "private_area_floor: false flag (also skips the 55/45 soft bias). kitchen is",
+    "mechanical_vent (its only exterior wall is the rear back-door wall). The",
+    "compact profile's bedroom_standard set_max_area_sqm=20.0 uses the new",
+    "cap-REPLACING knob (plain max_area_sqm can only lower the catalog's 12.0",
+    "ceiling for this type, never raise it).",
+    "At 9x9 m (5x5 env): bedroom 2.6x3.5=9.1, bath 2.6x1.5=3.9, great 2.4x2.5=6.0,",
+    "kitchen 2.4x2.5=6.0 -- 25.0/25 sqm tiled, zero snaps, COMPLIANT, 1 soft warning",
+    "(intended bath->kitchen door). Sweep-verified square-lot range: 8.5x8.5 to",
+    "12x12 m (64 sqm floor -- already past the sensible 1BR ceiling; the 2BR band",
+    "starts at 45 sqm floor per floor-area-per-br, so larger lots should be offered",
+    "2BR instead). 12.5x12.5 is achievable if ever needed by adding aspect_overrides",
+    "{\"bath\": 2.5} (verified) -- the binding constraint there is bath's 2:1 aspect",
+    "cap limiting the private column's width."
+  ]
+}

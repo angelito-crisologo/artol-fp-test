@@ -1,0 +1,23 @@
+{
+  "intent": "1BR / 1 bath narrow front-rear smoke test, no carport. 8x10 lot with standard 2 m setbacks gives a 4x6 m envelope (24 m2, ratio 0.67, deep) — the narrow-fp-02 reference plan scaled to its own 22.4 m2 footprint: full-width bedroom across the rear, full-depth great room column with the entry and counter dining, wet column with the kitchen above the bath at the front corner. kitchen_back_door off — the kitchen has no exterior rear wall.",
+  "lot_width": 8.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 1,
+  "must_haves": [
+    "bedroom spanning the full width at the rear",
+    "bath at the front corner with its door off the great room",
+    "kitchen above the bath on one plumbing wall",
+    "counter dining between kitchen and great room",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "kitchen_back_door": false,
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/narrow/1s_1br_nw_front_rear_bath_gr.json"
+}

@@ -1,0 +1,21 @@
+{
+  "intent": "1BR / 1 bath wide-shell smoke test, no carport. 14x10 lot gives a 10x6 envelope = 60 m2 floor, inside the sweep-verified clean (0-warning) range (13.3x9.5 to 15.4x11.0 m).",
+  "lot_width": 14.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 1,
+  "must_haves": [
+    "single common bath",
+    "rear-pocket hall",
+    "open-plan great room + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_side_split_bath_hall_gr.json"
+}

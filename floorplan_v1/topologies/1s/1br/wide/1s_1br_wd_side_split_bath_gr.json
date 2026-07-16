@@ -1,0 +1,178 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_wd_side_split_bath_gr",
+  "label": "Wide-shell 1BR / 1 bath, SIDE SPLIT — full-depth bedroom column on one side; the other side splits front/back into a great room (front, hosts entry) and a rear service band with the bath and kitchen side-by-side. The T&B sits BETWEEN the bedroom and the kitchen, buffering the bedroom from kitchen noise; its door opens from the kitchen aisle. Sibling of 1s_1br_wd_split_wing_bath_gr (same 6x4 m program, wet rooms in a rear band instead of an end column).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "bedroom",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "bedroom's only door — opens east into the great room across the column seam. 1.2 m floor = 0.9 m clear door + frames."
+    },
+    {
+      "a": "bedroom",
+      "b": "bath",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "bath sits directly beside the bedroom in the rear band — shared wall only, no door, per the locked no-bath-through-bedroom rule. The bath is deliberately BETWEEN the bedroom and the kitchen, buffering the bedroom from kitchen noise/smells."
+    },
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_door",
+      "note": "bath's only door — opens east into the kitchen aisle, on the shared plumbing wall (2026-07-16 revision, per client direction): routing the bath through the kitchen frees the great room's entire rear-wall left segment for furniture (the prime TV/console wall) and consolidates all service circulation in one pocket. Accepts the bath_door_into_kitchen sanitary soft warning, same trade-off as the squarish and narrow siblings. NOTE: authored as a FIXED door, not a door_host_group — with a group, Pass 1a's auto-scorer always flips the door back to the great room (the front-door spine's +4.0 circulation-overlap weight dwarfs the freed-wall bonus minus the sanitary penalty), so a group cannot hold the kitchen as the effective default."
+    },
+    {
+      "a": "bath",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "wall_only",
+      "note": "solid wall — no door (the bath doors off the kitchen instead, keeping this stretch of the great room's rear wall furnishable). This adjacency also pins the rear band's depth: bath and kitchen must BOTH touch the great room's rear edge, which forces them to equal depth with no extra constraint."
+    },
+    {
+      "a": "kitchen",
+      "b": "great",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "counter_divider": true,
+      "counter_side": "great",
+      "note": "kitchen (rear) and great room (front) STACK — the catalog's default LDK arrangement, no ldk_horizontal needed. Open plan with a dining counter along the horizontal seam, band + 2 stools inside the great room (counter_side) so the kitchen keeps its full work aisle. min_shared_wall_m 2.1 = 2 x 0.6 m seats + 0.9 m pass; also floors the kitchen's width at 2.1 m."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["bedroom"],
+    "public_rooms": ["great", "kitchen", "bath"]
+  },
+  "private_area_floor": false,
+  "match_bedroom_widths": false,
+  "left_anchored": [
+    "bedroom"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "kitchen",
+    "bath"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "great",
+      "bath"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_side_split_bath_gr",
+      "when": {
+        "buildable_area_lt_sqm": 40
+      },
+      "auto_apply": {
+        "common_bath": {
+          "min_area_sqm": 2.6,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 9.5
+        }
+      },
+      "rationale": "Ultra-compact wide unit (canonical 6x4 m envelope, 24 sqm), same tier values as the split_wing sibling: bath floors at 2.6 sqm and caps at 4.5 so snap_gaps can't balloon it; bedroom caps at 9.5 so freed area flows to the great room."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Third 1BR entry in the wide catalog; sibling of 1s_1br_wd_split_wing_bath_gr",
+    "(same ~24 sqm program on the same canonical 10x8 lot / 6x4 m envelope) with a",
+    "different service arrangement: instead of a wet END COLUMN, the bath and",
+    "kitchen form a side-by-side REAR BAND above the great room, with the bath",
+    "between the bedroom and the kitchen.",
+    "",
+    "Layout intent (front at bottom, canonical form — kitchen on the right per",
+    "the catalog's symmetry convention; a left-mirrored brief flips the whole",
+    "plan, giving the kitchen|bath|bedroom reading order):",
+    "  Rear:  [BEDROOM (cont.) | BATH | KITCHEN]",
+    "  Front: [BEDROOM         | GREAT ROOM    ]",
+    "                             [porch/entry]",
+    "",
+    "Bath access (2026-07-16 revision): the bath door opens from the KITCHEN",
+    "side (a fixed door on the plumbing wall) — freeing the great",
+    "room's entire rear-wall left segment, its prime furniture wall (the front",
+    "wall carries the entry + windows). This accepts the bath_door_into_kitchen",
+    "sanitary soft warning, like the squarish and narrow siblings. A door_host",
+    "group was tried and abandoned: Pass 1a's auto-scorer always flips the door",
+    "back to the great room (front-door-spine circulation overlap, +4.0 weight,",
+    "dwarfs freed-wall minus sanitary), so only a fixed door holds this choice.",
+    "",
+    "This is the LEAST override-hungry 1BR topology: kitchen+great stack",
+    "front-to-rear (default LDK rule holds), kitchen touches the rear wall",
+    "(rear-pin, dirty kitchen, and back door conventions all intact), and the",
+    "kitchen sits in the right half (symmetry break satisfied). Only",
+    "private_area_floor: false is needed (bedroom ~9 sqm vs great+kitchen",
+    "~12 sqm — same 1BR rationale as all siblings).",
+    "",
+    "Geometry note: the rear band's uniform depth needs no explicit constraint —",
+    "bath<->great and kitchen<->great must both touch, and with both rear-",
+    "anchored that forces bath.depth == kitchen.depth automatically.",
+    "",
+    "Dining is at the counter (counter_divider, counter_side great), on the",
+    "HORIZONTAL kitchen/great seam — first counter use on a N/S wall in the",
+    "wide catalog. The 2.1 m min_shared_wall doubles as the kitchen's width",
+    "floor, leaving the bath ~1.6 m of band width beside it.",
+    "",
+    "No fallback declared. Not a mirror-image variant of split_wing — the",
+    "service arrangement (band vs column), bath position (buffering vs front),",
+    "and LDK orientation (stacked vs side-by-side) all differ."
+  ]
+}

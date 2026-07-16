@@ -217,6 +217,34 @@ class OpenPlanEdge:
 
 
 @dataclass
+class Counter:
+    """A dining counter (breakfast bar) along an open-plan kitchen edge.
+
+    The band sits INSIDE the kitchen-side room against the shared boundary;
+    the walk-through gap is whatever part of the edge the band doesn't
+    cover. Stools render on the living side. Geometry is absolute (model
+    coords) so the renderer needs no room lookup:
+      - N/S wall: band spans x in [start_m, start_m + length_m],
+        y from `coord` extending depth_m INTO the kitchen room.
+      - E/W wall: same with axes swapped.
+    """
+    room: str            # band-host room id (band drawn inside this room)
+    facing: str          # room on the other side of the shared edge
+    wall: str            # side of `room` the shared edge is on (N/S/E/W)
+    coord: float         # constant coordinate of the shared edge
+    start_m: float       # band start along the edge (absolute)
+    length_m: float      # band length along the edge
+    depth_m: float = 0.6
+    stools: int = 2
+    # False (default, band in the kitchen): stools sit ACROSS the seam in
+    # the facing/living room. True (band in the living room via
+    # counter_side): stools sit inside the host room on the band's far
+    # edge — sitting side and band share the room; the kitchen keeps its
+    # full aisle width.
+    stools_with_band: bool = False
+
+
+@dataclass
 class ArchPlan:
     """Architectural projection of a Layout + Topology pair. The Layout owns the
     room rectangles; this object adds the architectural elements on top."""
@@ -225,6 +253,7 @@ class ArchPlan:
     doors: List[Door]                       = field(default_factory=list)
     windows: List[Window]                   = field(default_factory=list)
     open_plan_edges: List[OpenPlanEdge]     = field(default_factory=list)
+    counters: List[Counter]                 = field(default_factory=list)
 
 
 # ----------------------------------------------------------------------------
@@ -640,6 +669,70 @@ def _open_plan_edges_for_adjacency(adj, layout: Layout) -> List[OpenPlanEdge]:
                                     wall=edge[0],
                                     cell_a=ca, cell_b=cb))
     return out
+
+
+# Dining-counter geometry (counter_divider adjacencies). Seat width follows
+# standard bar-seating practice (0.6 m per person); the pass gap matches the
+# PH minimum clear passage (0.9 m). Band length grows with the edge but is
+# capped so an unusually long open edge doesn't read as a full-room divider.
+COUNTER_DEPTH_M    = 0.60
+COUNTER_SEAT_W_M   = 0.60
+COUNTER_PASS_MIN_M = 0.90
+COUNTER_BAND_MAX_M = 2.40
+
+
+def _counter_for_adjacency(adj, layout: Layout, topology: Topology
+                           ) -> Optional[Counter]:
+    """Build a Counter for a counter_divider adjacency, or None when the
+    realized shared edge can't fit 2 seats + the pass gap (graceful skip).
+
+    Band placement: the band hugs the edge end NEARER the kitchen's wet
+    wall (nearest bath centroid along the edge axis), continuing the work
+    zone; the walk-through gap lands at the other end, which is also where
+    circulation from the living side naturally enters the kitchen."""
+    rooms_by_id = {r.id: r for r in layout.rooms}
+    ra, rb = rooms_by_id.get(adj.a), rooms_by_id.get(adj.b)
+    if ra is None or rb is None:
+        return None
+    if ra.type == "kitchen":
+        kroom, lroom = ra, rb
+    elif rb.type == "kitchen":
+        kroom, lroom = rb, ra
+    else:
+        kroom, lroom = ra, rb   # no kitchen on the edge — band on room_a side
+    # counter_side override: the named room hosts the band instead of the
+    # kitchen. When the living room hosts, the stools move inside it too
+    # (beyond the band) so the kitchen keeps its full aisle width.
+    host, other = kroom, lroom
+    stools_with_band = False
+    cside = getattr(adj, "counter_side", None)
+    if cside is not None and cside in rooms_by_id and cside != kroom.id:
+        host, other = rooms_by_id[cside], kroom
+        stools_with_band = True
+    edge = _best_shared_edge_for_rooms(host, other)
+    if edge is None:
+        return None
+    side, coord, start, end, _ca, _cb = edge
+    edge_len = end - start
+    min_len = 2 * COUNTER_SEAT_W_M + COUNTER_PASS_MIN_M
+    if edge_len < min_len - 1e-6:
+        return None
+    band_len = min(edge_len - COUNTER_PASS_MIN_M, COUNTER_BAND_MAX_M)
+    # Anchor the band at the end nearer the nearest bath (wet wall side).
+    def _cx(r): return (r.rect.x0 + r.rect.x1) / 2.0
+    def _cy(r): return (r.rect.y0 + r.rect.y1) / 2.0
+    baths = [r for r in layout.rooms if r.type in BATH_TYPES]
+    at_low_end = True
+    if baths:
+        bath = min(baths, key=lambda b: abs(_cx(b) - _cx(kroom))
+                                        + abs(_cy(b) - _cy(kroom)))
+        b_axis = _cx(bath) if side in ("N", "S") else _cy(bath)
+        at_low_end = abs(start - b_axis) <= abs(end - b_axis)
+    band_start = start if at_low_end else end - band_len
+    return Counter(room=host.id, facing=other.id, wall=side, coord=coord,
+                   start_m=round(band_start, 3), length_m=round(band_len, 3),
+                   depth_m=COUNTER_DEPTH_M, stools=2,
+                   stools_with_band=stools_with_band)
 
 
 def _free_segments(wall_len: float, blockers: List[Tuple[float, float]],
@@ -1271,6 +1364,12 @@ def architecturalize(layout: Layout, topology: Topology,
         if kind == "open_plan":
             for ope in _open_plan_edges_for_adjacency(adj, layout):
                 plan.open_plan_edges.append(ope)
+            # Dining counter (breakfast bar) on this open edge, if the
+            # topology asked for one and the realized edge fits it.
+            if getattr(adj, "counter_divider", False):
+                ctr = _counter_for_adjacency(adj, layout, topology)
+                if ctr is not None:
+                    plan.counters.append(ctr)
             continue
         if kind == "wet_core":
             continue

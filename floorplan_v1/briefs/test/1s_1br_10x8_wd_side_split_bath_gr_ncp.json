@@ -1,0 +1,21 @@
+{
+  "intent": "1BR / 1 bath wide side-split smoke test, no carport. 10x8 lot with standard 2 m setbacks gives a 6x4 m envelope (24 m2, ratio 1.5): full-depth bedroom column, rear service band with bath and kitchen side-by-side (bath between bedroom and kitchen as an acoustic buffer), great room in front with the entry and counter dining on the horizontal kitchen seam.",
+  "lot_width": 10.0,
+  "lot_depth": 8.0,
+  "bedroom_count": 1,
+  "must_haves": [
+    "bath and kitchen side-by-side in a rear band on one plumbing wall",
+    "bath between bedroom and kitchen",
+    "great room in front of the service band with counter dining",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_side_split_bath_gr.json"
+}
