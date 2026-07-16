@@ -127,15 +127,18 @@ class Lot:
 
 
 # --- Shell category thresholds (based on the buildable shell, not the raw lot) ---
-# ratio = shell width / shell depth (front-to-rear). Five bands across the
-# spectrum, matching the topology directory structure:
-#   super_deep  ratio  < 0.55          very deep narrow lots
-#   deep        0.55 <= ratio < 0.80   deep but not extreme
+# ratio = shell width / shell depth (front-to-rear). Four bands across the
+# spectrum, matching the topology directory structure (squarish/narrow/wide):
+#   narrow      ratio  < 0.80          deep-to-narrow lots (was split into
+#                                      "super_deep"/"deep" until 2026-07-16;
+#                                      merged to "narrow" so this matches
+#                                      topology target_shell values exactly
+#                                      -- the split was never consumed by any
+#                                      other logic, only ever printed/compared)
 #   squarish    0.80 <= ratio < 1.30   near-square
 #   wide        1.30 <= ratio < 1.85   wide but not extreme
 #   extra_wide  ratio >= 1.85          very wide / shallow
-SHELL_SUPER_DEEP_MAX = 0.55
-SHELL_DEEP_MAX       = 0.80
+SHELL_NARROW_MAX     = 0.80
 SHELL_WIDE_MIN       = 1.30
 SHELL_EXTRA_WIDE_MIN = 1.85
 
@@ -143,12 +146,10 @@ SHELL_EXTRA_WIDE_MIN = 1.85
 def shell_category(lot: "Lot") -> str:
     env = lot.envelope()
     if env.h <= 0:
-        return "super_deep"
+        return "narrow"
     ratio = env.w / env.h
-    if ratio < SHELL_SUPER_DEEP_MAX:
-        return "super_deep"
-    if ratio < SHELL_DEEP_MAX:
-        return "deep"
+    if ratio < SHELL_NARROW_MAX:
+        return "narrow"
     if ratio < SHELL_WIDE_MIN:
         return "squarish"
     if ratio < SHELL_EXTRA_WIDE_MIN:

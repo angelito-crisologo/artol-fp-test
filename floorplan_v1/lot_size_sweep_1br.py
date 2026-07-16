@@ -11,11 +11,13 @@ min/max per shape, not a "safe across N topologies" number. Each shape gets
 its own ratio range matching its target shell_category bucket(s):
   - squarish: ratio ~1.00 (bucket [0.80, 1.30))
   - wide:     ratio ~1.3-1.8 (bucket [1.30, 1.85))
-  - narrow:   ratio ~0.3-0.75 (buckets 'deep' [0.55,0.80) + 'super_deep' (<0.55) --
-              no literal "narrow" shell_category bucket exists; the topology's
-              own target_shell label doesn't correspond 1:1 to shell_category's
-              output, so this sweep calls _run_hand_authored directly instead
-              of going through ai/match.py's shell filter)
+  - narrow:   ratio ~0.3-0.75 (bucket [0, 0.80) -- shell_category returned
+              this as split 'deep'/'super_deep' buckets until 2026-07-16,
+              when they were merged into a single 'narrow' bucket to match
+              topology target_shell values exactly. This sweep still calls
+              _run_hand_authored directly rather than going through
+              ai/match.py's shell filter, matching the other two shapes'
+              approach in this script.)
 
 No carport (ncp), symmetric 2 m setbacks on all sides.
 

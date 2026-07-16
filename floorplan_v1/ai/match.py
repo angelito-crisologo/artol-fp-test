@@ -2,7 +2,7 @@
 
 Two things are structurally fixed per topology (can't be changed by brief
 parameters at solve time): its room program (bedroom count) and its
-target_shell (squarish/wide/deep/...). Everything else on Brief (carport
+target_shell (squarish/wide/narrow/extra_wide). Everything else on Brief (carport
 type, bath preferences, swap_master_standard, ...) is a parameter applied
 WHEN a topology is run, not a filter on which topologies are candidates.
 
