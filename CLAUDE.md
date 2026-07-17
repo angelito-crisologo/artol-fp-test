@@ -2,72 +2,50 @@
 
 PH floor plan generator + validator. Single-detached mid-market houses. CP-SAT solver.
 
-## Session handoff (2026-07-13) — read this first
+## Session handoff (2026-07-16) — read this first
 
-Mac was reset since the last session; environment was rebuilt (`brew install
-python@3.12`, fresh `.venv`, `pip install -r requirements.txt`) and verified
-— 46/47+ tests passing, GitHub remote intact and pushed
-(`github.com/angelito-crisologo/artol-fp-test`), Streamlit Cloud deployment
-at `https://artol-fp.streamlit.app/` confirmed still live. See
-[[deployment-status]] memory for details.
+GitHub remote in sync, both commits pushed
+(`github.com/angelito-crisologo/artol-fp-test`, `8c275de`, `780df73`).
+Streamlit Cloud deployment at `https://artol-fp.streamlit.app/` picks up
+pushes automatically (~1 min rebuild). Full regression: **61/61 pass**.
 
-This session's work, in order:
+This session built the entire **1-bedroom topology catalog** — 7 new
+topologies across all three shells, each reverse-engineered from a
+reference floor-plan image (now deleted from the repo root post-session)
+and verified to a COMPLIANT solve at a canonical lot size. Full detail in
+[[br1-topology-catalog]]; summary here:
 
-1. **Door-hinge bug fix** (`solver/architectural_plan.py`) — L-shaped
-   bedrooms (ensuite-alcove claim) combined with the `stack_bias` heuristic
-   could hinge a door against a non-existent wall, or leave two stacked
-   bedrooms' doors far apart instead of mirroring at their real shared
-   corner. Fixed + regression-tested (46/46 pass, zero baseline drift).
-   Also added a lot-size feasibility sweep (`lot_size_sweep.py`,
-   `LOT_SIZE_SWEEP_FINDINGS.md`) and 17 minimum-boundary test briefs under
-   `briefs/test/test_mins/`. **Committed and pushed** (`71fb163`).
-2. **Wide topology `baths_ds_hall_gr` → `baths_ds_gr`** — removed the hall
-   per request; both bedrooms now door directly into the great room,
-   mirroring the squarish `baths_ds_gr` sibling. Test brief
-   `1s_2br_14x11_wd_side_split_baths_ds_gr_ncp`. Committed.
-3. **New topology `1s_2br_wd_front_back_split_baths_ds_gr.json`** — a novel
-   "front-back split" design (one wall spans the full width, dividing an
-   all-public front band from an all-private rear band, vs. every other
-   topology's vertical column split). Went through several revisions
-   (originally `1s_2br_sq_front_back_split_baths_ds_lk.json`, squarish and
-   misfiled under `wide/`, then a `living_room` version, then `great_room`)
-   and a deep multi-session diagnosis — **WORKING**, verified at both
-   14x11 and 14x10 m (COMPLIANT, 0 warnings, no fallback). Front band:
-   `great_room` | `kitchen` genuinely side-by-side. Rear band, one row:
-   `master | ensuite | common | standard` (baths clustered in the middle).
-   Also got a side-setback dirty-kitchen door (`_dirty_kitchen_door` in
-   `architectural_plan.py` was hardcoded to only check a room's rear wall —
-   extended to try E/W walls when the topology's dirty_kitchen setback
-   element declares `location: "side_setback"`). Five separate fixes were
-   needed to get it solving — full trail in
-   [[front-back-split-topology-solver-bug]] — the two reusable ones are a
-   `solver.py` fix (kitchen's hardcoded rear-pin now skips itself when
-   `zone_split` explicitly puts kitchen in the front/public zone) and a new
-   topology-level `ldk_horizontal` flag (disables the solver's hardcoded
-   LDK vertical-stacking rules for topologies that want a horizontal/
-   side-by-side LDK instead — default `False`, zero effect on the rest of
-   the catalog). Test briefs: `1s_2br_14x11_wd_front_back_split_baths_ds_gr_ncp`,
-   `1s_2br_14x10_wd_front_back_split_baths_ds_gr_ncp`. Committed and pushed.
-4. **New topology `1s_2br_wd_quadrant_split_baths_ds_ld.json`** — private
-   and public occupy diagonal corners instead of a single axis. Front band:
-   `great_room` (left, entry) + `standard` (right). Rear band: `master` +
-   `ensuite` (left), `hall` + `common` T&B stacked (hall in front) in the
-   middle, `kitchen` (right) — `hall` is the circulation hinge, open to
-   both `great_room` and `kitchen`. Original draft (with separate
-   `living_room` + `dining_room` instead of one `great_room`) had a 3-way
-   mutual adjacency (`hall`↔`kitchen`↔`dining` all touching) that was
-   unsolvable even at 34x34 m with every room's caps relaxed — merging into
-   `great_room` per Angelito's redesign eliminated that hub entirely and
-   it now solves clean on the first try (no snapping). Also had the same
-   `hall`-rear-anchored-while-`common`-stacked-behind-it authoring bug
-   fixed on the other two topologies, and the same `right_anchored`
-   edge-collision pattern (`kitchen` + `standard` sharing the same wall —
-   removed `standard`). Verified at 14x11 and 14x10 m, COMPLIANT, 0
-   warnings, no fallback, uses `ldk_horizontal` is NOT needed here (great
-   and kitchen aren't directly adjacent, so the hardcoded LDK stacking rule
-   doesn't conflict). Test briefs:
-   `1s_2br_14x11_wd_quadrant_split_baths_ds_ld_ncp`,
-   `1s_2br_14x10_wd_quadrant_split_baths_ds_ld_ncp`.
+1. **Squarish**: `1s_1br_sq_side_split_bath_gr` (9×9 lot, 5×5 shell) — a
+   straight-cut 2×2 grid matching `square-topology.png` exactly (bedroom +
+   bath left column, great room + kitchen right column, one straight
+   vertical wall).
+2. **Narrow** (3 topologies): the pre-existing `nw_side_corridor_bath_hall`
+   (fixed a `left_anchored` bug, now solves 8.5×12 up), plus two new ones —
+   `nw_front_back_split_bath_gr` (8×10, from `narrow-fp-01.png`) and
+   `nw_front_rear_bath_gr` (8×10, from `narrow-fp-02.png`, full-width rear
+   bedroom).
+3. **Wide** (2 new, alongside the pre-existing `wd_side_split_bath_hall_gr`
+   which needs ≥13.3×9.5): `wd_split_wing_bath_gr` (10×8, from
+   `wide-fp-01.png`, wet end-column) and `wd_side_split_bath_gr` (10×8,
+   user-requested variant — bath+kitchen rear band instead of end column,
+   bath doors into the kitchen per a later revision).
+4. **New dining-counter feature** (`counter_divider` adjacency flag) — all
+   7 topologies use it instead of a full dining room (furnishability math:
+   a great_room at its 6 m² hard minimum only fits a couch + TV, no
+   table). See [[counter-divider-dining-spec]] — LOCKED design, do not
+   re-propose the rejected `kitchen_dining` nook type or `lkc` config.
+5. **Six new per-topology solver overrides** needed to make these small
+   programs solvable: `match_widths`, `private_area_floor`,
+   `zone_balance_rooms`, `aspect_overrides`, `kitchen_rear_pin`,
+   `set_max_area_sqm`. See [[solver-topology-overrides]] — same
+   "thread through all 7 Topology-copy sites" trap as `ldk_horizontal`.
+6. **Fixed a real pre-existing bug**: `shell_category()` never returned
+   `"narrow"` (only `"deep"`/`"super_deep"`), so `ai/match.py` could never
+   surface ANY narrow topology through the Streamlit app, 1BR or the 5
+   pre-existing 2BR ones. Fixed by merging the buckets. See
+   [[shell-category-narrow-fix]] — `extra_wide` has the same unfixed gap
+   (`wide`-labeled topologies never match `extra_wide` lots), flagged not
+   fixed, scoped out by explicit user instruction.
 - Remember [[ask-before-coding]] — this project's standing convention.
 
 ## Current focus (as of 2026-06-25)
@@ -106,10 +84,37 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
 
-**Test suite status:** 50 pass, 0 fail, 0 error (includes 17 minimum-boundary
-briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]]).
+**1BR topologies** (`floorplan_v1/topologies/1s/1br/{squarish,narrow,wide}/`,
+added 2026-07-16 — full detail in [[br1-topology-catalog]]):
+
+- `sq_side_split_bath_gr` — squarish, 9×9 lot, straight-cut 2×2 grid
+- `nw_side_corridor_bath_hall` — narrow, 8.5×12, shotgun corridor sequence
+- `nw_front_back_split_bath_gr` — narrow, 8×10, bedroom door via kitchen side
+- `nw_front_rear_bath_gr` — narrow, 8×10, full-width rear bedroom
+- `wd_side_split_bath_hall_gr` — wide, 14×10 (pre-existing, needs ≥13.3×9.5)
+- `wd_split_wing_bath_gr` — wide, 10×8, wet end-column
+- `wd_side_split_bath_gr` — wide, 10×8, wet rear band, least override-hungry
+
+All 1BR topologies use `private_area_floor: false` (a single bedroom can
+never outweigh the LDK under the hard "private ≥ public" rule) and the new
+`counter_divider` dining-counter render feature — see
+[[solver-topology-overrides]] and [[counter-divider-dining-spec]].
+
+**Test suite status:** 61 pass, 0 fail, 0 error (includes 17 minimum-boundary
+briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]],
+plus 8 new 1BR test briefs added 2026-07-16).
 
 ## Recently completed
+
+**2BR wide catalog additions (2026-07-13/14):** `baths_ds_hall_gr` →
+`baths_ds_gr` (hall removed, both bedrooms door direct to great room). New
+topology `1s_2br_wd_quadrant_split_baths_ds_ld` — private/public in
+diagonal quadrants, `hall` as the circulation hinge between great_room and
+kitchen; confirmed the `right_anchored` edge-collision authoring pattern is
+repeatable (see [[quadrant-split-topology]]). Verified 14×11 and 14×10,
+committed and pushed. Also fixed a door-hinge bug for L-shaped
+ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
+2BR lot-size sweep (`lot_size_sweep.py`, [[squarish-2br-lot-size-sweep]]).
 
 **Horizontal-LDK solver support + front-back-split topology working (2026-07-14):** Two general solver capabilities, plus a topology that now uses them. (1) `solver.py`'s hardcoded kitchen-rear-wall pin now skips itself when a topology's `zone_split` explicitly declares kitchen as a front/public room (mathematically necessary — the old unconditional pin was incompatible with `zone_split` by construction). (2) New topology-level flag `ldk_horizontal` (default `False`) disables the solver's hardcoded LDK vertical-stacking rules (kitchen+great_room must stack, kitchen+dining must stack without living_room, living-in-front-of-both) for topologies that want great_room/kitchen side-by-side instead of stacked — threaded through every `Topology`-copy-constructing function in both `solver/topology.py` and `run.py` (7 sites total; missing any of them silently resets the flag). `1s_2br_wd_front_back_split_baths_ds_gr` now solves cleanly using both — see [[front-back-split-topology-solver-bug]] for the full 5-fix diagnostic trail. 48/48 regression, zero drift on any pre-existing baseline.
 
@@ -133,17 +138,21 @@ briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]]).
 
 ## Open / deferred
 
+- **`extra_wide` shell-matching gap (found 2026-07-16, not fixed):** same bug class as the `narrow` fix — `ai/match.py` does exact string equality, but no topology declares `target_shell: "extra_wide"`, so `wide`-labeled topologies never match an `extra_wide` lot through the app. Scoped out of the narrow fix by explicit user instruction; needs its own go-ahead. See [[shell-category-narrow-fix]].
 - **Door placement / corner-preference (requested, not started):** `door_placement` override on adjacency: `"low_corner" | "high_corner" | "center"`. Entry point: `architectural_plan.py::_door_for_adjacency` — `low_real`/`high_real` logic exists, needs override field + center path. (Different tier from door-HOST selection, which is done.)
 - **Task #13 (deferred at user request):** Remove obsolete single-bath wide topologies, briefs, outputs.
 - Wide-shell catalog plan in memory ([[wide-shell-catalog-plan]]) calls for 3BR wide-only topologies as Phase 2 (`1s_3br_wd_side_split_bath_hall_ld`, `1s_3br_wd_side_split_baths_cl_ld`). Not started.
+- 1BR catalog is squarish/narrow/wide only — no `dp`/`swd`/`sdp` 1BR shapes yet. Not requested; noting the gap for symmetry with the 2BR catalog's shape coverage.
 
 ## Key project conventions
 
 - **Ask before coding.** Discuss approach, get explicit go-ahead, then write code. See [[ask-before-coding]].
 - **Every bedroom needs hallway/public access** — never via a bathroom. See [[floorplan-quality]].
 - **Don't present mirror-image variants** as distinct designs.
-- **Floor area bands** per [[floor-area-per-br]]: 2BR/1bath 45–65, 2BR/2bath 65–80, 3BR/2bath 80–120, 4BR/3bath 100–150 m².
+- **Floor area bands** per [[floor-area-per-br]]: 2BR/1bath 45–65, 2BR/2bath 65–80, 3BR/2bath 80–120, 4BR/3bath 100–150 m². No locked 1BR band yet — the 7 topologies built 2026-07-16 land around 24–36 m² each, treat as a working range not a locked convention.
 - **Rear-linear topology (bedrooms across rear) is infeasible** with current solver — use side-split column-stack instead. See [[rear-linear-infeasibility]].
+- **1BR topologies need `private_area_floor: false`** — the solver's hard "private ≥ public" area rule assumes a multi-bedroom private wing; a single bedroom can never satisfy it against a full LDK. See [[solver-topology-overrides]].
+- **Prefer a fixed door over `door_host_group` when the desired host scores worse than the alternative** — Pass 1a's auto-scorer will silently flip a group's default to whichever host wins on circulation-overlap, so a group can't reliably hold a deliberately-suboptimal-scoring choice. See [[br1-topology-catalog]] (door-host-group finding on `wd_side_split_bath_gr`).
 
 ## Useful paths
 
@@ -154,3 +163,4 @@ briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]]).
 - Run tests: `cd floorplan_v1 && python3 run.py --test`
 - Run single brief: `python3 run.py --test --brief=<name>`
 - Interactive tester: `streamlit run floorplan_v1/app.py` (see `DEPLOY.md` for hosting it online)
+- Lot-size sweeps: `lot_size_sweep.py` (squarish 2BR, multi-sibling), `lot_size_sweep_1br.py` (one topology per shape, 1BR)
