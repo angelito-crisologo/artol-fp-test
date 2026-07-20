@@ -1,0 +1,25 @@
+{
+  "intent": "2-STOREY 2BR / 2 bath squarish rear-corner-stair smoke test on the canonical 10x10 lot, no carport. 6x6 envelope per floor (36 m\u00b2 footprint, 72 m\u00b2 gross) \u2014 inside the locked 2BR/2-bath 65-80 m\u00b2 band that the narrow 2s pair undershoots. Exercises the squarish 2s signature: both bedrooms side-by-side at the front with street-facing windows (2F-only zone_split), hall-less GF with the great room as circulation, dining counter on the great/kitchen edge, rear-corner stair with the bath2->stairwell wet-stack soft proximity, and the composite GROUND FLOOR | SECOND FLOOR SVG.",
+  "lot_width": 10.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "both bedrooms upstairs, side-by-side, street-facing windows",
+    "hall-less ground floor \u2014 great room is the circulation",
+    "dining counter between great room and kitchen",
+    "straight stair in the rear corner off the great room",
+    "one T&B per floor, upper bath near the wet stack",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/2br/squarish/2s_2br_sq_rear_stair_bath_gr.json",
+  "dining_counter": false
+}

@@ -1,0 +1,239 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_2br_nw_front_stair_foyer_bath",
+  "label": "Narrow-shell 2-storey 2BR / 2 baths, FRONT STAIR + FOYER \u2014 stair rises straight from the entry vestibule so upstairs is reached without crossing the living zone; biggest bedroom 2 at the rear. Suits renters, bedspacers, or multi-generation privacy; plumbing split.",
+  "target_shell": "narrow",
+  "storeys": 2,
+  "meta": {
+    "topology_id": "2s_2br_nw_front_stair_foyer_bath",
+    "title": "Variant D - Front stair + foyer",
+    "context": "Philippines residential (NBC / PD 957 compliant)",
+    "units": "meters",
+    "coordinate_system": {
+      "origin": "front-left corner of lot",
+      "x": "across frontage, left to right",
+      "y": "from front (south, road side) toward rear (north)",
+      "drawing_convention": "front of lot at bottom of sketch (south)"
+    },
+    "created": "2026-07-18"
+  },
+  "classification": {
+    "storeys": 2,
+    "bedrooms": 2,
+    "lot_shape": "narrow",
+    "attachment": "detached",
+    "carport": false
+  },
+  "envelope": {
+    "lot": {
+      "width": 8.0,
+      "depth": 12.0,
+      "area_sqm": 96.0
+    },
+    "setbacks": {
+      "front": 2.0,
+      "rear": 2.0,
+      "side_left": 2.0,
+      "side_right": 2.0
+    },
+    "shell": {
+      "x": 2.0,
+      "y": 2.0,
+      "width": 4.0,
+      "depth": 8.0,
+      "footprint_sqm": 32.0
+    },
+    "walls": {
+      "exterior_thickness": 0.15,
+      "interior_thickness": 0.1
+    },
+    "interior_clear": {
+      "width": 3.7,
+      "depth": 7.7,
+      "area_per_floor_sqm": 28.49
+    },
+    "storeys": 2,
+    "floor_to_floor": 3.0,
+    "gross_floor_area_sqm": 64.0,
+    "outdoor_zones": [
+      {
+        "name": "front yard / entry court",
+        "location": "front setback",
+        "size": "8.0 x 2.0"
+      },
+      {
+        "name": "service / laundry yard",
+        "location": "rear setback",
+        "size": "8.0 x 2.0"
+      },
+      {
+        "name": "side breezeways",
+        "location": "side setbacks",
+        "size": "2.0 x 12.0 each"
+      }
+    ]
+  },
+  "room_schema": "x, y = lot coordinates of room's front-left corner; w = width (x-dir); d = depth (y-dir); areas in sqm",
+  "variant": {
+    "id": "D",
+    "name": "Front stair + foyer",
+    "concept": "Stair rises straight from the entry vestibule; upstairs is reached without crossing the living zone. Suits renters, bedspacers, or multi-generation privacy.",
+    "stair": {
+      "type": "straight",
+      "location": "left wall, front",
+      "width": 0.9,
+      "run": 3.5,
+      "risers": 15,
+      "riser_height": 0.2,
+      "tread": 0.25,
+      "ascent": "foot at foyer (front), ascends rearward, arrives mid-plan",
+      "under_stair": "storage at rear (high) end"
+    },
+    "plumbing": "split (ground wet zone rear, second-floor T&B mid-plan)",
+    "floors": {
+      "ground": [
+        {
+          "name": "Stair",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 2.15,
+          "w": 0.9,
+          "d": 3.5,
+          "area": 3.15
+        },
+        {
+          "name": "Foyer",
+          "type": "circulation",
+          "x": 3.05,
+          "y": 2.15,
+          "w": 2.8,
+          "d": 1.5,
+          "area": 4.2,
+          "notes": "entry vestibule; shoe storage"
+        },
+        {
+          "name": "Living",
+          "type": "public",
+          "x": 3.05,
+          "y": 3.65,
+          "w": 2.8,
+          "d": 3.0,
+          "area": 8.4
+        },
+        {
+          "name": "Hall",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 5.65,
+          "w": 0.9,
+          "d": 1.0,
+          "area": 0.9,
+          "notes": "under-stair passage"
+        },
+        {
+          "name": "Dining",
+          "type": "public",
+          "x": 2.15,
+          "y": 6.65,
+          "w": 3.7,
+          "d": 1.7,
+          "area": 6.29
+        },
+        {
+          "name": "Kitchen",
+          "type": "wet",
+          "x": 2.15,
+          "y": 8.35,
+          "w": 2.2,
+          "d": 1.5,
+          "area": 3.3,
+          "notes": "service door to rear yard"
+        },
+        {
+          "name": "T&B",
+          "type": "wet",
+          "x": 4.35,
+          "y": 8.35,
+          "w": 1.5,
+          "d": 1.5,
+          "area": 2.25
+        }
+      ],
+      "second": [
+        {
+          "name": "Stair void",
+          "type": "void",
+          "x": 2.15,
+          "y": 2.15,
+          "w": 0.9,
+          "d": 3.5,
+          "area": 3.15
+        },
+        {
+          "name": "Bedroom 1",
+          "type": "private",
+          "x": 3.05,
+          "y": 2.15,
+          "w": 2.8,
+          "d": 3.2,
+          "area": 8.96,
+          "notes": "front, over foyer"
+        },
+        {
+          "name": "Hall A",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 5.65,
+          "w": 0.9,
+          "d": 1.2,
+          "area": 1.08,
+          "notes": "stair arrival"
+        },
+        {
+          "name": "Hall B",
+          "type": "circulation",
+          "x": 3.05,
+          "y": 5.35,
+          "w": 1.3,
+          "d": 1.5,
+          "area": 1.95
+        },
+        {
+          "name": "T&B",
+          "type": "wet",
+          "x": 4.35,
+          "y": 5.35,
+          "w": 1.5,
+          "d": 1.5,
+          "area": 2.25
+        },
+        {
+          "name": "Bedroom 2",
+          "type": "private",
+          "x": 2.15,
+          "y": 6.85,
+          "w": 3.7,
+          "d": 3.0,
+          "area": 11.1,
+          "notes": "largest room; full width, rear"
+        }
+      ]
+    },
+    "entry": {
+      "location": "front wall, into foyer",
+      "x": 4.4,
+      "y": 2.0
+    },
+    "tradeoffs": {
+      "pros": [
+        "upstairs privacy from living zone",
+        "biggest Bedroom 2",
+        "renter/bedspacer friendly"
+      ],
+      "cons": [
+        "living room smallest usable front frontage",
+        "plumbing not stacked"
+      ]
+    }
+  }
+}

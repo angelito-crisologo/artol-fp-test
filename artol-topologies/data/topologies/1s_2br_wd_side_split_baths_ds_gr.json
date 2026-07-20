@@ -1,0 +1,225 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_side_split_baths_ds_gr",
+  "label": "Wide-shell 2BR / 2 baths DISTRIBUTED, no hall \u2014 ensuite sandwiched between master (front) and standard (rear) in the bedroom column, mirroring the squarish distributed-bath pattern (1s_2br_sq_side_split_baths_ds_gr). Both bedrooms door directly into the great room; common bath gets its own direct doors from standard (private route) and from the great room (guest-accessible route) instead of routing through a hall.",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 door on master's north wall, ensuite sits directly behind master in the bedroom column's mid band. Same distributed-bath idiom as the squarish ds catalog, brought into the wide shell."
+    },
+    {
+      "a": "ensuite",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "ensuite's north wall touches standard's south wall \u2014 no door, acoustic+privacy buffer between the two bedrooms."
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "master's east wall = great room's west wall in the front band \u2014 a real door, no hall buffer."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "standard's east wall = great room's west wall in the rear band \u2014 a real door, no hall buffer. With the hall removed, both bedrooms access the great room directly, same as the squarish distributed-bath sibling."
+    },
+    {
+      "a": "standard",
+      "b": "common",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_door",
+      "note": "declared for adjacency/geometry purposes (pulls common next to standard) but architectural_plan.py's generic bedroom<->common-bath rule always suppresses this into a wall, never a door \u2014 common baths are never directly bedroom-accessible. Same no-op declaration exists on the squarish ds_gr sibling. Standard's only route to common is via the great room door below."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common bath's ONLY actual door \u2014 opens onto the great room, mirrors the squarish distributed-bath sibling's common\u2194great door. With the hall removed and the standard\u2194common door suppressed (see above), this is the sole way in or out of common bath."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "shared plumbing wall \u2014 common bath and kitchen stack at the rear."
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form one open LDK (gr style) \u2014 consistent with every wide-shell topology in the catalog so far; the shell's shallower depth doesn't comfortably support a separate living+dining ('ld') split."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "standard",
+      "b": "common",
+      "weight": 25,
+      "note": "pull common toward standard's east wall (the primary bedroom-side user) when there's slack \u2014 same idiom used in the squarish distributed-bath topologies."
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "standard"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "match_bedroom_widths": true,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": [
+    "master",
+    "ensuite",
+    "standard"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "standard",
+    "common",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "ensuite",
+      "standard"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_side_split_baths_ds_gr",
+      "when": {
+        "buildable_area_lt_sqm": 80
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 18.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "On compact wide lots (<80 sqm buildable), kitchen floors at 1.8 m depth (usable galley, above the PD 1096 1.5 m hard min). Both baths get an auto floor so neither collapses to its hard minimum by default; master is capped at 18 sqm so its priority weight doesn't steal depth from the ensuite that's sandwiched behind it. preferred_apply bumps ensuite to 3.0 sqm and kitchen to a more generous 2.0 m galley where the envelope allows \u2014 tried first, relaxed together on infeasibility."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Wide-shell catalog topology \u2014 2BR / 2 baths DISTRIBUTED, no hall. Sibling of 1s_2br_wd_side_split_baths_ds_hall_gr with the hall removed: both bedrooms door directly into the great room (same direct-access idiom master already used), and common bath picks up a second direct door onto the great room instead of routing through hall. Mirrors the squarish 1s_2br_sq_side_split_baths_ds_gr pattern, brought into the wide shell.",
+    "",
+    "Floor band: roughly 65-85 sqm buildable \u2014 same territory as the hall variant and side_split_baths_cl_gr, sized against 14x11 to 15x12 m lots.",
+    "",
+    "Layout intent (canonical form \u2014 brief.carport_side='right' or 'none'):",
+    "  Rear band:   [standard          | common (wet)      | kitchen ]",
+    "  Mid band:    [ensuite           |                   | great (cont.) ]",
+    "  Front band:  [master            |   GREAT ROOM (direct doors from both bedrooms)  ]",
+    "",
+    "Two sub-columns (no separate mid/hall column, unlike the hall variant):",
+    "  - LEFT  (~3-3.5 m): [master front, ensuite mid, standard rear] \u2014 bedroom column, same distributed stack as squarish ds_gr/ds_ld",
+    "  - RIGHT (~5.5-6.5 m): [great_room front+mid, kitchen rear] \u2014 LDK column, with common bath tucked at the rear boundary next to kitchen",
+    "",
+    "Master and standard access: both door directly into the great room \u2014 no hall buffer for either bedroom.",
+    "",
+    "Common bath access: ONE actual door, from the great room \u2014 the standard<->common adjacency above is declared (for geometry pull) but always gets suppressed to a wall by architectural_plan.py's generic bedroom<->common-bath rule, same as the squarish ds_gr sibling. So standard's route to the bath is through the great room, same as everyone else's.",
+    "",
+    "Wet stack: common bath's east wall = kitchen's west wall (wet_core). Combined with the rear-setback dirty kitchen, all wet utilities land in one rear-east bay, same as every other topology in the catalog.",
+    "",
+    "Carport: not declared in the base topology \u2014 NCP form, consistent with the other wide topologies. To add a side carport, add a building_void at front_right. For a front-parallel carport, brief.carport_side='front' bumps the front setback to 3 m. When brief.carport_side='left', the runner mirrors the topology so the LDK ends up on the left and the bedroom column on the right.",
+    "",
+    "No fallback_topology declared \u2014 matches the squarish ds_gr sibling, which also omits one."
+  ]
+}

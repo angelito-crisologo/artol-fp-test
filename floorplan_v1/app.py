@@ -33,7 +33,7 @@ if _HERE not in sys.path:
 from brief import Brief                      # noqa: E402  (ai)
 from extract import extract_requirements     # noqa: E402  (ai)
 from match import match_topologies            # noqa: E402  (ai)
-from render import archplan_to_svg            # noqa: E402  (core)
+from render import archplan_to_svg, compose_floor_svgs  # noqa: E402  (core)
 from run import _run_hand_authored, _run_ai  # noqa: E402
 
 # Carport type semantics per CLAUDE.md — spelled out here since "ccp"/"fcp"
@@ -330,8 +330,13 @@ if st.session_state["candidates"] is not None:
                         st.session_state["brief"], item.filename, verbose=False,
                         deterministic=True)
                     result_id = item.id
-                plan = getattr(layout, "archplan", None)
-                svg = archplan_to_svg(plan)
+                archplans = getattr(layout, "archplans", None)
+                if archplans:   # multi-storey: one plan per floor, composite
+                    svg = compose_floor_svgs(
+                        [(t, archplan_to_svg(p)) for t, p in archplans])
+                else:
+                    plan = getattr(layout, "archplan", None)
+                    svg = archplan_to_svg(plan)
                 results.append({
                     "id": result_id, "ok": True, "svg": svg,
                     "issues": layout.issues, "score": layout.score,

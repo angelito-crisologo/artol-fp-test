@@ -1,0 +1,284 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_front_back_split_baths_cl_hall_lk",
+  "label": "Squarish 3BR / baths CLUSTERED, FRONT_BACK split with mid-band HALL \u2014 full-width public band at front (living-kitchen, lk style, dining folded into living), full-width private band at rear with all three bedrooms; wet core (common + ensuite back-to-back) in the middle band beside the hall. The most compact of the 3BR squarish family.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "living",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "lk style \u2014 living and kitchen are one open front band, dining folds into the living side"
+    },
+    {
+      "a": "hall",
+      "b": "living",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "hall's south mouth opens into the living room \u2014 no door"
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite sits in the mid band directly in front of master \u2014 interior door on master's front wall"
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "back-to-back baths share one plumbing wall"
+    },
+    {
+      "a": "kitchen",
+      "b": "common",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "common bath backs onto the kitchen wall \u2014 all three wet rooms in one contiguous stack"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master door at the hall's east end"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 door opens north into the hall"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 door opens north into the hall"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common bath door opens west into the hall"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "br3",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the shared bath centered on the standard pair"
+    }
+  ],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "br2",
+      "br3",
+      "common"
+    ],
+    "public_rooms": [
+      "living",
+      "kitchen"
+    ]
+  },
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "bedroom_band_fills_width": true,
+  "rear_anchored": [
+    "br2",
+    "br3",
+    "master"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "living",
+      "hall",
+      "br2"
+    ],
+    [
+      "kitchen",
+      "common",
+      "br3"
+    ],
+    [
+      "kitchen",
+      "ensuite",
+      "master"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_front_back_split_baths_cl_hall_lk",
+      "when": {
+        "buildable_area_lt_sqm": 100
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "master_bedroom": {
+          "max_area_sqm": 14.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "This is the economic workhorse of the 3BR set, so the trigger stays at 100 m\u00b2. The rear band carries three bedroom widths (>= 2.8 + 2.8 + 3.0 m), so master is capped hardest (14 m\u00b2). Baths sit in preferred so they can compress toward the hard min on BP 220-class shells while bedroom widths hold."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "3BR squarish catalog topology #3 \u2014 FRONT_BACK split, clustered wet stack.",
+    "The most compact of the four: natural floor band ~84-96 m\u00b2; minimum feasible",
+    "shell ~9.3 x 9.0 m (width is the binding constraint, not area). Verified",
+    "2026-07-18 end-to-end (solve + validate COMPLIANT) for ncp, ccp right,",
+    "ccp left (mirror) and fcp, down to a true 9.0 x 9.0 m buildable (ncp).",
+    "",
+    "Layout intent (canonical, brief.carport_side='right'):",
+    "  Rear:  [br2   | br3          | master          ]",
+    "  Mid:   [HALL          | common | ensuite       ]",
+    "  Front: [living (entry)         | kitchen       ]",
+    "",
+    "Program: clean two-band parti. Full-width public band at front \u2014 living",
+    "hosts entry, kitchen at front-right, lk open plan (dining folds into living;",
+    "the lanai or dirty-kitchen side can host overflow dining). Full-width private",
+    "band at rear holds all three bedrooms. The thin middle band carries the",
+    "east-west hall plus the entire wet stack: kitchen, common and ensuite form",
+    "one contiguous plumbing bay (kitchen fronts it, common backs the kitchen,",
+    "ensuite backs common and doors into master).",
+    "",
+    "Ventilation: all three bedrooms hold the rear wall (windows to the rear",
+    "setback / service area), living + kitchen hold the front \u2014 no landlocked",
+    "room. Baths and hall vent via high windows or mechanical, per PD 1096",
+    "allowance for baths.",
+    "",
+    "Fit rule: rear band needs >= 8.6 m internal width (2.8 + 2.8 + 3.0) \u2014",
+    "shell width >= ~9.3 m with wall allowances. Depth can compress to ~9.0 m",
+    "because the mid band is only bath-depth (~1.8-2.0 m).",
+    "",
+    "Single wet stack = cheapest plumbing of the family; pick this topology first",
+    "for BP 220 / economic-housing briefs. When brief.carport_side='left', mirror.",
+    "",
+    "Solver notes (2026-07-18): left_anchored/right_anchored were REMOVED \u2014",
+    "as authored (living+br2 left, kitchen+ensuite+master right) the topology",
+    "was infeasible at every lot size (confirmed up to 20x20 buildable). Root",
+    "cause: any anchor-list combination beyond a single list alone contradicts",
+    "the front_to_rear_stacks + full adjacency graph (hall alone touches 5",
+    "other rooms while chained front-to-rear between living and br2) \u2014 pinning",
+    "kitchen/ensuite/master flush to the right wall was the specific trigger,",
+    "but left+rear together (no right at all) also failed. rear_anchored alone",
+    "is sufficient: kitchen_side='right' (the solver's softer center-based",
+    "symmetry break, untouched) still reliably keeps living left / kitchen",
+    "right in practice, but br2/br3 left-right order within the rear band is",
+    "no longer pinned \u2014 solver's choice, sometimes br3|br2|master instead of",
+    "the diagram's br2|br3|master. Functionally equivalent (both are plain",
+    "standard bedrooms); treat the ASCII diagram above as intent, not a",
+    "geometry guarantee."
+  ]
+}

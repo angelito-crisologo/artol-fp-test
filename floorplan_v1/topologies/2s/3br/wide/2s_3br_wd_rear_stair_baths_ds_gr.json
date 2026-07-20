@@ -1,0 +1,294 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_3br_wd_rear_stair_baths_ds_gr",
+  "label": "Wide-shell 2-STOREY 3BR / 2 baths, REAR SIDEWAYS STAIR, hall-less ground floor, distributed baths (one per floor) \u2014 the first 2-storey 3BR. Ground floor: full-width great room across the front (entry), sideways 3.5 m stair + kitchen + T&B tiling the rear band. Upstairs: master and second bedroom street-facing at the front, third bedroom at the rear, and the landing hall as a compact mid-band CORE serving all five doors (three bedrooms, bath, stair arrival) \u2014 the 2-storey cousin of the 1s 3BR hall_core pinwheel. Canonical 12x10 lot (8x6 buildable per floor, 96 m\u00b2 gross \u2014 mid-band for 3BR/2-bath 80-120 m\u00b2).",
+  "target_shell": "wide",
+  "storeys": 2,
+  "rooms": [
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true,
+      "storey": 1
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "storey": 1,
+      "mechanical_vent": true
+    },
+    {
+      "id": "bath1",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "stair",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom",
+      "storey": 2
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms",
+      "storey": 2
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms",
+      "storey": 2
+    },
+    {
+      "id": "bath2",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "hall2",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "stairwell",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "note": "GF: kitchen opens directly off the great room \u2014 dining counter on the shared edge (2 x 0.6 m seats + 0.9 m pass = 2.1 m min); band + stools live on the great-room side to keep the galley aisle clear. Render-only (counter_divider) \u2014 briefs may set dining_counter: false to suppress it without touching this topology.",
+      "counter_divider": true,
+      "counter_side": "great"
+    },
+    {
+      "a": "great",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "GF: T&B doors into the great room \u2014 hall-less GF, the great room IS the circulation; door-placement scoring keeps it off the entry sightline"
+    },
+    {
+      "a": "great",
+      "b": "stair",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_boarding",
+      "note": "GF: open stair boards straight off the great room; the boarding constraint holds this edge to the flight's bottom end"
+    },
+    {
+      "a": "kitchen",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "GF: T&B shares a plumbing wall with the kitchen \u2014 single GF wet bay at the rear; kitchen keeps its rear service door"
+    },
+    {
+      "a": "stair",
+      "b": "stairwell",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_vertical",
+      "note": "VERTICAL circulation edge: flight and stairwell opening occupy the identical rectangle on their floors (rect-equality in the solver, graph connectivity for validation)"
+    },
+    {
+      "a": "stairwell",
+      "b": "hall2",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_arrival",
+      "note": "2F: the landing hall must meet the stairwell at the TOP end of the flight \u2014 step off into circulation, never a bedroom wall"
+    },
+    {
+      "a": "hall2",
+      "b": "master",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: master door off the landing hall"
+    },
+    {
+      "a": "hall2",
+      "b": "br2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: second bedroom door off the landing hall"
+    },
+    {
+      "a": "hall2",
+      "b": "br3",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: third bedroom door off the landing hall-core"
+    },
+    {
+      "a": "hall2",
+      "b": "bath2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "2F: second T&B doors off the landing hall"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "bath2",
+      "b": "stairwell",
+      "weight": 15,
+      "note": "2F: pull the upper T&B toward the rear stair corner \u2014 lands it near the GF wet bay (kitchen + bath1 share the rear band), shortening the vertical plumbing run. Soft only: cross-floor wet-stack alignment isn't a hard v2 constraint yet."
+    }
+  ],
+  "entry_point": "great",
+  "zone_balance_rooms": {
+    "private": [
+      "master",
+      "br2",
+      "br3",
+      "bath2",
+      "hall2"
+    ],
+    "public": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "aspect_overrides": {
+    "stairs": 4.0
+  },
+  "left_anchored": [
+    "stair"
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "stair_run_geometry",
+      "when": {
+        "buildable_area_lt_sqm": 99999
+      },
+      "auto_apply": {
+        "stairs": {
+          "min_greatest_dim_m": 3.5,
+          "max_least_dim_m": 1.2
+        },
+        "common_bath": {
+          "max_greatest_dim_m": 2.6,
+          "max_area_sqm": 3.9
+        },
+        "hallway": {
+          "max_area_sqm": 6.0
+        }
+      },
+      "rationale": "ALWAYS-ON (the 99999 trigger): a straight stair's run is riser math the solver cannot derive \u2014 3.0 m floor-to-floor at 15 x 200 mm risers needs 14 x 250 mm treads = 3.5 m; min_greatest_dim_m pins the run, max_least_dim_m 1.2 keeps the flight a flight (orientation stays the solver's choice \u2014 it picks the sideways run on this shell). common_bath caps stop post-snap gap-filling from stretching a bath into a corridor. hallway max_area_sqm 6.0 (vs 4.5 on the 2BR siblings): this hall-core hosts FIVE doors \u2014 three bedrooms, the bath, and the stair arrival \u2014 so it earns more area, but stays bounded so snap growth returns spare m\u00b2 to bedrooms instead."
+    }
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "great",
+      "bath1"
+    ],
+    [
+      "great",
+      "stair"
+    ],
+    [
+      "master",
+      "hall2"
+    ],
+    [
+      "br2",
+      "hall2"
+    ]
+  ],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "notes": [
+    "2-STOREY wide catalog topology #2 \u2014 the FIRST 2-storey 3BR",
+    "(authored 2026-07-19; scaled up from 2s_2br_wd_rear_stair_bath_gr,",
+    "keeping its sideways rear stair and full-width front great room).",
+    "",
+    "Program: 3BR / 2 baths DISTRIBUTED one per floor (baths_ds) \u2014 GF common",
+    "T&B off the great room, upper common bath off the landing hall. All",
+    "three bedrooms upstairs. Bath count matches the locked 3BR/2-bath",
+    "floor band (80-120 m\u00b2 gross).",
+    "",
+    "Why the hall is a CORE, not a corridor: putting all three bedrooms",
+    "across the front (the tempting wide move) forces a back corridor",
+    "spanning all three door walls \u2014 ~6.5 m of hallway, past the 4:1",
+    "hallway aspect cap and against the minimal-notch convention. Instead",
+    "master + br2 take the street front, br3 takes the rear beside the",
+    "bath, and the hall sits as a compact mid-band node (~5-6 m\u00b2) with all",
+    "five doors radiating from it \u2014 the 2-storey cousin of the 1s",
+    "1s_3br_sq_hall_core pinwheel.",
+    "",
+    "Canonical layout (12 x 10 lot, 2 m setbacks, 8 x 6 buildable/floor):",
+    "  GF:  Front: [great room (entry, FULL width, counter at rear edge)]",
+    "       Rear:  [stair (sideways) -> | kitchen | T&B                 ]",
+    "  2F:  Front: [br2            | master                             ]",
+    "       Mid:   [hall-core (5 doors)         | br3                   ]",
+    "       Rear:  [stairwell      | T&B        | br3                   ]",
+    "Stair: straight, 0.9-1.2 m wide, >= 3.5 m sideways run, 15 risers @",
+    "200 mm / 250 mm treads, left-anchored; boards off the great room,",
+    "arrives at the hall-core (stair_boarding / stair_arrival end",
+    "constraints, horizontal-run branch).",
+    "",
+    "Verified sizes (all COMPLIANT, 0 warnings, deterministic): 12x10",
+    "canonical (96 m\u00b2 gross), 13x10 (108), 11.5x9.5 (82 \u2014 band floor),",
+    "14x10.5 (130 \u2014 above band, solver-fine, offer 4BR instead per the",
+    "floor-band convention). Technically solves down to 11x9 (70 m\u00b2",
+    "gross) \u2014 BELOW the 3BR band floor; treat the 80 m\u00b2 band, not solver",
+    "feasibility, as the practical minimum when matching briefs.",
+    "",
+    "Structure/override choices: deliberately minimal \u2014 only the stair is",
+    "anchored (single-member left_anchored) and only two gentle stacks",
+    "([master, hall2], [br2, hall2]) pull those two bedrooms in front of",
+    "the hall; br3/bath2/stairwell arrange freely via adjacencies (no",
+    "zone_split \u2014 br3 belongs in the rear band, unlike the 2BR siblings",
+    "whose split pins both bedrooms front). zone_balance_rooms counts the",
+    "whole upper floor minus stairwell as private. Kitchen mechanical_vent",
+    "per the wide-2BR rationale (counter-width, service-door-dominated rear",
+    "wall at compact sizes). Soft proximity bath2->stairwell keeps the",
+    "upper bath near the GF wet bay (cross-floor wet-stack alignment is",
+    "soft-only in v2).",
+    "",
+    "Known quirk (shared with the 2BR wide sibling): when the solver floats",
+    "the sideways flight off the rear wall, the strip behind it is claimed",
+    "as an alcove where an eligible room abuts it, or stays a small",
+    "suggestion-level hole where only baths/stairs adjoin (both are",
+    "excluded claimants) \u2014 honest behind-stair space either way.",
+    "",
+    "Naming: `baths_ds` = distributed baths (one per floor), `gr` = open",
+    "great-room style, no `_hall` token since the GROUND floor is hall-less",
+    "(the 2F landing hall is mandatory in every 2s topology and is not",
+    "tokened, consistent with the 2s 2BR family)."
+  ]
+}

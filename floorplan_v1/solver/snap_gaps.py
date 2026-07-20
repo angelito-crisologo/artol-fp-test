@@ -44,7 +44,8 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
               verbose: bool = False,
               void_rects: Optional[List[Rect]] = None,
               matched_x_pairs: Optional[List[Tuple[str, str]]] = None,
-              max_area_caps: Optional[dict] = None
+              max_area_caps: Optional[dict] = None,
+              frozen_ids: Optional[set] = None
               ) -> Tuple[Layout, int]:
     """Iteratively snap rooms to fill rectangular gaps. Modifies layout's room
     rects in place; returns (layout, snap_count) for inspection.
@@ -67,9 +68,16 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
     capped room is shrunk so the resulting total area (rect + rect2) stays
     under the cap. If the room is already at or over its cap, it doesn't
     grow at all on this iteration.
+
+    `frozen_ids` are room ids that must NOT be extended at all. Multi-storey
+    v2 uses this for stair rooms: the GF flight and the 2F stairwell are
+    snapped per-floor in separate passes, so growing one would silently
+    break the solver's cross-floor rect-equality — and a stair's run is
+    riser math, not leftover space (design decision D6).
     """
     env = layout.lot.envelope()
     voids = void_rects or []
+    frozen = frozen_ids or set()
     # Build a twin lookup: room_id -> twin_room_id (x-axis only).
     twin_of: dict = {}
     for a, b in (matched_x_pairs or []):
@@ -82,6 +90,8 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
         best_dist = 0.0
         best_target: Optional[Tuple[Room, int, str]] = None
         for room in layout.rooms:
+            if room.id in frozen:
+                continue
             cells = room.cells
             for cell_idx, cell in enumerate(cells):
                 # Obstacles: every cell in the layout except the one we're
@@ -96,6 +106,21 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
                     # all cells) stays under the cap after this extension.
                     if room.id in caps:
                         d = _shrink_for_area_cap(d, room, cell, side, caps[room.id])
+                    # Master-supremacy guard: the solver enforces the PH hard
+                    # rule master > standard (1 m² margin) at solve time, but
+                    # unequal snap growth can erode it (observed live: br3
+                    # +90 cm vs master +35 cm ended in exact equality). Cap a
+                    # standard bedroom's growth at its storey's master's
+                    # CURRENT area minus half the margin — master only ever
+                    # grows during snapping, so the invariant survives the
+                    # whole loop regardless of extension order.
+                    if room.type == "bedroom_standard":
+                        m = next((r for r in layout.rooms
+                                  if r.type == "master_bedroom"
+                                  and r.storey == room.storey), None)
+                        if m is not None:
+                            d = _shrink_for_area_cap(d, room, cell, side,
+                                                     m.area - 0.5)
                     # If this room has a matched twin and the snap is on the
                     # x-axis (east/west), cap d to what the twin can also do.
                     if side in ("east", "west") and room.id in twin_of:
@@ -443,3 +468,142 @@ def _room_with_edge(rooms, side: str, x_or_y: float,
                 best_overlap = overlap
                 best = room
     return best
+
+
+# ---------------------------------------------------------------------------
+# Dead-strip claimer (multi-storey v2)
+# ---------------------------------------------------------------------------
+
+# Which room types make the best owner for an unowned interior strip, best
+# first. Habitable public rooms benefit most (they're usually below their
+# preferred area); halls are natural circulation spill; kitchens turn the
+# strip into a pantry nook (the reference spec's under-stair storage).
+_STRIP_CLAIM_PRIORITY = {
+    "living_room": 0, "great_room": 0,
+    "hallway": 1,
+    "dining_room": 2,
+    "master_bedroom": 3, "bedroom_standard": 3,
+    "kitchen": 4,
+}
+
+
+def claim_dead_strips(layout, void_rects: Optional[List[Rect]] = None,
+                      verbose: bool = False) -> int:
+    """Post-snap pass that finds UNOWNED rectangular interior strips and
+    hands each to an adjacent room as its rect2 cell (making that room
+    L-shaped). Complements snap_gaps, which can only extend a room's FULL
+    edge: a strip flanking part of a stair column (shorter than every
+    neighbor's edge) is unreachable by edge-extension but perfectly
+    claimable as an alcove.
+
+    Built for the multi-storey pipeline (dead slivers beside the stair
+    column — see MULTISTOREY_V2_DESIGN.md known gaps); deliberately NOT
+    wired into the single-storey path, whose 60+ test baselines are stable
+    without it.
+
+    Only strictly rectangular uncovered regions are claimed (an L-shaped
+    hole is left alone); the claimant's cell must fully contain one side of
+    the strip so the union is a clean L. Rooms typed 'stairs' never claim
+    (the flight is riser math); rooms that already have a rect2 are skipped
+    (one alcove per room). Returns the number of strips claimed.
+    """
+    env = layout.lot.envelope()
+    eps = 1e-6
+    obstacles = [c for r in layout.rooms for c in r.cells] + list(void_rects or [])
+    xs = sorted({env.x0, env.x1} | {v for c in obstacles for v in (c.x0, c.x1)
+                                    if env.x0 - eps < v < env.x1 + eps})
+    ys = sorted({env.y0, env.y1} | {v for c in obstacles for v in (c.y0, c.y1)
+                                    if env.y0 - eps < v < env.y1 + eps})
+    nx, ny = len(xs) - 1, len(ys) - 1
+
+    def covered(i, j):
+        cx, cy = (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+        return any(c.x0 - eps < cx < c.x1 + eps and
+                   c.y0 - eps < cy < c.y1 + eps for c in obstacles)
+
+    free = [[not covered(i, j) for j in range(ny)] for i in range(nx)]
+    seen = [[False] * ny for _ in range(nx)]
+    claimed = 0
+    for i0 in range(nx):
+        for j0 in range(ny):
+            if not free[i0][j0] or seen[i0][j0]:
+                continue
+            # Flood-fill the uncovered component.
+            comp, stack = [], [(i0, j0)]
+            seen[i0][j0] = True
+            while stack:
+                i, j = stack.pop()
+                comp.append((i, j))
+                for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    a, b = i + di, j + dj
+                    if 0 <= a < nx and 0 <= b < ny and free[a][b] \
+                            and not seen[a][b]:
+                        seen[a][b] = True
+                        stack.append((a, b))
+            # Decompose the component into rectangles. A rectangular hole
+            # yields itself in one piece; an L/T-shaped one (e.g. the region
+            # wrapping a stair column's corner) is split greedily: take the
+            # topmost-leftmost remaining cell, extend right along its row,
+            # then extend that column-span downward while every column stays
+            # present. Pieces are claimed largest-first so the most valuable
+            # strip gets the best-ranked neighbor (a room can hold only one
+            # alcove — rect2 — so order matters).
+            remaining = set(comp)
+            pieces = []
+            while remaining:
+                i, j = min(remaining, key=lambda c: (ys[c[1]], xs[c[0]]))
+                i_hi = i
+                while (i_hi + 1, j) in remaining:
+                    i_hi += 1
+                j_hi = j
+                while all((k, j_hi + 1) in remaining for k in range(i, i_hi + 1)):
+                    j_hi += 1
+                for k in range(i, i_hi + 1):
+                    for l in range(j, j_hi + 1):
+                        remaining.discard((k, l))
+                pieces.append(Rect(xs[i], ys[j], xs[i_hi + 1], ys[j_hi + 1]))
+            pieces.sort(key=lambda r: -r.area)
+            for strip in pieces:
+                if strip.area < THRESHOLD_M:
+                    continue
+                x0, y0, x1, y1 = strip.x0, strip.y0, strip.x1, strip.y1
+                # Candidate claimants: a room cell that abuts one full side
+                # of the strip (edge coincident and spanning the strip's side).
+                best, best_rank = None, None
+                for room in layout.rooms:
+                    if room.type == "stairs" or room.rect2 is not None:
+                        continue
+                    rank = _STRIP_CLAIM_PRIORITY.get(room.type)
+                    if rank is None:
+                        continue
+                    # Master-supremacy guard: the solver enforces the PH hard
+                    # rule master > standard at solve time; a post-solve claim
+                    # must not silently break it. A standard bedroom may only
+                    # take a strip if its resulting total stays below its
+                    # storey's master (observed live: an 11x11 squarish 3BR
+                    # solve handed br3 a 5.2 m2 alcove, outgrowing master).
+                    if room.type == "bedroom_standard":
+                        m = next((r for r in layout.rooms
+                                  if r.type == "master_bedroom"
+                                  and r.storey == room.storey), None)
+                        if m is not None and room.area + strip.area >= m.area:
+                            continue
+                    c = room.rect
+                    abuts = (
+                        (abs(c.x1 - x0) < eps or abs(c.x0 - x1) < eps)
+                        and c.y0 < y0 + eps and c.y1 > y1 - eps
+                    ) or (
+                        (abs(c.y1 - y0) < eps or abs(c.y0 - y1) < eps)
+                        and c.x0 < x0 + eps and c.x1 > x1 - eps
+                    )
+                    if abuts and (best_rank is None or rank < best_rank):
+                        best, best_rank = room, rank
+                if best is None:
+                    continue
+                best.rect2 = strip
+                obstacles.append(strip)
+                claimed += 1
+                if verbose:
+                    print(f"  alcove: {best.id} +{strip.area:.2f} sqm "
+                          f"(dead strip x={x0:.2f}-{x1:.2f} y={y0:.2f}-{y1:.2f})")
+    return claimed

@@ -5,9 +5,9 @@ import json
 import os
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-# core/ → floorplan_v1/ → repo root (artol-ai/)
+# core/ → floorplan_v1/ → data/ph_floorplan_rules.json (app-local rules file)
 _RULES_PATH = os.path.normpath(
-    os.path.join(_HERE, "..", "..", "ph_floorplan_rules.json"))
+    os.path.join(_HERE, "..", "data", "ph_floorplan_rules.json"))
 
 # Priority weights — protection priority (higher = shrinks last when envelope
 # is tight). Weights are read by size_priority() below and used in the solver

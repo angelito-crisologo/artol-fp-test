@@ -1,0 +1,22 @@
+{
+  "intent": "3BR / 2 bath hall-core (pinwheel) MINIMUM-boundary smoke test, no carport. 13x13.5 lot gives a 9x9.5 envelope = 85.5 m\u00b2 floor \u2014 the verified minimum for the rectangular (ncp) envelope. Public band front-left (great_room hosts entry, kitchen behind), master+ensuite and br3 across the rear band, br2 front-right off the great_room, short mid-band hall serving master, br3 and the common T&B. Kitchen column is on the LEFT (non-carport side) \u2014 exercises kitchen_side_pin: false.",
+  "lot_width": 13.0,
+  "lot_depth": 13.5,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "distributed baths (ensuite + common)",
+    "central hall core",
+    "open-plan great room + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/3br/squarish/1s_3br_sq_hall_core_baths_ds_hall_gr.json"
+}

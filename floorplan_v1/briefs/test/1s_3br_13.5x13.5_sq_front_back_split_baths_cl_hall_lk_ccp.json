@@ -1,0 +1,18 @@
+{
+  "intent": "3BR / 2 bath front-back split, clustered wet stack, with claimed carport on the right. 13.5x13.5 lot gives a 9.5x9.5 envelope less the 1x4 front-right carport notch. Exercises the L-cut building_void + right-side carport against the right-side kitchen (softer center-based symmetry break only, no hard right_anchored on kitchen).",
+  "lot_width": 13.5,
+  "lot_depth": 13.5,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "carport_side": "right",
+  "carport_type": "ccp",
+  "must_haves": [
+    "clustered baths (ensuite + common) in one wet stack",
+    "central hall",
+    "open-plan living + kitchen (lk style)",
+    "claimed carport right"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "topology": "1s/3br/squarish/1s_3br_sq_front_back_split_baths_cl_hall_lk.json"
+}

@@ -1,0 +1,25 @@
+{
+  "intent": "2-STOREY 2BR / 2 bath wide rear-sideways-stair smoke test on the canonical 11x9 lot, no carport. 7x5 envelope per floor (35 m\u00b2 footprint, 70 m\u00b2 gross) \u2014 in the 65-80 m\u00b2 2BR/2-bath band, on a wide-frontage lot. Exercises the catalog's first HORIZONTAL stair run (the solver's run-axis decision picks the sideways orientation on this shell), the horizontal branch of the stair_boarding/stair_arrival end constraints, the full-width front great room, both bedrooms street-facing with the hall as a bounded center notch (hallway max_area cap), and bath2 stacked directly over bath1.",
+  "lot_width": 11.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "sideways stair along the rear band",
+    "full-width great room across the front",
+    "both bedrooms upstairs, street-facing",
+    "dining counter between great room and kitchen",
+    "upper T&B stacked over the ground-floor T&B",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/2br/wide/2s_2br_wd_rear_stair_bath_gr.json",
+  "dining_counter": false
+}

@@ -1,0 +1,210 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_nw_side_corridor_baths_ds_rear_kitchen",
+  "label": "Narrow-shell 2BR / 2 baths DISTRIBUTED, SIDE-CORRIDOR, kitchen at the rear \u2014 two parallel front-to-rear columns rather than great_room-full-width-plus-rows. Left column (front to rear): common bath, standard bedroom, master bedroom, ensuite. Right column: great_room, hall, kitchen. Common bath doors directly into great_room (its front-column neighbor) instead of the hall; standard and master both door onto the hall from across the column boundary.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "ensuite",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "ensuite (left column, rear-most) and kitchen (right column, rear-most) sit side by side across the column boundary, sharing a plumbing wall \u2014 the one wet-stack consolidation this layout achieves. No door; ensuite stays master-exclusive."
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 sits directly behind master in the left column (common, standard, master, ensuite front-to-rear). Door opens from master's rear wall into ensuite."
+    },
+    {
+      "a": "kitchen",
+      "b": "hall",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "kitchen sits directly behind hall in the right column (great, hall, kitchen front-to-rear) \u2014 no door, same 'public room open to hall' treatment used for great_room elsewhere in the catalog. Kitchen's only connection to the rest of the house is via the hall; it does not border great_room directly."
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's only public door \u2014 opens onto the hall across the column boundary (left column's 3rd room aligns with the right column's 2nd room)."
+    },
+    {
+      "a": "master",
+      "b": "standard",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master and standard are consecutive in the left column (standard directly in front of master) \u2014 shared wall only, no door."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common and standard are consecutive in the left column (common front-most, standard behind it) \u2014 shared wall only, no door."
+    },
+    {
+      "a": "standard",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "standard's only door \u2014 opens onto the hall across the column boundary."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common bath's only door \u2014 opens directly into great_room, its front-column neighbor across the boundary (both are the front-most room in their column). Same precedent as common bath dooring into great_room in 1s_2br_sq_side_split_bath_gr."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public_wall",
+      "note": "great_room is tall enough to also reach across into standard's row (one row behind common) \u2014 geometry-only, NO door. Standard's real door is to the hall."
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "hall sits directly behind great_room in the right column \u2014 no door, codebase rule: hallway\u2194public is always open-plan."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": false,
+  "left_anchored": [
+    "ensuite",
+    "master",
+    "common",
+    "standard"
+  ],
+  "right_anchored": [
+    "kitchen",
+    "hall"
+  ],
+  "rear_anchored": [
+    "ensuite",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "common",
+      "standard",
+      "master",
+      "ensuite"
+    ],
+    [
+      "great",
+      "hall",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_side_corridor_baths_ds_rear_kitchen",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "bedroom_standard": {
+          "max_least_dim_m": 2.8
+        }
+      },
+      "rationale": "Common bath and standard bedroom are consecutive rooms in the left column (not a shared row), so on compact lots standard's least-dim is capped rather than left to grow, keeping common bath from being squeezed below its 3.0 sqm floor. Ensuite floors slightly higher than the other narrow topologies (2.5 sqm) since it shares a wet-core wall with kitchen here rather than with common bath, and doesn't need to leave room for a second bath alongside it. Hall's min stays pinned tight (0.95 m); no max cap since hall is a normal right-column room here (between great_room and kitchen), not a corridor that could run away in length."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen",
+      "note": "kitchen sits at the REAR in this variant (unlike the other narrow topologies, where kitchen is grouped with great_room at the front) \u2014 the standard rear_setback dirty-kitchen pattern applies normally here."
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Narrow-shell catalog topology, built from a dimensioned sketch (6.0 x 10.0 m footprint, 60 sqm). The original sketch described a 'great_room full width at front, three rows behind it' layout, but that structure is not realizable by this solver's rectangle model: it requires great_room, hall, AND standard to be mutually adjacent (a 3-way triangle) while common bath ALSO needs to reach both great_room and standard \u2014 three separate rooms all needing to border the same pair of side-by-side rooms is a geometric impossibility (only two rooms can flank a pair from either side). The realized design keeps every declared room-to-room adjacency but resolves them as two parallel front-to-rear columns instead \u2014 see the diagnostic trail for the full derivation.",
+    "",
+    "Actual layout (canonical, front/street at the bottom, hall on the right):",
+    "  LEFT COLUMN (front to rear):  COMMON T&B -> STANDARD BR -> MASTER BR -> ENSUITE",
+    "  RIGHT COLUMN (front to rear): GREAT ROOM -> HALL -> KITCHEN",
+    "",
+    "Common bath and great_room are both the front-most room in their column, so common's door opens directly into great_room across the column boundary \u2014 same precedent as 1s_2br_sq_side_split_bath_gr's common-bath-to-great_room door. Standard and master each reach the hall the same way, across the column boundary at their respective rows. Kitchen sits at the REAR, sharing a wet-core wall with ensuite (also rear-most, other column), and reaching the rest of the house only through the hall \u2014 it does not border great_room directly, same long-walk trade-off as 1s_2br_nw_side_corridor_bath_hall. This also means the classic rear_setback dirty-kitchen pattern applies cleanly, unlike the front-band-kitchen narrow variants.",
+    "",
+    "Master has a single public door (to hall) plus its private ensuite door \u2014 same two-door pattern used throughout the catalog wherever an ensuite coexists with hall access.",
+    "",
+    "6.0 x 10.0 m building footprint (1:1.67) is narrower than squarish but shallower than the 1:2.2-1:3 ratio the rest of the narrow catalog assumes \u2014 this one tests the shallow end of 'narrow' rather than the deep end.",
+    "",
+    "No carport declared \u2014 consistent with the rest of the narrow catalog. No fallback declared yet \u2014 first draft."
+  ]
+}

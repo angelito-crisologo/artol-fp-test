@@ -1,0 +1,674 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/ph-floorplan-rules-v0.2.json",
+  "meta": {
+    "name": "PH Single-Detached Floor Plan Rules & Preferences",
+    "version": "0.2.0-prototype",
+    "target_segment": "single_detached_mid_market",
+    "occupancy_group": "Group A (Residential Dwellings) — PD 1096 Sec. 701",
+    "units": "SI: metres (m), square metres (sqm), cubic metres (cum), millimetres (mm)",
+    "primary_legal_source": "PD 1096 — National Building Code of the Philippines (NBCP)",
+    "notes": [
+      "HARD constraints are statutory minimums; a generated/validated layout MUST satisfy all that apply.",
+      "SOFT preferences are design targets derived from common PH residential practice; the generator should optimize toward these but may relax them.",
+      "Detailed yard/setback tables, road-right-of-way, and parking ratios live in the NBCP Implementing Rules & Regulations (IRR, 2004) and the Local Government Unit (LGU) zoning ordinance — these override/refine PD 1096 and must be layered in per-project. Placeholders are flagged with 'source': 'IRR/LGU — TO CONFIRM'.",
+      "BP 220 (economic/socialized housing) defines SMALLER minimums (18-22 sqm dwelling). It does NOT apply to this mid-market segment, but is recorded for future segment support.",
+      "v0.2 adds: setback_usage_policy (covered vs uncovered + firewall toggle), sizing_policy (progression + PH priority), templates (the 3 provided 2BR configs), v1_scenario (locked PoC), and refined room entries (master+ensuite, common vs ensuite bath, carport/dirty-kitchen as uncovered setback elements)."
+    ],
+    "last_updated": "2026-05-24"
+  },
+
+  "global_constraints": {
+    "lot_occupancy": {
+      "hard": {
+        "max_occupancy_inside_lot_pct": 80,
+        "max_occupancy_corner_lot_pct": 90,
+        "measurement_basis": "Taken at ground level, exclusive of courts, yards, and light wells.",
+        "source": "PD 1096 Sec. 708(a), Sec. 802"
+      },
+      "note": "Remaining lot area (20% inside / 10% corner) is the Total Open Space within Lot (TOSL). IRR refines this with Impervious-Surface limits per zoning. source: IRR/LGU — TO CONFIRM"
+    },
+    "setbacks": {
+      "hard": {
+        "min_distance_from_property_line_m": 2.0,
+        "source": "PD 1096 Sec. 708(a)"
+      },
+      "refinement": {
+        "note": "IRR Table for R-1 (single detached) typically requires front 4.5 m, side 1.5-2.0 m, rear 2.0 m. Eaves over required windows must be >=0.75 m from side/rear property lines (Sec. 704(a)). Confirm against LGU zoning before relying on these.",
+        "front_yard_m": 4.5,
+        "side_yard_m": 1.5,
+        "rear_yard_m": 2.0,
+        "source": "IRR/LGU — TO CONFIRM"
+      }
+    },
+    "access": {
+      "hard": {
+        "must_adjoin_public_space": "Building must adjoin or have direct access to a public space, yard, or street on at least one side.",
+        "source": "PD 1096 Sec. 704(a), Sec. 801(b)"
+      }
+    },
+    "ceiling_height": {
+      "hard": {
+        "habitable_natural_ventilation_min_m": 2.70,
+        "habitable_artificial_ventilation_min_m": 2.40,
+        "multistorey_first_storey_min_m": 2.70,
+        "multistorey_second_storey_min_m": 2.40,
+        "succeeding_storeys_headroom_min_m": 2.10,
+        "mezzanine_clear_above_below_min_m": 1.80,
+        "source": "PD 1096 Sec. 805"
+      },
+      "soft": {
+        "preferred_clear_height_m": [2.70, 3.00],
+        "rationale": "Higher ceilings aid passive cooling in tropical climate; 2.7-3.0 m common in mid-market homes.",
+        "source": "PH residential practice"
+      }
+    },
+    "stairs": {
+      "hard": {
+        "min_clear_width_mm": 750,
+        "riser_mm": 200,
+        "min_run_mm": 200,
+        "source": "PD 1096 Sec. 708(h)"
+      },
+      "soft": {
+        "preferred_clear_width_mm": [900, 1100],
+        "preferred_riser_mm": [150, 180],
+        "preferred_run_mm": [250, 300],
+        "rationale": "Code minimum stair is steep/narrow; comfortable mid-market stairs are wider with lower risers and deeper treads.",
+        "source": "PH residential practice"
+      },
+      "note": "Not used by v1 (single-storey). Retained for multi-storey v2."
+    },
+    "egress": {
+      "hard": {
+        "min_entrances": 1,
+        "min_exits": 1,
+        "source": "PD 1096 Sec. 708(i)"
+      }
+    },
+    "sanitation": {
+      "hard": {
+        "min_sanitary_toilets": 1,
+        "requires_potable_water_supply": true,
+        "requires_wastewater_disposal": "Connect to municipal sewer where available; otherwise Imhoff/septic tank with subsurface absorption field.",
+        "requires_washing_and_drainage_facilities": true,
+        "source": "PD 1096 Sec. 708(c), Sec. 901-903"
+      }
+    },
+    "circulation": {
+      "soft": {
+        "min_hallway_clear_width_m": 0.90,
+        "preferred_hallway_clear_width_m": [1.00, 1.20],
+        "min_door_width_general_mm": 800,
+        "min_door_width_bathroom_mm": 700,
+        "min_door_width_main_entry_mm": 900,
+        "source": "PH residential practice; note PD 1096 governs exit corridors separately"
+      }
+    },
+    "light_and_ventilation": {
+      "hard": {
+        "window_free_area_min_pct_of_floor": 10,
+        "window_must_open_to": ["court", "yard", "public_street", "alley", "open_water_course"],
+        "applies_when": "Room has NO artificial ventilation system.",
+        "source": "PD 1096 Sec. 808"
+      },
+      "soft": {
+        "preferred_window_area_pct_of_floor": 15,
+        "encourage_cross_ventilation": true,
+        "rationale": "Openings on two opposite/adjacent walls enable cross-breeze; passive cooling can save ~20% energy.",
+        "source": "PH tropical design practice"
+      }
+    },
+    "courts": {
+      "hard": {
+        "min_horizontal_dimension_m": 2.00,
+        "inner_court_connection": "Inner courts must connect to a street or yard via a passageway >= 1.20 m wide, or by a door through room(s).",
+        "source": "PD 1096 Sec. 804"
+      }
+    },
+    "vent_shaft": {
+      "hard": {
+        "min_cross_section_per_m_height_sqm": 0.10,
+        "absolute_min_cross_section_sqm": 1.00,
+        "min_least_dimension_mm": 600,
+        "source": "PD 1096 Sec. 809(a)"
+      },
+      "use": "Mechanism by which an interior room (e.g. interior toilet) can satisfy ventilation without an exterior window."
+    },
+    "air_space": {
+      "hard": {
+        "habitable_room_min_air_space_per_person_cum": 14.0,
+        "source": "PD 1096 Sec. 807(3)"
+      }
+    },
+    "foundation_and_structure": {
+      "hard": {
+        "footing_min_thickness_mm": 250,
+        "footing_min_depth_below_grade_mm": 600,
+        "first_floor_live_load_min_kg_per_sqm": 200,
+        "second_floor_live_load_min_kg_per_sqm": 150,
+        "roof_wind_load_min_kg_per_sqm": 120,
+        "source": "PD 1096 Sec. 708(d,f,g)"
+      },
+      "note": "Structural rules are not layout-shaping per se, but column-grid spacing of 3.0-4.5 m is a practical soft constraint on room module sizing. source: PH practice"
+    }
+  },
+
+  "setback_usage_policy": {
+    "principle": {
+      "rule": "A setback is legally OPEN space, intended for natural light, ventilation, and fire safety. Only UNCOVERED elements may occupy a mandatory setback. Covered/roofed/walled structures must sit inside the buildable footprint UNLESS a firewall abutment is declared on that segment.",
+      "source": "PD 1096 (open-yard intent of setbacks) + IRR/LGU — TO CONFIRM"
+    },
+    "covered_definition": "A structure is 'covered' if it has a PERMANENT roof or roofed frame, or enclosing walls. A temporary, collapsible/retractable fabric shade (e.g. a sail awning on foldable or removable supports) is NOT a permanent roof and does NOT make an element 'covered'. Note: legality hinges on the shade being genuinely temporary/non-permanent; a fixed permanent roof frame risks being treated as a structure by a strict building official. source: IRR/LGU — TO CONFIRM",
+    "allowed_in_setback_uncovered": ["open_air_carport", "open_air_parking", "open_dirty_kitchen", "open_laundry_wash_area", "uncovered_porch", "uncovered_lanai", "garden", "pathway"],
+    "must_be_in_footprint_or_firewall_covered": ["covered_carport", "roofed_dirty_kitchen", "any_enclosed_room"],
+    "eaves_clearance": {
+      "min_from_property_line_m": 0.75,
+      "recommended_from_property_line_m": 1.0,
+      "applies_to": "Any roof projection / eaves of a covered element.",
+      "source": "PD 1096 Sec. 704(a)"
+    },
+    "covered_structure_front_setback": {
+      "default_m": 3.0,
+      "range_m": [3.0, 4.5],
+      "note": "Covered structures (incl. covered carports) must sit behind this line; uncovered/open-air parking is EXEMPT and may use the front setback.",
+      "configurable": true,
+      "source": "IRR/LGU — TO CONFIRM"
+    },
+    "firewall_abutment": {
+      "enabled": false,
+      "default_rationale": "DEFAULT OFF for v1 — most portable/always-compliant, since many LGU zoning ordinances and subdivision HOAs ban firewalls. Toggle per project after confirming the subdivision permits it.",
+      "when_enabled_limits": {
+        "max_length_one_side_pct": 80,
+        "max_length_rear_pct": 50,
+        "max_total_firewall_pct_of_perimeter": 50,
+        "fire_rated_solid_wall_required": true,
+        "openings_facing_neighbor": "NONE — no doors, windows, or vent blocks; smoke/vent must go inward or up via chimney.",
+        "source": "Firewall % limits are IRR-level (NOT base PD 1096 Sec. 804, which governs courts). Fire-resistive wall basis: PD 1096 Sec. 704 + fire-zone chapters. IRR/LGU — TO CONFIRM"
+      }
+    }
+  },
+
+  "sizing_policy": {
+    "progression": ["preferred", "relaxed_minimum", "hard_minimum"],
+    "progression_note": "Size each room at its PREFERRED dimensions first; when the envelope is tight, relax toward the comfortable/relaxed minimum (soft.min_dimensions_m / soft.min_area_sqm — set to client preferred minimums as of 2026-06-25), and only down to the hard code minimum (hard.min_*) as a last resort. Solver logic: guarantee hard_minimum as a hard constraint, then grow toward relaxed_minimum, then preferred.",
+    "priority_order_high_to_low": ["master_bedroom", "bedroom_standard", "living_room", "kitchen", "dining_room", "service_baths", "laundry", "maids_room", "external"],
+    "priority_note": "Protection priority: higher = shrinks last when envelope is tight. Private bedrooms are protected above public spaces (client direction 2026-06-25). Within public: living > kitchen > dining. External spaces give way first.",
+    "ldk_members": ["living_room", "dining_room", "kitchen"],
+    "bedroom_allocation_pct": {
+      "1br": 30,
+      "2br": 40,
+      "3br": 60,
+      "note": "Target percentage of total floor area allocated to all bedrooms combined (including master). Soft constraint — solver should aim for this allocation; may be exceeded or relaxed when envelope is tight.",
+      "source": "Client specification (2026-06-25)"
+    },
+    "source": "User direction (2026-05-24) + PH residential practice + client preferred minimums (2026-06-25)"
+  },
+
+  "room_catalog": [
+    {
+      "id": "habitable_room_generic",
+      "label": "Habitable room (generic / human habitation)",
+      "zone": "private",
+      "hard": {
+        "min_area_sqm": 6.00,
+        "min_least_dimension_m": 2.00,
+        "requires_natural_light_vent_or_artificial": true,
+        "source": "PD 1096 Sec. 806(1), Sec. 808"
+      },
+      "applies_to": ["bedroom", "living_room", "dining_room", "family_room", "study", "maids_room"]
+    },
+    {
+      "id": "bedroom_standard",
+      "label": "Bedroom (standard / single)",
+      "zone": "private",
+      "covered": true,
+      "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_exterior_window": true, "source": "PD 1096 Sec. 806(1), Sec. 808" },
+      "soft": {
+        "min_dimensions_m": [3.0, 3.5],
+        "min_area_sqm": 10.0,
+        "preferred_dimensions_m": [3.0, 3.5],
+        "preferred_area_sqm": [9.0, 12.0],
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "bedroom_standard",
+      "adjacency": { "prefer_near": ["common_bath", "hallway"], "avoid_near": ["dirty_kitchen", "carport", "main_entry"], "cluster": "sleeping_quarters" }
+    },
+    {
+      "id": "master_bedroom",
+      "label": "Master bedroom",
+      "zone": "private",
+      "covered": true,
+      "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_exterior_window": true, "source": "PD 1096 Sec. 806(1)" },
+      "soft": {
+        "min_dimensions_m": [3.5, 4.0],
+        "min_area_sqm": 12.0,
+        "preferred_dimensions_m": [3.5, 4.5],
+        "preferred_area_sqm": [12.0, 20.0],
+        "typically_includes": ["ensuite_bath", "closet"],
+        "is_largest_bedroom": true,
+        "source": "PH residential practice"
+      },
+      "size_priority": "master_bedroom",
+      "placement_preference": { "prefer": "rear", "fallback": "front", "rationale": "Quietest, furthest from street and carport." },
+      "adjacency": { "prefer_near": ["ensuite_bath"], "requires_ensuite_access": "ensuite_bath door connects ONLY to master_bedroom", "avoid_near": ["service_area", "carport"], "cluster": "sleeping_quarters" }
+    },
+    {
+      "id": "living_room",
+      "label": "Living room / Sala",
+      "zone": "public",
+      "covered": true,
+      "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_natural_light_vent_or_artificial": true, "source": "PD 1096 Sec. 806(1), Sec. 808" },
+      "soft": {
+        "min_dimensions_m": [3.0, 3.5],
+        "min_area_sqm": 12.0,
+        "preferred_dimensions_m": [4.5, 6.0],
+        "preferred_area_sqm": [16.0, 22.0],
+        "source": "PH residential practice; upper bound tightened 27→22 to rebalance against bedrooms (was producing LDK-heavy plans). min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "living_room",
+      "adjacency": { "prefer_near": ["main_entry", "dining_room", "lanai"], "is_arrival_zone": true, "hosts_main_entry": true, "cluster": "public_living" }
+    },
+    {
+      "id": "great_room",
+      "label": "Great room (open-plan living + dining)",
+      "zone": "public",
+      "covered": true,
+      "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "requires_natural_light_vent_or_artificial": true, "note": "Habitable room; treated under Sec. 806(1). Merges living + dining into one open-plan space; may be L-shaped (modeled as two cells).", "source": "PD 1096 Sec. 806(1), Sec. 808" },
+      "soft": {
+        "preferred_dimensions_m": [4.5, 6.0],
+        "preferred_area_sqm": [26.0, 36.0],
+        "rationale": "Combined living + dining; preferred area approximates the sum of separate living (16-22) and dining (10-14) targets. Upper bound tightened 43→36 alongside the living + dining rebalance.",
+        "source": "PH residential practice"
+      },
+      "size_priority": "living_room",
+      "adjacency": { "prefer_near": ["main_entry", "kitchen", "lanai"], "is_arrival_zone": true, "hosts_main_entry": true, "cluster": "public_living" }
+    },
+    {
+      "id": "dining_room",
+      "label": "Dining room / area",
+      "zone": "public",
+      "covered": true,
+      "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "source": "PD 1096 Sec. 806(1)" },
+      "soft": {
+        "min_dimensions_m": [2.5, 3.0],
+        "min_area_sqm": 10.0,
+        "preferred_dimensions_m": [3.0, 4.0],
+        "preferred_area_sqm": [10.0, 14.0],
+        "source": "PH residential practice; upper bound tightened 16→14 to rebalance against bedrooms. min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "dining_room",
+      "adjacency": { "prefer_near": ["kitchen", "living_room"], "cluster": "public_living" }
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen (main / clean kitchen)",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 3.00,
+        "min_least_dimension_m": 1.50,
+        "source": "PD 1096 Sec. 806(2)"
+      },
+      "soft": {
+        "min_dimensions_m": [2.0, 3.0],
+        "min_area_sqm": 8.0,
+        "preferred_dimensions_m": [2.5, 3.5],
+        "preferred_area_sqm": [6.0, 12.0],
+        "work_triangle": "Sink, stove, refrigerator in triangle; counter sum 3.6-7.9 m.",
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "kitchen",
+      "placement_preference": { "prefer": "rear_wall", "rationale": "Must sit on the rear wall so its exit door opens onto the open dirty kitchen / service area in the rear setback." },
+      "adjacency": { "prefer_near": ["dining_room", "dirty_kitchen", "service_area"], "exit_door_to": ["dirty_kitchen", "service_area"], "cluster": "service" }
+    },
+    {
+      "id": "dirty_kitchen",
+      "label": "Dirty kitchen (open / uncovered, in setback)",
+      "zone": "service",
+      "covered": false,
+      "setback_eligible": true,
+      "retractable_shade": { "optional": true, "type": "collapsible_fabric_sail", "note": "Temporary sun/rain shade; does NOT change 'covered' status or setback eligibility." },
+      "hard": { "note": "Open-air element in the rear (or side) setback; not an enclosed room, so Sec. 806 room minimums do not bind. Must remain uncovered (no permanent roof) to stay legal in the setback, OR use a firewall abutment if firewall policy is enabled.", "source": "PD 1096 setback open-yard intent; IRR/LGU — TO CONFIRM" },
+      "soft": {
+        "preferred_dimensions_m": [2.0, 3.0],
+        "preferred_area_sqm": [4.0, 9.0],
+        "min_service_walkway_m": 0.90,
+        "rationale": "Heavy/aromatic cooking kept out of the indoor kitchen; sits in the rear setback, well-ventilated, open-air.",
+        "source": "PH residential practice"
+      },
+      "size_priority": "external",
+      "adjacency": { "prefer_near": ["kitchen", "service_area", "rear_yard"], "must_be_adjacent_to": ["kitchen"], "avoid_near": ["living_room", "master_bedroom"], "location": "rear_setback", "cluster": "service" }
+    },
+    {
+      "id": "ensuite_bath",
+      "label": "Ensuite toilet & bath (master only)",
+      "zone": "private",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.4, 2.2],
+        "min_area_sqm": 2.8,
+        "preferred_dimensions_m": [1.8, 2.1],
+        "preferred_area_sqm": [3.0, 4.5],
+        "door_width_mm": 700,
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "service_baths",
+      "adjacency": { "access": "door connects ONLY to master_bedroom", "prefer_near": ["master_bedroom"], "may_be_interior_with_vent_shaft": true, "cluster": "sleeping_quarters" }
+    },
+    {
+      "id": "common_bath",
+      "label": "Common toilet & bath (public access)",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.2, 2.0],
+        "min_area_sqm": 2.6,
+        "preferred_dimensions_m": [1.8, 2.1],
+        "preferred_area_sqm": [3.0, 4.5],
+        "door_width_mm": 700,
+        "source": "PH residential practice; min_dimensions_m and min_area_sqm set to client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "service_baths",
+      "adjacency": { "access": "accessed from public space (hallway / living / dining), NOT through a bedroom", "prefer_near": ["hallway", "bedroom_standard", "dining_room"], "may_be_interior_with_vent_shaft": true, "cluster": "flexible" }
+    },
+    {
+      "id": "bath_toilet",
+      "label": "Bath & toilet (generic base)",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.0, 2.0],
+        "preferred_dimensions_m": [1.8, 2.1],
+        "preferred_area_sqm": [3.0, 4.5],
+        "door_width_mm": 700,
+        "source": "PH residential practice"
+      },
+      "note": "Generic base type; specialized into ensuite_bath and common_bath for v1.",
+      "adjacency": { "may_be_interior_with_vent_shaft": true, "cluster": "flexible" }
+    },
+    {
+      "id": "service_area",
+      "label": "Service / laundry / wash area (open, uncovered, in setback)",
+      "zone": "service",
+      "covered": false,
+      "setback_eligible": true,
+      "hard": { "requires_washing_and_drainage_facilities": true, "note": "Open-air laundry/wash in the rear (or side) setback; must remain uncovered.", "source": "PD 1096 Sec. 708(c); setback open-yard intent" },
+      "soft": {
+        "preferred_dimensions_m": [1.5, 3.0],
+        "preferred_area_sqm": [4.0, 9.0],
+        "rationale": "Laundry, wash, drying; kept discreet from living zones; benefits from daylight for drying.",
+        "source": "PH residential practice"
+      },
+      "size_priority": "laundry",
+      "adjacency": { "prefer_near": ["dirty_kitchen", "kitchen", "rear_yard"], "avoid_near": ["living_room"], "location": "rear_setback", "cluster": "service" }
+    },
+    {
+      "id": "maids_room",
+      "label": "Maid's / helper's room",
+      "zone": "service",
+      "covered": true,
+      "hard": { "min_area_sqm": 6.00, "min_least_dimension_m": 2.00, "note": "Habitable room -> full Sec. 806(1) minimum applies.", "source": "PD 1096 Sec. 806(1)" },
+      "soft": {
+        "preferred_dimensions_m": [2.0, 3.0],
+        "preferred_area_sqm": [6.0, 9.0],
+        "source": "PH residential practice"
+      },
+      "size_priority": "maids_room",
+      "note": "Not in v1 program; retained for larger programs.",
+      "adjacency": { "prefer_near": ["kitchen", "service_area"], "cluster": "service" }
+    },
+    {
+      "id": "lanai",
+      "label": "Lanai / veranda (outdoor)",
+      "zone": "public",
+      "covered": false,
+      "setback_eligible": true,
+      "hard": { "note": "Outdoor/semi-outdoor; not a habitable room. If kept uncovered it may occupy a setback; if permanently roofed it must sit in the footprint (or use a firewall).", "source": "PD 1096 Sec. 802; setback open-yard intent" },
+      "soft": {
+        "preferred_dimensions_m": [2.0, 4.0],
+        "preferred_area_sqm": [6.0, 16.0],
+        "rationale": "Extension of living space for gatherings/al fresco; strong PH preference.",
+        "source": "PH residential practice"
+      },
+      "size_priority": "external",
+      "note": "Not in v1 program; retained for future.",
+      "adjacency": { "prefer_near": ["living_room", "dining_room", "rear_yard"], "cluster": "public_living" }
+    },
+    {
+      "id": "carport",
+      "label": "Carport (open / uncovered, in side setback)",
+      "zone": "service",
+      "covered": false,
+      "setback_eligible": true,
+      "hard": { "note": "Uncovered open-air parking; allowed in the side (or front) setback. A COVERED carport would NOT be setback-eligible and must sit in the footprint behind the covered-structure front setback (or use a firewall). Parking provision/ratio governed by IRR & LGU zoning. source: IRR/LGU — TO CONFIRM" },
+      "soft": {
+        "single_sedan_dimensions_m": [2.5, 5.0],
+        "single_suv_dimensions_m": [3.0, 5.5],
+        "double_dimensions_m": [5.5, 5.5],
+        "source": "PH parking practice"
+      },
+      "placement_rule": {
+        "prefer": "side_setback",
+        "explore": ["left_side", "right_side"],
+        "fallback": "front_setback",
+        "carport_side_setback_widen_to_m": 3.0,
+        "street_access": "Carport sits toward the front of the chosen side yard for direct street/driveway access.",
+        "note": "Engine evaluates both left and right and keeps the better-scoring side."
+      },
+      "size_priority": "external",
+      "adjacency": { "prefer_near": ["front_yard", "living_room"], "cluster": "entry_service" }
+    },
+    {
+      "id": "porch",
+      "label": "Porch / entry landing (uncovered, front setback)",
+      "zone": "public",
+      "covered": false,
+      "setback_eligible": true,
+      "hard": { "note": "Uncovered entry landing in the front setback. Must remain uncovered to stay setback-eligible. Always present — not optional.", "source": "PD 1096 setback open-yard intent" },
+      "soft": {
+        "preferred_dimensions_m": [1.0, 1.5],
+        "preferred_area_sqm": [1.5, 1.5],
+        "rationale": "Provides a transition step between the street / carport approach and the living room entry door.",
+        "source": "PH residential practice"
+      },
+      "size_priority": "external",
+      "adjacency": { "prefer_near": ["living_room", "great_room"], "cluster": "entry_service" }
+    },
+    {
+      "id": "hallway",
+      "label": "Hallway / circulation corridor",
+      "zone": "circulation",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.50,
+        "min_least_dimension_m": 0.90,
+        "note": "Min clear width 0.90 m per Sec. 1207 (single-family stair/passage); area floor keeps it a usable corridor, not a token sliver.",
+        "source": "PD 1096 Sec. 1207 (corridors/passageways)"
+      },
+      "soft": {
+        "preferred_dimensions_m": [1.0, 4.0],
+        "preferred_area_sqm": [2.5, 6.0],
+        "source": "PH residential practice"
+      },
+      "size_priority": "service_baths",
+      "note": "Private-wing circulation node: bedrooms and the common T&B open onto it; one end bridges to the public LDK (dining or living).",
+      "adjacency": { "prefer_near": ["bedroom_standard", "master_bedroom", "common_bath", "dining_room", "living_room"], "is_arrival_zone": false, "cluster": "circulation" }
+    },
+    {
+      "id": "stairs",
+      "label": "Stair flight / stairwell (multi-storey v2)",
+      "zone": "circulation",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 2.10,
+        "min_least_dimension_m": 0.75,
+        "note": "0.75 m min clear width per Sec. 708(h); area floor = 0.75 m x the 2.8 m minimum straight run (14 treads x 200 mm min run) for a 3.0 m floor-to-floor at the 200 mm max riser. Run length itself is riser math the solver cannot derive - 2s topologies pin it via a min_greatest_dim_m adjustment.",
+        "source": "PD 1096 Sec. 708(h) (stairways)"
+      },
+      "soft": {
+        "preferred_dimensions_m": [0.9, 3.5],
+        "preferred_area_sqm": [3.15, 4.5],
+        "source": "PH residential practice (900-1100 mm clear width, 150-180 mm risers, 250-300 mm treads)"
+      },
+      "size_priority": "service_baths",
+      "note": "Used on BOTH floors of a 2-storey topology: the GF flight and the 2F stairwell opening are separate rooms of this type, tied to the identical rectangle by a kind='stair_vertical' adjacency. Not habitable; no window requirement. See MULTISTOREY_V2_DESIGN.md.",
+      "adjacency": { "prefer_near": ["hallway", "living_room", "foyer"], "is_arrival_zone": false, "cluster": "circulation" }
+    },
+    {
+      "id": "foyer",
+      "label": "Foyer / entry vestibule",
+      "zone": "public",
+      "covered": true,
+      "soft": { "preferred_dimensions_m": [1.5, 2.0], "source": "PH residential practice" },
+      "note": "Optional; v1 front door opens directly into the living room.",
+      "adjacency": { "prefer_near": ["main_entry", "living_room"], "is_arrival_zone": true, "cluster": "public_living" }
+    },
+    {
+      "id": "powder_room",
+      "label": "Powder room (toilet + sink, no shower)",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.2, 1.2],
+        "min_area_sqm": 1.4,
+        "preferred_dimensions_m": [1.2, 1.5],
+        "preferred_area_sqm": [1.4, 2.0],
+        "door_width_mm": 700,
+        "source": "Client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "service_baths",
+      "note": "Half-bath for guest use; toilet and lavatory only. Not in v1 program.",
+      "adjacency": { "access": "accessed from public space (hallway / living / dining)", "prefer_near": ["hallway", "living_room", "dining_room"], "may_be_interior_with_vent_shaft": true, "cluster": "flexible" }
+    },
+    {
+      "id": "maids_bath",
+      "label": "Maid's / helper's toilet & bath",
+      "zone": "service",
+      "covered": true,
+      "hard": {
+        "min_area_sqm": 1.20,
+        "min_least_dimension_m": 0.90,
+        "ventilation": "Exterior window (>=10% floor area) OR vent shaft per Sec. 809 if interior.",
+        "source": "PD 1096 Sec. 806(3), Sec. 808, Sec. 809"
+      },
+      "soft": {
+        "min_dimensions_m": [1.0, 1.2],
+        "min_area_sqm": 1.4,
+        "preferred_dimensions_m": [1.2, 1.5],
+        "preferred_area_sqm": [1.4, 2.0],
+        "door_width_mm": 700,
+        "source": "Client preferred minimums (2026-06-25)."
+      },
+      "size_priority": "service_baths",
+      "note": "Dedicated bath for maids_room; accessed only from maids_room or service area. Not in v1 program.",
+      "adjacency": { "prefer_near": ["maids_room", "service_area"], "may_be_interior_with_vent_shaft": true, "cluster": "service" }
+    }
+  ],
+
+  "zoning_model": {
+    "zones": {
+      "public": { "rooms": ["living_room", "dining_room", "foyer", "lanai"], "description": "Guest-facing, active, arrival side." },
+      "private": { "rooms": ["bedroom_standard", "master_bedroom", "ensuite_bath", "study"], "description": "Quiet sleeping quarters; cluster together, buffer from public/service." },
+      "service": { "rooms": ["kitchen", "dirty_kitchen", "service_area", "maids_room", "carport", "common_bath"], "description": "Work/utility loop; kitchen-dining-service forms a working loop; keep discreet from living zones." }
+    },
+    "soft_rules": [
+      "Cluster bedrooms together (sleeping quarters) on the quiet side and buffer from public and service zones for acoustic/visual privacy.",
+      "Form a kitchen <-> dining <-> living spine to support multitasking without congestion.",
+      "Front door opens directly into the living room (the arrival zone) at the front/street side.",
+      "Place the kitchen on the rear wall so its exit door opens onto the open dirty kitchen / service area in the rear setback.",
+      "Prefer the master bedroom toward the rear (quietest); standard bedroom toward the front; ensuite opens only off the master; common bath accessed from public space.",
+      "Keep the carport on the quieter exterior, opposite the bedroom cluster where possible."
+    ]
+  },
+
+  "orientation_model": {
+    "active_in_v1": false,
+    "soft_rules": [
+      "Prevailing winds: NE (amihan, Oct-Mar) and SW (habagat, Apr-Sep). Orient main living/sleeping openings to catch these for cross-ventilation.",
+      "Minimize large unshaded openings on W and E facades to reduce afternoon/morning solar heat gain; favor N and S exposures for habitable rooms.",
+      "Provide roof overhangs/eaves and shading devices on sun-exposed openings.",
+      "Place service spaces (carport, storage, service area) on hot W/E facades to buffer habitable rooms from heat.",
+      "Aim for openings on at least two walls per habitable room to enable cross-ventilation."
+    ],
+    "note": "Deferred to v2 per project decision; rules retained for when orientation scoring is enabled.",
+    "source": "PH tropical design practice"
+  },
+
+  "templates": {
+    "description": "Three user-provided 2BR topology configurations (common-configs/ PDFs). They share ONE adjacency graph; they differ only in footprint aspect ratio. Treat as STARTING POINTS the engine may vary, not fixed templates.",
+    "shared_adjacency_graph": {
+      "edges": [
+        ["main_entry", "living_room"],
+        ["living_room", "dining_room"],
+        ["dining_room", "kitchen"],
+        ["kitchen", "dirty_kitchen"],
+        ["kitchen", "service_area"],
+        ["living_room", "hallway"],
+        ["hallway", "bedroom_standard"],
+        ["hallway", "master_bedroom"],
+        ["hallway", "common_bath"],
+        ["master_bedroom", "ensuite_bath"],
+        ["side_yard", "carport"]
+      ],
+      "spine_layout": "Private spine (bedrooms + baths) on one side; public/service spine (living -> dining -> kitchen, front to rear) on the other. Living at front (main entry), kitchen at rear (door to dirty kitchen/service in rear setback). Carport in a side setback; dirty kitchen + laundry in the rear setback.",
+      "size_priority_reminder": "public_LDK > master_bedroom > bedroom_standard > baths (see sizing_policy)."
+    },
+    "variants": [
+      { "id": "bungalow_square", "footprint_aspect": "≈ square (width ≈ depth)", "best_for_lot": "squarish buildable envelope", "source_file": "common-configs/bungalow_square config.pdf" },
+      { "id": "bungalow_deep", "footprint_aspect": "deep (depth > width)", "best_for_lot": "narrow/deep buildable envelope; FITS the v1 ~5x11 m envelope", "fits_v1": true, "source_file": "common-configs/bungalow_deep config.pdf" },
+      { "id": "bungalow_wide", "footprint_aspect": "wide (width > depth)", "best_for_lot": "broad/shallow buildable envelope", "source_file": "common-configs/bungalow_wide config.pdf" }
+    ]
+  },
+
+  "v1_scenario": {
+    "label": "v1 proof-of-concept (locked 2026-05-24)",
+    "lot": { "width_m": 10.0, "depth_m": 15.0, "area_sqm": 150.0, "type": "inside_lot", "street_side": "front" },
+    "storeys": 1,
+    "setbacks_applied_m": { "front": 2.0, "rear": 2.0, "carport_side": 3.0, "other_side": 2.0 },
+    "buildable_footprint_m": { "width": 5.0, "depth": 11.0, "area_sqm": 55.0, "note": "Carport side widened to 3 m; carport itself is uncovered in that side setback and does NOT consume footprint." },
+    "footprint_program": ["master_bedroom", "ensuite_bath", "bedroom_standard", "common_bath", "living_room", "dining_room", "kitchen"],
+    "setback_elements": ["carport (uncovered, side setback)", "dirty_kitchen (uncovered, rear setback, optional retractable sail)", "service_area (uncovered laundry/wash, rear setback)"],
+    "template_seed": "bungalow_deep",
+    "orientation_scoring": false,
+    "firewall_policy": false,
+    "definition_of_done": "Produce several distinct, fully code-compliant 2BR layouts on this lot, each rendered as a 2D SVG and passing the validator with zero hard-rule (error) violations.",
+    "pipeline": ["topology template", "slicing-tree subdivision", "simulated annealing", "validator as fitness (lexicographic: hard -> zoning -> preferred sizes)", "2D SVG render"]
+  },
+
+  "validation_severity_levels": {
+    "error": "Violates a HARD (statutory) constraint. Layout is non-compliant and must be corrected.",
+    "warning": "Violates a refinement constraint sourced from IRR/LGU that must be confirmed per project (e.g. covered element in setback without firewall; eaves clearance; firewall length limits).",
+    "suggestion": "Falls outside a SOFT preference target; layout is legal but sub-optimal for PH living."
+  },
+
+  "segment_reference_BP220": {
+    "note": "NOT applied to mid-market. Recorded for future economic/socialized-housing segment.",
+    "min_dwelling_floor_area_economic_sqm": 22,
+    "min_dwelling_floor_area_socialized_sqm": 18,
+    "source": "BP 220 Revised IRR (2008)"
+  }
+}

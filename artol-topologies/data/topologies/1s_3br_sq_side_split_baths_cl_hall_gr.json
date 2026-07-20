@@ -1,0 +1,276 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_side_split_baths_cl_hall_gr",
+  "label": "Squarish 3BR / baths CLUSTERED with mid-band HALL \u2014 3BR extension of the 2BR side_split_cl_hall: master at front of the private column, ensuite+common wet core and hall in the middle band, br3 and br2 paired across the rear; kitchen migrates to the rear of the public column. Open-plan great_room + kitchen.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 interior door from master, west side of the bath block"
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "shared plumbing wall \u2014 both wet stacks in one bay, single vent run"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master door opens north into the hall"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 door opens south into the hall"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 door opens south into the hall \u2014 the hall runs east-west along the rear pair's front walls so both standards reach it"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common bath door opens east into the hall"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "hall's east wall is an open mouth into the great_room (codebase rule: hallway\u2194great_room is always open)"
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen are one open LDK (gr style); kitchen sits at the rear of the public column"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "master",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the master-adjacent side of the wet core close to master"
+    },
+    {
+      "a": "br2",
+      "b": "kitchen",
+      "weight": 10,
+      "note": "let br2 borrow the kitchen party wall so the rear band packs without a dead pocket"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "common",
+      "br3",
+      "br2"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "left_anchored": [
+    "master",
+    "ensuite",
+    "br3"
+  ],
+  "right_anchored": [
+    "great",
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "br3",
+    "br2",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "ensuite",
+      "br3"
+    ],
+    [
+      "master",
+      "common",
+      "br2"
+    ],
+    [
+      "master",
+      "hall",
+      "br2"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_side_split_baths_cl_hall_gr_3br",
+      "when": {
+        "buildable_area_lt_sqm": 110
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "master_bedroom": {
+          "max_area_sqm": 15.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Same tiering as the 2BR parent but triggered at 110 m\u00b2. The rear pair is the pressure point: master is capped at 15 m\u00b2 so br2/br3 hold >= 2.8 m clear width each. When preferred relaxes, kitchen never drops below 1.8 m; baths may fall toward the 1.2 m\u00b2 hard min."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "3BR squarish catalog topology #2 \u2014 SIDE_SPLIT with clustered wet core.",
+    "Direct 3BR extension of 1s_2br_sq_side_split_baths_cl_hall_gr. Natural floor",
+    "band ~92-106 m\u00b2; minimum feasible shell ~9.3 x 9.8 m.",
+    "",
+    "Layout intent (canonical, brief.carport_side='right'):",
+    "  Front: [master               | great_room (entry) ]",
+    "  Mid:   [ensuite|common| HALL | great_room         ]",
+    "  Rear:  [br3      | br2      | kitchen             ]",
+    "",
+    "Program: identical clustered bath block (ensuite + common share a wet_core)",
+    "and front-master position as the 2BR parent. The changes: (1) the rear of the",
+    "private column now holds a PAIR of standard bedrooms instead of one, so the",
+    "private column widens to ~6.0-6.4 m (2 x 3.0-3.2 m bedroom widths); (2) the",
+    "hall stretches east-west along the pair's front walls so BOTH standards door",
+    "into it; (3) the kitchen migrates from the public column's midpoint to its",
+    "rear, keeping the gr open plan and putting the dirty kitchen directly behind.",
+    "",
+    "Ventilation: master fronts the street, br3/br2 hold the rear wall, great_room",
+    "holds front + side \u2014 no landlocked habitable room.",
+    "",
+    "Privacy: best-in-class of the four 3BR squarish topologies \u2014 every bedroom",
+    "door faces the hall, no bedroom shares a wall with the great_room except",
+    "via the bath block buffer.",
+    "",
+    "Fit warning: needs the widest shell of the family. If frontage < ~9.3 m the",
+    "rear pair collapses below 2.8 m widths \u2014 fall back to hall_core (#1) or",
+    "front_back_split (#3). When brief.carport_side='left', mirror the topology."
+  ]
+}

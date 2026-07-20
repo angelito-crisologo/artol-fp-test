@@ -1,0 +1,266 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_2br_sq_rear_stair_bath_gr",
+  "label": "Squarish-shell 2-STOREY 2BR / 2 baths, REAR-CORNER STAIR, hall-less ground floor \u2014 open great room across the full front (entry, dining folds in with a counter on the kitchen edge), kitchen + T&B in a rear wet bay, straight stair in the rear corner boarding off the great room. Upstairs, the squarish signature: BOTH bedrooms side-by-side at the front with street-facing windows, landing hall behind them, second T&B at the rear near the wet stack. Canonical 10x10 lot (6x6 buildable per floor, 72 m\u00b2 gross \u2014 inside the 2BR/2-bath 65-80 m\u00b2 band).",
+  "target_shell": "squarish",
+  "storeys": 2,
+  "rooms": [
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true,
+      "storey": 1
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "storey": 1
+    },
+    {
+      "id": "bath1",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "stair",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom",
+      "storey": 2
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms",
+      "storey": 2
+    },
+    {
+      "id": "bath2",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "hall2",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "stairwell",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "note": "GF: kitchen opens directly off the great room \u2014 dining counter on the shared edge (2 x 0.6 m seats + 0.9 m pass = 2.1 m min); band + stools live on the great-room side to keep the galley aisle clear. Render-only (counter_divider) \u2014 briefs may set dining_counter: false to suppress it without touching this topology.",
+      "counter_divider": true,
+      "counter_side": "great"
+    },
+    {
+      "a": "great",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "GF: T&B doors into the great room \u2014 hall-less GF, the great room IS the circulation; door-placement scoring keeps it off the entry sightline"
+    },
+    {
+      "a": "great",
+      "b": "stair",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_boarding",
+      "note": "GF: open stair boards straight off the great room; the boarding constraint holds this edge to the flight's bottom end"
+    },
+    {
+      "a": "kitchen",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "GF: T&B shares a plumbing wall with the kitchen \u2014 single GF wet bay at the rear; kitchen keeps its rear service door"
+    },
+    {
+      "a": "stair",
+      "b": "stairwell",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_vertical",
+      "note": "VERTICAL circulation edge: flight and stairwell opening occupy the identical rectangle on their floors (rect-equality in the solver, graph connectivity for validation)"
+    },
+    {
+      "a": "stairwell",
+      "b": "hall2",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_arrival",
+      "note": "2F: the landing hall must meet the stairwell at the TOP end of the flight \u2014 step off into circulation, never a bedroom wall"
+    },
+    {
+      "a": "hall2",
+      "b": "master",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: master door off the landing hall"
+    },
+    {
+      "a": "hall2",
+      "b": "br2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: second bedroom door off the landing hall"
+    },
+    {
+      "a": "hall2",
+      "b": "bath2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "2F: second T&B doors off the landing hall"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "bath2",
+      "b": "stairwell",
+      "weight": 15,
+      "note": "2F: pull the upper T&B toward the rear stair corner \u2014 lands it near the GF wet bay (kitchen + bath1 share the rear band), shortening the vertical plumbing run. Soft only: cross-floor wet-stack alignment isn't a hard v2 constraint yet."
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "front",
+    "private_rooms": [
+      "master",
+      "br2"
+    ],
+    "public_rooms": [
+      "bath2"
+    ],
+    "note": "2F-only geometric partition (all listed rooms are storey 2, per the multi-storey zone_split rule): both bedrooms hold the FRONT band \u2014 the squarish signature, side-by-side street-facing windows \u2014 with the T&B strictly behind the split line. 'public_rooms' here is the mechanical 'other side of the split' list, not a zoning claim; hall2 and stairwell float."
+  },
+  "zone_balance_rooms": {
+    "private": [
+      "master",
+      "br2",
+      "bath2",
+      "hall2"
+    ],
+    "public": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "aspect_overrides": {
+    "stairs": 4.0
+  },
+  "left_anchored": [
+    "stair"
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "stair_run_geometry",
+      "when": {
+        "buildable_area_lt_sqm": 99999
+      },
+      "auto_apply": {
+        "stairs": {
+          "min_greatest_dim_m": 3.5,
+          "max_least_dim_m": 1.2
+        },
+        "common_bath": {
+          "max_greatest_dim_m": 2.6,
+          "max_area_sqm": 3.9
+        }
+      },
+      "rationale": "ALWAYS-ON (the 99999 trigger): a straight stair's run is riser math the solver cannot derive \u2014 3.0 m floor-to-floor at 15 x 200 mm risers needs 14 x 250 mm treads = 3.5 m. min_greatest_dim_m pins the run; max_least_dim_m 1.2 keeps the flight a flight. The common_bath caps stop post-snap gap-filling from stretching a bath into a corridor (post-snap aspect is unchecked); 2.6 m / 3.9 m\u00b2 is roomier than the narrow 2s sibling's 2.5 / 2.5 because this 36 m\u00b2-per-floor shell can afford proper baths."
+    }
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "great",
+      "bath1"
+    ],
+    [
+      "great",
+      "stair"
+    ]
+  ],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "notes": [
+    "2-STOREY squarish catalog topology #1 \u2014 REAR-CORNER STAIR, hall-less GF",
+    "(authored 2026-07-19 per MULTISTOREY_V2_DESIGN.md and the",
+    "multistorey-topology-authoring checklist; first 2s topology outside the",
+    "narrow shell).",
+    "",
+    "Why this parti is the SQUARISH take on a 2-storey 2BR: the ~6 m buildable",
+    "width fits TWO bedrooms side-by-side across the front \u2014 both get",
+    "street-facing windows \u2014 which the 4 m narrow shell can never do (its 2s",
+    "pair stacks master front / br2 rear instead). The extra width also feeds",
+    "a proper great room (~6 m wide) and roomier baths than the narrow",
+    "sibling. Canonical 10x10 lot = 6x6 buildable x 2 floors = 72 m\u00b2 gross,",
+    "landing INSIDE the locked 2BR/2-bath 65-80 m\u00b2 floor band that the",
+    "narrow 2s pair (48-64 m\u00b2) undershoots.",
+    "",
+    "Canonical layout (10 x 10 lot, 2 m setbacks, 6 x 6 buildable per floor):",
+    "  GF:  Front: [great room (entry, full width, counter at rear edge)]",
+    "       Rear:  [stair | T&B | kitchen              ]  kitchen rear-pinned",
+    "  2F:  Front: [br2        | master               ]  side-by-side",
+    "       Mid:   [stairwell | hall2 landing         ]",
+    "       Rear:  [stairwell | T&B | master closet   ]",
+    "Stair: straight, 0.9-1.2 m wide, >= 3.5 m run, 15 risers @ 200 mm /",
+    "250 mm treads, left-anchored into the rear corner; boards off the great",
+    "room, arrives at hall2 (stair_boarding / stair_arrival hold the two",
+    "mouths to opposite ends of the run).",
+    "",
+    "Structure/override choices (each per an established convention):",
+    "  - zone_split is a 2F-ONLY horizontal partition pinning both bedrooms",
+    "    to the front band with bath2 behind \u2014 the side-by-side-bedrooms",
+    "    signature, stated as one split line instead of anchor lists (the",
+    "    3BR catalog's over-constrained-anchors trap; only the stair is",
+    "    anchored, single-member list, the proven-safe pattern).",
+    "  - zone_balance_rooms counts the whole upper floor minus stairwell as",
+    "    the private wing \u2014 same reasoning as the narrow hall-less sibling:",
+    "    bedrooms-alone can't outweigh a full-width GF great room + kitchen.",
+    "  - Hall-less GF: at 36 m\u00b2/floor the great room is the circulation",
+    "    (stair boards off it, bath1 doors into it) per the compact",
+    "    convention; a _hall sibling for larger squarish lots (with",
+    "    fallback_below_buildable_sqm routing back here) is future work.",
+    "  - soft proximity bath2->stairwell pulls the upper bath toward the",
+    "    rear corner, near the GF wet bay, to shorten the vertical plumbing",
+    "    run (cross-floor wet-stack alignment is still soft-only in v2).",
+    "",
+    "Naming note: the `bath` token undercounts the program (two common",
+    "baths, one per floor) \u2014 kept consistent with the 2s narrow siblings",
+    "pending the 2s naming-convention pass."
+  ]
+}

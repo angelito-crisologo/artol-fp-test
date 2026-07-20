@@ -1,0 +1,220 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_2br_nw_rear_stair_understair_bath",
+  "label": "Narrow-shell 2-storey 2BR / 2 baths, REAR TRANSVERSE STAIR \u2014 stair runs along the rear wall with the ground-floor bath tucked under its high end; buys a full-width living room and the biggest kitchen of the set. Second floor needs a side corridor; smallest bedroom 2; plumbing split.",
+  "target_shell": "narrow",
+  "storeys": 2,
+  "meta": {
+    "topology_id": "2s_2br_nw_rear_stair_understair_bath",
+    "title": "Variant C - Rear transverse stair",
+    "context": "Philippines residential (NBC / PD 957 compliant)",
+    "units": "meters",
+    "coordinate_system": {
+      "origin": "front-left corner of lot",
+      "x": "across frontage, left to right",
+      "y": "from front (south, road side) toward rear (north)",
+      "drawing_convention": "front of lot at bottom of sketch (south)"
+    },
+    "created": "2026-07-18"
+  },
+  "classification": {
+    "storeys": 2,
+    "bedrooms": 2,
+    "lot_shape": "narrow",
+    "attachment": "detached",
+    "carport": false
+  },
+  "envelope": {
+    "lot": {
+      "width": 8.0,
+      "depth": 12.0,
+      "area_sqm": 96.0
+    },
+    "setbacks": {
+      "front": 2.0,
+      "rear": 2.0,
+      "side_left": 2.0,
+      "side_right": 2.0
+    },
+    "shell": {
+      "x": 2.0,
+      "y": 2.0,
+      "width": 4.0,
+      "depth": 8.0,
+      "footprint_sqm": 32.0
+    },
+    "walls": {
+      "exterior_thickness": 0.15,
+      "interior_thickness": 0.1
+    },
+    "interior_clear": {
+      "width": 3.7,
+      "depth": 7.7,
+      "area_per_floor_sqm": 28.49
+    },
+    "storeys": 2,
+    "floor_to_floor": 3.0,
+    "gross_floor_area_sqm": 64.0,
+    "outdoor_zones": [
+      {
+        "name": "front yard / entry court",
+        "location": "front setback",
+        "size": "8.0 x 2.0"
+      },
+      {
+        "name": "service / laundry yard",
+        "location": "rear setback",
+        "size": "8.0 x 2.0"
+      },
+      {
+        "name": "side breezeways",
+        "location": "side setbacks",
+        "size": "2.0 x 12.0 each"
+      }
+    ]
+  },
+  "room_schema": "x, y = lot coordinates of room's front-left corner; w = width (x-dir); d = depth (y-dir); areas in sqm",
+  "variant": {
+    "id": "C",
+    "name": "Rear transverse stair",
+    "concept": "Stair pushed to the rear wall with ground T&B tucked under its high end; buys a full-width living room and the biggest kitchen of the set.",
+    "stair": {
+      "type": "straight_transverse",
+      "location": "along rear wall",
+      "width": 1.0,
+      "run": 3.5,
+      "risers": 15,
+      "riser_height": 0.2,
+      "tread": 0.25,
+      "ascent": "foot at left (from kitchen), ascends rightward, arrives rear-right",
+      "under_stair": "ground-floor T&B under high end (right)"
+    },
+    "plumbing": "split (ground wet zone rear, second-floor T&B mid-plan)",
+    "floors": {
+      "ground": [
+        {
+          "name": "Living",
+          "type": "public",
+          "x": 2.15,
+          "y": 2.15,
+          "w": 3.7,
+          "d": 3.0,
+          "area": 11.1
+        },
+        {
+          "name": "Dining",
+          "type": "public",
+          "x": 2.15,
+          "y": 5.15,
+          "w": 3.7,
+          "d": 1.9,
+          "area": 7.03
+        },
+        {
+          "name": "Kitchen",
+          "type": "wet",
+          "x": 2.15,
+          "y": 7.05,
+          "w": 3.7,
+          "d": 1.8,
+          "area": 6.66,
+          "notes": "full width; counters both sides; service door on right side wall"
+        },
+        {
+          "name": "Stair",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 8.85,
+          "w": 2.2,
+          "d": 1.0,
+          "area": 2.2
+        },
+        {
+          "name": "T&B",
+          "type": "wet",
+          "x": 4.35,
+          "y": 8.85,
+          "w": 1.5,
+          "d": 1.0,
+          "area": 1.5,
+          "notes": "under stair high end; min headroom compliant"
+        }
+      ],
+      "second": [
+        {
+          "name": "Bedroom 1",
+          "type": "private",
+          "x": 2.15,
+          "y": 2.15,
+          "w": 3.7,
+          "d": 3.0,
+          "area": 11.1,
+          "notes": "full width, front"
+        },
+        {
+          "name": "T&B",
+          "type": "wet",
+          "x": 2.15,
+          "y": 5.15,
+          "w": 1.5,
+          "d": 1.5,
+          "area": 2.25
+        },
+        {
+          "name": "Hall",
+          "type": "circulation",
+          "x": 3.65,
+          "y": 5.15,
+          "w": 2.2,
+          "d": 1.5,
+          "area": 3.3
+        },
+        {
+          "name": "Bedroom 2",
+          "type": "private",
+          "x": 2.15,
+          "y": 6.65,
+          "w": 2.8,
+          "d": 2.2,
+          "area": 6.16,
+          "notes": "meets NBC 6 sqm minimum"
+        },
+        {
+          "name": "Corridor",
+          "type": "circulation",
+          "x": 4.95,
+          "y": 6.65,
+          "w": 0.9,
+          "d": 3.2,
+          "area": 2.88,
+          "notes": "right side, links hall to stair arrival"
+        },
+        {
+          "name": "Stair void",
+          "type": "void",
+          "x": 2.15,
+          "y": 8.85,
+          "w": 2.8,
+          "d": 1.0,
+          "area": 2.8
+        }
+      ]
+    },
+    "entry": {
+      "location": "front wall, center",
+      "x": 3.6,
+      "y": 2.0
+    },
+    "tradeoffs": {
+      "pros": [
+        "biggest ground-floor social spaces",
+        "full-width living and kitchen"
+      ],
+      "cons": [
+        "smallest Bedroom 2",
+        "highest 2F corridor share",
+        "plumbing not stacked"
+      ]
+    }
+  }
+}

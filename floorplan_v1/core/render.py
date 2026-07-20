@@ -325,6 +325,12 @@ def layout_to_svg(layout: Layout) -> str:
             # cover all exterior edges, and at open-plan boundaries the
             # _open_plan_svg overdraw already kills the seam.
             s.append(_rect_svg(lot, c, fill, no_stroke=composite))
+        # Stairs: draw the tread lines + UP/DN travel arrow instead of the
+        # generic centered label (the arrow direction comes from the solver's
+        # ascent decision, stored on room.stair_up).
+        if r.type == "stairs" and getattr(r, "stair_up", None):
+            s.append(_stair_glyph(lot, r))
+            continue
         big = max(cells, key=lambda c: c.area)  # label on the largest cell
         cx = MARGIN + (big.x0 + big.w / 2) * SCALE
         cy = _y(lot, big.y0 + big.h / 2)
@@ -372,6 +378,62 @@ def layout_to_svg(layout: Layout) -> str:
 
 def _to_svg_xy(lot, mx, my):
     return MARGIN + mx * SCALE, MARGIN + (lot.depth - my) * SCALE
+
+
+def _stair_glyph(lot, room) -> str:
+    """Stair symbol for a type=='stairs' room: light tread lines across the
+    run plus a bold travel-direction arrow — 'UP' on the ground floor,
+    'DN' on upper floors (there you step off the opening and descend). The
+    ascent vector room.stair_up points from the flight's bottom to its top;
+    the arrow uses it directly on the ground floor and reversed above."""
+    up = getattr(room, "stair_up", None)
+    if not up:
+        return ""
+    dx, dy = up
+    rect = room.rect
+    vertical = abs(dy) > abs(dx)
+    out = []
+    # Tread lines perpendicular to the run, ~0.28 m apart (tread depth).
+    TREAD_M = 0.28
+    n = max(2, int(round((rect.h if vertical else rect.w) / TREAD_M)))
+    for i in range(1, n):
+        if vertical:
+            yy = rect.y0 + i * rect.h / n
+            xa, ya = _to_svg_xy(lot, rect.x0, yy)
+            xb, _ = _to_svg_xy(lot, rect.x1, yy)
+            out.append(f'<line x1="{xa:.1f}" y1="{ya:.1f}" x2="{xb:.1f}" '
+                       f'y2="{ya:.1f}" stroke="#9a9a9a" stroke-width="0.6"/>')
+        else:
+            xx = rect.x0 + i * rect.w / n
+            xa, ya = _to_svg_xy(lot, xx, rect.y0)
+            _, yb = _to_svg_xy(lot, xx, rect.y1)
+            out.append(f'<line x1="{xa:.1f}" y1="{ya:.1f}" x2="{xa:.1f}" '
+                       f'y2="{yb:.1f}" stroke="#9a9a9a" stroke-width="0.6"/>')
+    # Travel direction: ascend on the ground floor, descend on upper floors.
+    descend = room.storey > 1
+    ddx, ddy = (-dx, -dy) if descend else (dx, dy)
+    cx, cy = (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2
+    half = (rect.h if vertical else rect.w) / 2
+    L = half - min(0.45, half * 0.30)          # inset the arrow from both ends
+    tx, ty = _to_svg_xy(lot, cx - ddx * L, cy - ddy * L)   # tail
+    hx, hy = _to_svg_xy(lot, cx + ddx * L, cy + ddy * L)   # head
+    out.append(f'<line x1="{tx:.1f}" y1="{ty:.1f}" x2="{hx:.1f}" y2="{hy:.1f}" '
+               f'stroke="#333" stroke-width="2" stroke-linecap="round"/>')
+    ang = math.atan2(hy - ty, hx - tx)          # arrowhead barbs at the head
+    for da in (math.radians(148), math.radians(-148)):
+        bx, by = hx + 7.0 * math.cos(ang + da), hy + 7.0 * math.sin(ang + da)
+        out.append(f'<line x1="{hx:.1f}" y1="{hy:.1f}" x2="{bx:.1f}" '
+                   f'y2="{by:.1f}" stroke="#333" stroke-width="2" '
+                   f'stroke-linecap="round"/>')
+    # UP / DN label just past the tail (halo so it reads over the treads).
+    seg = math.hypot(hx - tx, hy - ty) or 1.0
+    ux, uy = (hx - tx) / seg, (hy - ty) / seg   # unit vector tail -> head
+    lx, ly = tx - ux * 9.0, ty - uy * 9.0       # 9 px beyond the tail
+    out.append(f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" '
+               f'dominant-baseline="middle" font-family="Arial" font-size="9" '
+               f'font-weight="bold" fill="#333" stroke="white" '
+               f'stroke-width="2.5" paint-order="stroke">{("DN" if descend else "UP")}</text>')
+    return "".join(out)
 
 
 def _opp_side(side: str) -> str:
@@ -1410,6 +1472,53 @@ def archplan_to_svg(plan) -> str:
         overlays.append(_counter_svg(c, plan.layout))
     inject = "".join(overlays)
     return base.replace("</svg>", inject + "</svg>")
+
+
+_FLOOR_TITLE_BAND_PX = 34    # vertical space above each floor plan for its title
+_FLOOR_GAP_PX = 24           # horizontal gap between floor plans
+
+
+def compose_floor_svgs(titled_svgs) -> str:
+    """Composite per-floor plan SVGs side-by-side into ONE SVG document —
+    the multi-storey output format (MULTISTOREY_V2_DESIGN.md, D4). Keeps
+    the 1-brief-1-SVG contract intact for test baselines, the output
+    folder, and the Streamlit app.
+
+    `titled_svgs`: list of (title, svg_doc) left-to-right — ground floor
+    first. Each svg_doc is a complete document as produced by
+    layout_to_svg / archplan_to_svg; it is embedded unmodified as a nested
+    <svg> element (valid SVG) with an x/y offset, under a centered title.
+    """
+    import re
+    entries = []
+    for title, doc in titled_svgs:
+        m = re.search(r'<svg[^>]*\bwidth="([\d.]+)"[^>]*\bheight="([\d.]+)"',
+                      doc)
+        w, h = (float(m.group(1)), float(m.group(2))) if m else (600.0, 600.0)
+        entries.append((title, doc, w, h))
+    total_w = sum(w for _, _, w, _ in entries) \
+        + _FLOOR_GAP_PX * (len(entries) - 1)
+    total_h = _FLOOR_TITLE_BAND_PX + max(h for _, _, _, h in entries)
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" '
+             f'width="{total_w:.0f}" height="{total_h:.0f}" '
+             f'viewBox="0 0 {total_w:.0f} {total_h:.0f}">',
+             f'<rect x="0" y="0" width="{total_w:.0f}" '
+             f'height="{total_h:.0f}" fill="white"/>']
+    x = 0.0
+    for title, doc, w, h in entries:
+        parts.append(
+            f'<text x="{x + w / 2:.0f}" y="{_FLOOR_TITLE_BAND_PX - 12:.0f}" '
+            f'text-anchor="middle" font-family="Helvetica, Arial, sans-serif" '
+            f'font-size="15" font-weight="bold" letter-spacing="2">'
+            f'{title}</text>')
+        # Nest the complete per-floor document at (x, band). A nested <svg>
+        # element ignores any xml declaration-less doc's own x/y (none set)
+        # and scopes its viewBox locally, so the inner drawing is unchanged.
+        parts.append(doc.replace(
+            "<svg ", f'<svg x="{x:.0f}" y="{_FLOOR_TITLE_BAND_PX}" ', 1))
+        x += w + _FLOOR_GAP_PX
+    parts.append("</svg>")
+    return "".join(parts)
 
 
 def gallery_html(layouts: List[Layout], title: str) -> str:

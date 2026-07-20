@@ -48,6 +48,9 @@ repo.
   solver config (`solve(..., time_limit_s=10.0, ...)` in `run.py`); running
   several checked topologies at once means a wait proportional to how many
   are checked.
-- The catalog today is 9 topologies, all single-storey/2BR
-  (squarish + wide only) — requirements outside that (3BR, 2-storey, deep
-  lots, etc.) will correctly show "no matching topology," not an error.
+- The catalog today spans 1BR/2BR/3BR across squarish/narrow/wide shells,
+  single-storey and (as of 2026-07-19) 2-storey — 38 topology files total,
+  though not all are wired to a regression-tested brief yet (some 3BR
+  additions are unvalidated; see CLAUDE.md's Open/deferred section).
+  Requirements outside the matched catalog will correctly show "no matching
+  topology," not an error.

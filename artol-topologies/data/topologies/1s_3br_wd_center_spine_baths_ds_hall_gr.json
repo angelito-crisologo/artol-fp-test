@@ -1,0 +1,280 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_wd_center_spine_baths_ds_hall_gr",
+  "label": "Wide-shell 3BR / baths DISTRIBUTED with east-west CENTER SPINE hall \u2014 the classic PH wide bungalow parti: two room bands separated by a spine corridor. Great_room (entry) + master across the front, kitchen + common T&B + standard pair across the rear. Open-plan great_room + kitchen (gr style).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is an alcove at master's front-east corner (east gable wall for venting) \u2014 interior door from master"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's rear wall doors north into the spine \u2014 master is the only bedroom in the front band"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors south into the spine"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 doors south into the spine at its east end"
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "standard pair sits side-by-side in the rear band \u2014 shared wall only, no door"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "door_host_group": "common_access",
+      "note": "common T&B doors south into the spine \u2014 DEFAULT host of the 'common_access' group"
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "door_host_group": "common_access",
+      "door_allowed": true,
+      "door_kind": "bath_door",
+      "min_solid_wall_m": 0.5,
+      "note": "common shares the wet wall with kitchen (stack 1). ALTERNATE door host: only when shared wall >= 1.5 m; falls back to the spine on compact shells"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "the spine's west end mouths into the great_room (codebase rule: hallway\u2194great_room is always open)"
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room (front-west) and kitchen (rear-west) connect open-plan west of the spine's start (gr style)"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "common",
+      "b": "br2",
+      "weight": 20,
+      "note": "keep the shared bath next to the standard pair"
+    },
+    {
+      "a": "ensuite",
+      "b": "br3",
+      "weight": 10,
+      "note": "nudge the two east-side wet points toward each other to shorten the under-slab run on the east half"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "br2",
+      "br3",
+      "common",
+      "hall"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/3br/wide/1s_3br_wd_half_spine_baths_ds_hall_lk.json",
+  "match_bedroom_widths": true,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": [
+    "great",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "master",
+    "ensuite",
+    "br3"
+  ],
+  "rear_anchored": [
+    "kitchen",
+    "common",
+    "br2",
+    "br3"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "great",
+      "hall",
+      "common"
+    ],
+    [
+      "master",
+      "hall",
+      "br2"
+    ],
+    [
+      "master",
+      "hall",
+      "br3"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_center_spine_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 105
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 1.0
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "master_bedroom": {
+          "max_area_sqm": 15.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "The spine is the fixed cost of this parti (~1.0 x 6-7 m of pure circulation), so the profile triggers early (105 m\u00b2). Spine depth floors at 1.0 m; kitchen galley at 1.8 m; master capped at 15 m\u00b2 so the rear pair holds >= 2.9 m widths. Below ~88 m\u00b2 the spine cannot pay for itself \u2014 fall back to half_spine."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR wide catalog topology #1 \u2014 CENTER SPINE, the classic PH wide bungalow.",
+    "Natural floor band ~88-100 m\u00b2; canonical test shell 12.0 x 8.0 m (96 m\u00b2) on a",
+    "16.5 x 14.5 m lot; minimum feasible ~11.4 x 7.8 m before fallback.",
+    "",
+    "Layout intent (canonical, west = left):",
+    "  Rear:  [kitchen | common T&B | br2   | br3           ]",
+    "  Spine: [        ---- HALL (1.0 m deep) ------------- ]",
+    "  Front: [great_room (entry)  | master      : ensuite  ]",
+    "",
+    "Program: two full-width bands. Front band: great_room hosts entry on the",
+    "west, master + ensuite alcove on the east (street-facing master \u2014 the",
+    "traditional poblacion arrangement). Rear band west-to-east: kitchen, common",
+    "T&B, then the standard pair. The east-west spine threads between the bands,",
+    "starting east of the great_room\u2194kitchen open-plan connection, so the public",
+    "west half stays spine-free.",
+    "",
+    "Why depth 7.5-8.5 m is the sweet band: 3.3 m room + 1.0 m spine + 3.3 m room",
+    "+ walls. Deeper drifts squarish; shallower breaks the two-band section.",
+    "",
+    "Ventilation: every habitable room holds either the front or rear wall; the",
+    "spine borrows light from the great_room mouth. No landlocked rooms.",
+    "",
+    "Plumbing: distributed \u2014 kitchen+common share stack 1 (with the door_host_group",
+    "alternate letting common door off the kitchen wall on generous shells);",
+    "ensuite on the east gable is stack 2, softly pulled toward br3's wall.",
+    "",
+    "Carport: NCP base form like the 2BR wide series \u2014 declare via brief",
+    "(side_setback carport on the east, or front-parallel with 3.0 m front",
+    "setback). Mirror when brief.carport_side='left'."
+  ]
+}

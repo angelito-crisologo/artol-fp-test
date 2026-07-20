@@ -1,0 +1,237 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_quadrant_split_baths_ds_ld",
+  "label": "Wide-shell 2BR / 2 baths DISTRIBUTED, QUADRANT split, GR style \u2014 front band: great_room (left) + standard bedroom (right). Rear band: master + ensuite (left), hall + common T&B stacked (hall in front, T&B behind it) in the middle, kitchen (right). Hall is the circulation hinge: open to kitchen, and to great_room behind it, and hosts master's and common's only doors. Neither a clean vertical split nor a horizontal split \u2014 private and public occupy diagonal corners instead.",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 carved from master's own footprint via the alcove claim. Door from master only, no other access."
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "ensuite and common bath (T&B) share a plumbing wall, consolidating both wet stacks in the rear-middle band. No door \u2014 ensuite stays master-exclusive per the locked catalog convention."
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's east wall shares a wall with hall \u2014 direct door, master's only route to the rest of the house."
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_public_wall",
+      "note": "master's front wall = great_room's rear wall \u2014 geometry-only, NO door. Master's actual public access is via hall, not directly into great_room. Same idiom as master\u2194great in 1s_2br_wd_l_wrap_bath_hall_gr."
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "T&B's door opens into the hall \u2014 matches the catalog's standard 'common bath is hall/public-accessible, not routed through a bedroom' rule."
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "hall's front wall is an open mouth into great_room \u2014 codebase rule: hallway\u2194public is always open-plan, no door. This is hall's (and by extension master's and common's) connection to the public wing."
+    },
+    {
+      "a": "kitchen",
+      "b": "hall",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "kitchen's west wall opens onto the hall (open-plan, no door) \u2014 hall serves as kitchen's entrance from the private/circulation side, per brief."
+    },
+    {
+      "a": "standard",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public_wall",
+      "note": "standard's rear wall = kitchen's front wall \u2014 geometry-only, NO door. Keeps the building outline a clean rectangle at this seam, but deliberately does not give a bedroom a direct opening onto the kitchen work area; standard's actual door is to great_room instead."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.1,
+      "kind": "bedroom_to_public",
+      "note": "standard's only door \u2014 direct into great_room. 1.1 m floor = 0.8 m clear panel + frame + a little leeway."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": false,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": [
+    "master"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master",
+    "common",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "master"
+    ],
+    [
+      "great",
+      "hall",
+      "common"
+    ],
+    [
+      "standard",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_quadrant_split_baths_ds_ld",
+      "when": {
+        "buildable_area_lt_sqm": 80
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 1.0
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.2
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 18.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "The source concept sketch draws ensuite very small (~1.5 x 1.5 m, ~2.25 sqm) \u2014 tighter than every other ensuite in the catalog (which float around 2.5-3.0 sqm). auto_apply floors it at 2.2 sqm to stay close to the drawn concept while keeping it just above the 1.2 sqm hard minimum used elsewhere; preferred_apply lets it grow to 2.5 sqm where the lot allows. Kitchen and common bath floors match the rest of the wide-shell catalog."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen",
+      "note": "kitchen sits in the rear band in this topology, so the standard rear_setback dirty-kitchen pattern applies normally."
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Wide-shell catalog topology \u2014 2BR / 2 baths DISTRIBUTED, QUADRANT split, GR style. Revised 2026-07-14: living + dining merged into a single great_room (was two separate rooms), which eliminates a 3-way mutual adjacency (hall/kitchen/dining all touching each other) that made the original living+dining version unsolvable even on a 34x34 m lot with every room's size caps relaxed. Also fixes an authoring bug in the original: hall was declared both rear_anchored AND had common stacked behind it via front_to_rear_stacks \u2014 the same 'forced to touch the rear wall while another room sits behind it' contradiction diagnosed (and fixed) twice already this project on other topologies. hall is no longer rear_anchored here; common (T&B) is, correctly, since it's the one that actually touches the rear wall.",
+    "",
+    "Layout intent (canonical form, street/front at the bottom):",
+    "  Front band (bottom): [great_room (hosts entry)         | standard  ]",
+    "  Rear band  (top):    [master + ensuite | hall / common T&B (stacked) | kitchen ]",
+    "",
+    "great_room spans the full left+middle width (stacked in front of both master and the hall/common column); standard spans just the right width, stacked in front of kitchen only.",
+    "",
+    "Circulation: hall is the hinge between public and private. great_room -> hall (open mouth, no door) -> master (door) and common T&B (door). hall also opens directly onto kitchen (open-plan) \u2014 kitchen's only route to/from the rest of the house besides being visually open to it. kitchen has no direct adjacency to great_room; you reach it via hall.",
+    "",
+    "standard's only door is to great_room. standard<->kitchen is geometry-only (wall, no door) \u2014 deliberately no direct bedroom-to-kitchen opening.",
+    "",
+    "zone_split is null here (unlike the vertical- and horizontal-split topologies) \u2014 the private/public boundary isn't a single axis, so per-room 'zone' tags carry the classification instead. Same convention already used by 1s_2br_wd_l_wrap_bath_hall_gr.",
+    "",
+    "Confirmed target_shell: wide \u2014 the sketch's ~10x7 m footprint (1.43:1) matches the wide-shell catalog's proportions much more closely than squarish.",
+    "",
+    "Floor band: roughly 65-85 sqm buildable, sized against the sketch's ~70 sqm footprint (10 x 7 m building on a 14x11 buildable envelope).",
+    "",
+    "No fallback declared yet \u2014 this is a first-draft concept, not validated against a compact-lot fallback the way the rest of the catalog is."
+  ]
+}

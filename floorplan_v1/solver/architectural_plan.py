@@ -102,7 +102,13 @@ _OPEN_PLAN_TYPE_PAIRS = {
 
 def _effective_kind(adj, room_a_type: str, room_b_type: str) -> str:
     """Override the topology's declared adjacency kind when the two room types
-    form an LDK pair — those rooms have no wall between them by default."""
+    form an LDK pair — those rooms have no wall between them by default.
+    Stair mouths (multi-storey v2): boarding/arrival edges are open
+    transitions between circulation and the flight — rendered exactly like
+    open_plan (the solver gave them extra end-position semantics, but by
+    render time that's already baked into the geometry)."""
+    if adj.kind in ("stair_boarding", "stair_arrival"):
+        return "open_plan"
     if frozenset({room_a_type, room_b_type}) in _OPEN_PLAN_TYPE_PAIRS:
         return "open_plan"
     return adj.kind
@@ -543,16 +549,51 @@ def _door_for_adjacency(adj, layout: Layout,
     # that corner so the panel swings open against that perpendicular wall
     # at 180°. If both corners are real (or both fake), fall back to the
     # nearer-corner rule; ties go LOW for consistency.
+    #
+    # Corner-reality must be evaluated on whichever room the door actually
+    # SWINGS INTO, not always room_a. A swung-open panel rests against a
+    # perpendicular wall in the room it opens into — checking room_a's own
+    # corners is only equivalent when room_a and the swinger are flush along
+    # this wall (true for most ground-floor public rooms, which tend to be
+    # wall-anchored against each other). It's routinely FALSE upstairs: a
+    # narrow landing hall inset within a much wider bedroom shares a wall
+    # with that bedroom, but the hall's own corner sits mid-wall on the
+    # bedroom's side — nowhere near any of the bedroom's real corners — so
+    # hinging there swings the door into open floor with no wall behind it
+    # (found 2026-07-20: hall2<->master on a narrow 2-storey topology).
+    swing_into_id = _swing_into(room_a, room_b, adj.kind)
+    if swing_into_id == room_a.id:
+        swinger, swinger_cell, side_for_swinger = room_a, cell_a, side_a
+    else:
+        swinger, swinger_cell, side_for_swinger = room_b, cell_b, _opposite(side_a)
     # wall geometry uses the CELL that's actually sharing the edge with room_b
     # (not room_a.rect) — important for L-shape composites where the door
-    # lives on rect2's wall, not rect's wall.
+    # lives on rect2's wall, not rect's wall. position_m stays relative to
+    # room_a's cell (the renderer always draws from room_a's rect), but the
+    # real/fake corner test and its tie-break distances use the SWINGER's
+    # own wall bounds — both are absolute lot coordinates, so this is a
+    # straightforward substitution, not a coordinate-frame conversion.
     wall_origin = _wall_origin(cell_a, side_a)
-    wall_end = wall_origin + _wall_length(cell_a, side_a)
-    dist_low_to_corner  = start - wall_origin       # how far the shared edge's
-    dist_high_to_corner = wall_end - end            # ends are from cell_a's
-                                                    # perpendicular walls
+    swinger_wall_origin = _wall_origin(swinger_cell, side_for_swinger)
+    swinger_wall_end = swinger_wall_origin + _wall_length(swinger_cell, side_for_swinger)
+    dist_low_to_corner  = start - swinger_wall_origin   # how far the shared edge's
+    dist_high_to_corner = swinger_wall_end - end        # ends are from the SWINGER's
+                                                        # perpendicular walls
     low_real, high_real = _perpendicular_walls_real(
-        room_a, cell_a, side_a, env, layout.rooms)
+        swinger, swinger_cell, side_for_swinger, env, layout.rooms)
+    # _perpendicular_walls_real tests reality AT THE SWINGER'S OWN corner
+    # (derived from swinger_cell's full extent) — that's only the same point
+    # as the shared-edge's start/end when the swinger's wall span on this
+    # side matches the shared segment. When the swinger is the WIDER room
+    # (e.g. a bedroom whose neighbor is a much narrower inset hall), its
+    # wall runs on past both ends of the shared segment uninterrupted — the
+    # segment's start/end sit mid-wall, not at any real corner of the
+    # swinger, even though the swinger DOES have real corners elsewhere.
+    # Require actual coincidence, not just "a real corner exists somewhere".
+    if abs(dist_low_to_corner) > 0.01:
+        low_real = False
+    if abs(dist_high_to_corner) > 0.01:
+        high_real = False
 
     # Hinge selection priority:
     #   0. door_placement override on the adjacency (explicit author intent).
@@ -1195,7 +1236,8 @@ def _score_door_host(member, door: "Door", group_room: Room, host_room: Room,
 
 def architecturalize(layout: Layout, topology: Topology,
                      door_host: Optional[dict] = None,
-                     kitchen_back_door: bool = True) -> ArchPlan:
+                     kitchen_back_door: bool = True,
+                     dining_counter: bool = True) -> ArchPlan:
     """Project the topology onto the (snapped) layout to produce doors,
     windows, and open-plan-edge metadata.
 
@@ -1206,7 +1248,12 @@ def architecturalize(layout: Layout, topology: Topology,
 
     `kitchen_back_door` (default True): when True, a service door is always
     generated on the kitchen's rear exterior wall — even when no dirty kitchen
-    is present. Set False to seal the kitchen's rear wall entirely."""
+    is present. Set False to seal the kitchen's rear wall entirely.
+
+    `dining_counter` (default True, usually from brief.dining_counter): when
+    False, suppresses every counter_divider band + stools this topology
+    declares. Render-only — cannot conjure a counter on an edge the topology
+    didn't design for (that edge's min_shared_wall_m may be too short)."""
     plan = ArchPlan(layout=layout, topology=topology)
     env = layout.lot.envelope()
 
@@ -1365,8 +1412,9 @@ def architecturalize(layout: Layout, topology: Topology,
             for ope in _open_plan_edges_for_adjacency(adj, layout):
                 plan.open_plan_edges.append(ope)
             # Dining counter (breakfast bar) on this open edge, if the
-            # topology asked for one and the realized edge fits it.
-            if getattr(adj, "counter_divider", False):
+            # topology asked for one, the brief hasn't suppressed it, and
+            # the realized edge fits it.
+            if dining_counter and getattr(adj, "counter_divider", False):
                 ctr = _counter_for_adjacency(adj, layout, topology)
                 if ctr is not None:
                     plan.counters.append(ctr)

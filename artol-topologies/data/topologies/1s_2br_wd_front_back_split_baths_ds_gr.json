@@ -1,0 +1,237 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_front_back_split_baths_ds_gr",
+  "label": "Wide-shell 2BR / 2 baths CLUSTERED, FRONT-BACK split, GR style \u2014 the entire front (street-facing) half is public: great_room + kitchen, open-plan (gr style, no separate dining room). The entire rear half is private, arranged as ONE row: master, ensuite, common bath, and standard bedroom side by side (in that order), each dooring directly across the public/private boundary wall except ensuite (master's exclusive, no public door) and common (which shares its wet wall with ensuite instead). No hallway.",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 door on master's EAST wall. Ensuite and common cluster together in the middle of the row, between master and standard."
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "ensuite and common share a plumbing wall \u2014 the two-bath cluster in the middle of the rear row, between master and standard."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common bath's east wall = standard's west wall \u2014 shared wall only, no door (bedroom<->common-bath is always wall-only per the codebase's generic rule). Acoustic buffer between the bath cluster and standard."
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "master's south wall = great_room's north wall at the front/rear boundary \u2014 a real door, no hall. Master reaches the rest of the house only through this one door."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's south wall overlaps great_room's north wall \u2014 direct door. 1.2 m floor gives 0.8 m clear door + 0.15 m frame each side."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common bath's only door \u2014 south wall opens into great_room. With ensuite (wet_core, no door) on one side and standard (wall-only) on the other, this is common's sole access, same idiom as the squarish side_split_bath_gr family: both bedrooms reach the bath by stepping out through their own door into the public band and back in."
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form one open LDK (gr style) \u2014 consistent with every other wide-shell topology in the catalog. The solver's global LDK rule forces kitchen+great_room to stack front-to-rear (never side-by-side); the front_to_rear_stacks hint below pins great_room in front, kitchen behind."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "standard",
+      "common"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json",
+  "match_bedroom_widths": false,
+  "ldk_horizontal": true,
+  "left_anchored": [
+    "master"
+  ],
+  "right_anchored": [
+    "standard",
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master",
+    "ensuite",
+    "common",
+    "standard"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "master"
+    ],
+    [
+      "great",
+      "ensuite"
+    ],
+    [
+      "great",
+      "common"
+    ],
+    [
+      "great",
+      "standard"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_front_back_split_baths_ds_gr",
+      "when": {
+        "buildable_area_lt_sqm": 90
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 18.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Splitting the lot front-back halves the usable depth per band compared to the vertical-split topologies, so compact lots get tight fast \u2014 the whole private band has to fit master, ensuite, common, and standard side by side in one row of depth. auto_apply floors kitchen width and both bath areas so neither collapses to its hard minimum by default; master is capped at 18 sqm so its priority weight doesn't crowd the bath cluster or standard sharing its row. preferred_apply bumps ensuite and kitchen further where the envelope allows."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0,
+      "note": "placed on the GREAT ROOM side (left), not the kitchen side \u2014 deviates from the catalog default of pairing carport with kitchen's side, because the dirty kitchen already claims the kitchen-side setback here (kitchen is at the front, not the rear, so it can't push its service tail into a rear setback like every other topology does)."
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "side_setback",
+      "covered": false,
+      "behind": "kitchen",
+      "note": "moved from rear_setback to side_setback (kitchen-side/right) \u2014 a direct consequence of the front-back flip. Kitchen sits in the front band near the street in this topology, so it has no rear wall to extend a service tail from; the dirty kitchen instead extends off kitchen's outer side wall."
+    },
+    {
+      "type": "service_area",
+      "location": "side_setback",
+      "covered": false,
+      "note": "grouped with dirty_kitchen on the kitchen side for the same reason."
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false,
+      "note": "on the great room side, opposite the kitchen/service side."
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_left",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Wide-shell catalog topology \u2014 2BR / 2 baths CLUSTERED, FRONT-BACK split, GR style. Every other topology in the catalog splits the lot vertically (bedrooms on one side, LDK on the other, both running front-to-rear). This one splits it horizontally instead: the entire front half of the house is public, the entire rear half is private, and one wall spanning the full width separates them.",
+    "",
+    "Revision history: v1 (2026-07-13) used a plain living_room instead of great_room and was squarish-only (misfiled under wide/) \u2014 infeasible everywhere due to a mathematical contradiction between zone_split and the solver's hardcoded kitchen-rear-wall pin. v2 (2026-07-14) switched to great_room + kitchen (gr style) and corrected target_shell to wide. v3 (2026-07-14, WORKING): three solver-level fixes made this topology solve for real, verified end-to-end (14x11, COMPLIANT, score 23.50, 0 warnings, no fallback): (1) the kitchen-rear pin is now skipped when zone_split explicitly declares kitchen as a front/public room; (2) a new topology.ldk_horizontal flag (set true below) disables the solver's hardcoded LDK vertical-stacking rules, which otherwise force kitchen+great_room to stack front-to-rear and directly contradict a horizontal (side-by-side) LDK; (3) great_room was removed from left_anchored (only master stays) \u2014 forcing BOTH master and great_room onto the exact same left edge locked great_room into a rigid stacked relationship with master that made it geometrically impossible to also reach standard's adjacency on the far right, regardless of lot size (confirmed infeasible up to 34x34 m before this fix). Full diagnostic trail in project memory: front-back-split-topology-solver-bug.",
+    "",
+    "Layout intent (canonical form \u2014 brief.carport_side='left'), matches the actual solved geometry:",
+    "  Rear (private, one row): [master | ensuite | common | standard]",
+    "  Front (public, side-by-side): [great_room (hosts entry) | kitchen]",
+    "  One wall spans the FULL WIDTH, dividing the two bands.",
+    "",
+    "No hallway. Master and standard each door directly across the front/rear boundary wall into great_room. Ensuite is master's exclusive (wet_core with common, door only from master). Common's only door faces great_room \u2014 same circulation idiom as 1s_2br_wd_side_split_bath_hall_gr's non-hall siblings: both bedrooms reach the bath by stepping into the shared public room and back in.",
+    "",
+    "Wet stack: ensuite and common share a plumbing wall (wet_core) in the middle of the row.",
+    "",
+    "IMPORTANT deviation from the rest of the catalog: because kitchen sits at the FRONT of the house (street side) rather than the rear, the dirty kitchen and service area can't extend into a rear_setback the way they do in every vertical-split topology \u2014 there's no rear wall behind kitchen to extend from. They're relocated to the side_setback on kitchen's side instead. Carport is pushed to the opposite side (great room's side) to avoid crowding that same setback strip.",
+    "",
+    "Floor band: sized against a 14x11 m lot (envelope 10x7 = 70 sqm, ratio 1.43, genuinely wide).",
+    "",
+    "When brief.carport_side='right', the runner mirrors the topology: great_room/carport move right, kitchen/service move left.",
+    "",
+    "Fallback: 1s_2br_wd_side_split_bath_hall_gr \u2014 drops to the standard vertical-split single-bath hall topology on lots too shallow to support two full-width bands."
+  ]
+}

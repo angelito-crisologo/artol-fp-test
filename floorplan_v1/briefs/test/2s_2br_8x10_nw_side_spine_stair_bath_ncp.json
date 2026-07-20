@@ -1,0 +1,25 @@
+{
+  "intent": "2-STOREY 2BR / 2 bath HALL-LESS side-spine-stair smoke test \u2014 the compact sibling selected DIRECTLY, on its canonical 8x10 lot, no carport. 4x6 envelope per floor. The great room is the GF circulation: stair boards off it (left wall), T&B doors into it, kitchen opens behind it with a dining counter on the shared 2.1 m edge and an L-pantry alcove claimed from the dead strip behind the bath. Also exercises zone_balance_rooms (whole upper floor counts as the private wing) and the common_bath shape caps.",
+  "lot_width": 8.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "hall-less ground floor \u2014 great room is the circulation",
+    "open stair off the great room, left wall",
+    "dining counter between great room and kitchen",
+    "both bedrooms upstairs off the landing hall",
+    "one T&B per floor",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/2br/narrow/2s_2br_nw_side_spine_stair_bath.json",
+  "dining_counter": false
+}

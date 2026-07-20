@@ -21,6 +21,11 @@ class RoomSpec:
     # whose only exterior wall is the back-door wall). The intent is that
     # the room uses artificial ventilation instead.
     mechanical_vent: bool = False
+    # Which floor this room is on (1 = ground). Multi-storey v2: rooms on
+    # different storeys share the same x/y plane but never exclude each
+    # other; adjacencies are legal only between same-storey rooms except
+    # kind='stair_vertical'. See MULTISTOREY_V2_DESIGN.md.
+    storey: int = 1
 
 
 @dataclass
@@ -186,6 +191,13 @@ class Topology:
     # in the private column.
     zone_balance_rooms: Optional[Dict[str, List[str]]] = None
 
+    # Number of storeys (1 = single-storey, the catalog default). When > 1,
+    # every room carries a `storey` tag, the solver builds one no-overlap
+    # group per storey in a single joint model, and kind='stair_vertical'
+    # adjacencies pin the stair flight and stairwell opening to the identical
+    # rectangle across floors. See MULTISTOREY_V2_DESIGN.md.
+    storeys: int = 1
+
     # When False, the solver skips the hardcoded "kitchen touches the REAR
     # exterior wall" pin. The default True preserves the PH dirty-kitchen
     # convention (kitchen opens to the rear setback); set False on
@@ -194,6 +206,15 @@ class Topology:
     # zone_split horizontal escape (which needs a single straight
     # front/rear split line), this works for stepped layouts too.
     kitchen_rear_pin: bool = True
+
+    # When False, the solver skips the canonical-orientation symmetry break
+    # (kitchen center pinned to the carport half of the envelope). The
+    # default True keeps mirror-degenerate topologies from producing pure
+    # mirror candidates; set False on topologies whose canonical form puts
+    # the kitchen on the NON-carport side (e.g. the 3BR hall-core pinwheel:
+    # kitchen column left_anchored, carport right) — there the anchor list
+    # already breaks the symmetry and the pin is a contradiction.
+    kitchen_side_pin: bool = True
 
     # Optional per-room aspect-ratio cap override: {room_id_or_type: ratio}.
     # Looked up by room id first, then room type. When set for a room, the
@@ -278,6 +299,13 @@ class Topology:
     # out. When the fallback is used, the runner emits a "warning" issue noting
     # that the primary topology didn't fit.
     fallback_topology: Optional[str] = None
+    # Compact-shell fallback threshold (m² of buildable area PER FLOOR).
+    # When set together with fallback_topology, the runner skips straight to
+    # the fallback sibling on shells SMALLER than this — intent, not failure
+    # (e.g. a GF hall isn't worth 15% of a compact floor even though the
+    # solver could technically fit it). Recorded as a suggestion, unlike the
+    # infeasibility fallback's warning.
+    fallback_below_buildable_sqm: Optional[float] = None
 
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
@@ -319,7 +347,9 @@ def load_topology(path: str) -> Topology:
         match_widths=list(d.get("match_widths", [])),
         private_area_floor=bool(d.get("private_area_floor", True)),
         zone_balance_rooms=d.get("zone_balance_rooms"),
+        storeys=int(d.get("storeys", 1)),
         kitchen_rear_pin=bool(d.get("kitchen_rear_pin", True)),
+        kitchen_side_pin=bool(d.get("kitchen_side_pin", True)),
         aspect_overrides=dict(d.get("aspect_overrides", {})),
         bedroom_band_fills_width=bool(d.get("bedroom_band_fills_width", False)),
         ensuite_alcove_joins_master=bool(d.get("ensuite_alcove_joins_master", False)),
@@ -331,6 +361,7 @@ def load_topology(path: str) -> Topology:
         lot_adjustment_profiles=list(d.get("lot_adjustment_profiles", []) or []),
         building_voids=voids,
         fallback_topology=d.get("fallback_topology"),
+        fallback_below_buildable_sqm=d.get("fallback_below_buildable_sqm"),
     )
 
 
@@ -365,6 +396,40 @@ def validate_topology(t: Topology) -> List[str]:
     for r in t.rooms:
         if r.id not in visited and r.type in HABITABLE:
             errs.append(f"habitable room '{r.id}' is unreachable from entry")
+    # ---------- multi-storey structural rules ----------
+    # Storey tags must be in range; adjacencies may only join rooms on the
+    # SAME storey (they mean a shared wall in plan) — except the vertical
+    # circulation kind 'stair_vertical', which must join rooms on DIFFERENT
+    # storeys (it means "identical rectangle, one floor apart"). The entry
+    # room must be on the ground floor. A zone_split partitions one floor's
+    # plan and may not mix storeys.
+    storey_of = {r.id: r.storey for r in t.rooms}
+    for r in t.rooms:
+        if not (1 <= r.storey <= t.storeys):
+            errs.append(f"room '{r.id}' has storey {r.storey} outside "
+                        f"1..{t.storeys}")
+    for e in t.adjacencies:
+        sa, sb = storey_of.get(e.a), storey_of.get(e.b)
+        if sa is None or sb is None:
+            continue   # unknown-room error already reported above
+        if e.kind == "stair_vertical":
+            if sa == sb:
+                errs.append(f"stair_vertical adjacency {e.a} <-> {e.b} joins "
+                            f"rooms on the same storey ({sa})")
+        elif sa != sb:
+            errs.append(f"adjacency {e.a} <-> {e.b} crosses storeys "
+                        f"({sa} vs {sb}); only kind='stair_vertical' may")
+    if t.entry_point in storey_of and storey_of[t.entry_point] != 1:
+        errs.append(f"entry_point '{t.entry_point}' must be on storey 1")
+    if t.zone_split is not None:
+        zs_storeys = {storey_of[rid]
+                      for rid in (t.zone_split.private_rooms
+                                  + t.zone_split.public_rooms)
+                      if rid in storey_of}
+        if len(zs_storeys) > 1:
+            errs.append(f"zone_split mixes rooms from storeys "
+                        f"{sorted(zs_storeys)}; a zone_split partitions one "
+                        f"floor's plan")
     return errs
 
 
@@ -443,7 +508,9 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         match_widths=t.match_widths,
         private_area_floor=t.private_area_floor,
         zone_balance_rooms=t.zone_balance_rooms,
+        storeys=t.storeys,
         kitchen_rear_pin=t.kitchen_rear_pin,
+        kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
@@ -455,6 +522,7 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         lot_adjustment_profiles=list(t.lot_adjustment_profiles),
         building_voids=list(t.building_voids),
         fallback_topology=t.fallback_topology,
+        fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
     )
 
 
@@ -500,6 +568,7 @@ def apply_no_master_transform(t: Topology) -> Topology:
                 id=r.id, type="bedroom_standard", zone="private",
                 size_priority="bedroom_standard",
                 hosts_entry=r.hosts_entry, mechanical_vent=r.mechanical_vent,
+                storey=r.storey,
             ))
         elif r.type == "ensuite_bath":
             pass  # drop
@@ -542,7 +611,9 @@ def apply_no_master_transform(t: Topology) -> Topology:
         match_widths=t.match_widths,
         private_area_floor=t.private_area_floor,
         zone_balance_rooms=t.zone_balance_rooms,
+        storeys=t.storeys,
         kitchen_rear_pin=t.kitchen_rear_pin,
+        kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=False,  # ensuite is gone
@@ -554,6 +625,7 @@ def apply_no_master_transform(t: Topology) -> Topology:
         lot_adjustment_profiles=list(t.lot_adjustment_profiles),
         building_voids=list(t.building_voids or []),
         fallback_topology=t.fallback_topology,
+        fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
     )
 
 
@@ -602,7 +674,9 @@ def mirror_topology_x(t: Topology) -> Topology:
         match_widths=t.match_widths,
         private_area_floor=t.private_area_floor,
         zone_balance_rooms=t.zone_balance_rooms,
+        storeys=t.storeys,
         kitchen_rear_pin=t.kitchen_rear_pin,
+        kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
@@ -615,4 +689,63 @@ def mirror_topology_x(t: Topology) -> Topology:
         lot_adjustment_profiles=list(t.lot_adjustment_profiles),
         building_voids=mirrored_voids,
         fallback_topology=t.fallback_topology,
+        fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
+    )
+
+
+def storey_view(t: Topology, s: int) -> Topology:
+    """Single-floor VIEW of a multi-storey topology: rooms filtered to
+    storey `s`, adjacencies/proximities/stacks/anchors filtered to members
+    of that floor (which drops stair_vertical edges — they join different
+    storeys by definition). Used AFTER the joint solve so the per-floor
+    post-passes (validate, snap_gaps, architecturalize) can treat each floor
+    exactly like a 1s result. See MULTISTOREY_V2_DESIGN.md (D3).
+
+    Ground-floor-only concerns: setback_elements stay on storey 1 (they sit
+    at grade). building_voids are kept on EVERY storey (design decision D5:
+    the upper shell doesn't cantilever over a carport notch, so the void is
+    an obstacle on every floor). entry_point is left unchanged: on upper
+    floors it names a room that isn't in the view, which downstream code
+    already treats as "no front door / no porch" — exactly right.
+    zone_split is kept only if all its rooms live on this floor."""
+    keep_ids = {r.id for r in t.rooms if r.storey == s}
+    zs = t.zone_split
+    if zs is not None:
+        zs_ids = set(zs.private_rooms) | set(zs.public_rooms)
+        if not zs_ids <= keep_ids:
+            zs = None
+    return Topology(
+        id=t.id, label=t.label, target_shell=t.target_shell,
+        rooms=[r for r in t.rooms if r.storey == s],
+        adjacencies=[a for a in t.adjacencies
+                     if a.a in keep_ids and a.b in keep_ids],
+        entry_point=t.entry_point,
+        setback_elements=list(t.setback_elements) if s == 1 else [],
+        soft_proximities=[p for p in t.soft_proximities
+                          if p.a in keep_ids and p.b in keep_ids],
+        zone_split=zs,
+        notes=list(t.notes),
+        match_bedroom_widths=t.match_bedroom_widths,
+        match_bath_widths=t.match_bath_widths,
+        match_widths=[p for p in t.match_widths
+                      if len(p) == 2 and p[0] in keep_ids and p[1] in keep_ids],
+        private_area_floor=t.private_area_floor,
+        zone_balance_rooms=t.zone_balance_rooms,
+        storeys=1,
+        kitchen_rear_pin=t.kitchen_rear_pin,
+        kitchen_side_pin=t.kitchen_side_pin,
+        aspect_overrides=dict(t.aspect_overrides),
+        bedroom_band_fills_width=t.bedroom_band_fills_width,
+        ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
+        ldk_horizontal=t.ldk_horizontal,
+        front_to_rear_stacks=[[rid for rid in stack if rid in keep_ids]
+                              for stack in t.front_to_rear_stacks
+                              if sum(1 for rid in stack if rid in keep_ids) >= 2],
+        rear_anchored=[rid for rid in t.rear_anchored if rid in keep_ids],
+        left_anchored=[rid for rid in t.left_anchored if rid in keep_ids],
+        right_anchored=[rid for rid in t.right_anchored if rid in keep_ids],
+        lot_adjustment_profiles=list(t.lot_adjustment_profiles),
+        building_voids=list(t.building_voids),
+        fallback_topology=t.fallback_topology,
+        fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
     )

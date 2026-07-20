@@ -1,0 +1,24 @@
+{
+  "intent": "2-STOREY 2BR / 2 bath side-spine-stair with the GF HALL retained \u2014 8x12 lot, no carport. 4x8 envelope per floor = 32 m\u00b2, comfortably above the 28 m\u00b2 compact-fallback threshold, so the hall variant runs as-is (no auto-switch): great room front, hall + stair spine mid-left, T&B and kitchen rear. Proves the hall variant still earns its keep on shells that can afford it.",
+  "lot_width": 8.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "ground-floor hall retained (shell above the compact threshold)",
+    "straight side-spine stair on the left wall",
+    "both bedrooms upstairs off the landing hall",
+    "one T&B per floor",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/2br/narrow/2s_2br_nw_side_spine_stair_bath_hall.json",
+  "dining_counter": false
+}

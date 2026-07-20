@@ -68,6 +68,15 @@ class Room:
     rect2: Optional[Rect] = None   # optional 2nd cell -> L-shaped (composite) room
     mechanical_vent: bool = False  # opt-out from PD 1096 §808 10% window rule
                                    # (substitute artificial ventilation per §805)
+    storey: int = 1                # which floor this room is on (1 = ground);
+                                   # rooms on different storeys share the x/y
+                                   # plane but may overlap in plan
+    stair_up: Optional[tuple] = None  # for type=="stairs": ascent direction as
+                                      # a lot-space unit vector (dx, dy) pointing
+                                      # from the flight's BOTTOM to its TOP.
+                                      # Set by the solver from its ascent
+                                      # decision; the renderer draws the UP/DN
+                                      # travel arrow from it.
 
     @property
     def cells(self) -> List[Rect]:

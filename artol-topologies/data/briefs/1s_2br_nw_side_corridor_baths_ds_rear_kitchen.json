@@ -1,0 +1,23 @@
+{
+  "intent": "Narrow-shell 2BR / 2 baths DISTRIBUTED, kitchen at the rear \u2014 10x14 lot, NO CARPORT. Two parallel front-to-rear columns: left (common bath, standard, master, ensuite) and right (great_room, hall, kitchen). Common bath doors directly into great_room across the column boundary; standard and master each door onto the hall the same way.",
+  "lot_width": 10.0,
+  "lot_depth": 14.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "master ensuite, master's private door is to ensuite",
+    "master's second door onto the hall crosses the column boundary",
+    "common bath doors directly into great_room, not the hall",
+    "standard bedroom's only door is to the hall",
+    "kitchen at the rear, reached only via the hall",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/narrow/1s_2br_nw_side_corridor_baths_ds_rear_kitchen.json"
+}

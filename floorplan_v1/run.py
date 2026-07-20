@@ -35,10 +35,19 @@ except (ImportError, OSError) as _e:
           f"will write SVGs only. Install with `brew install cairo libffi pango` "
           f"then `pip3 install cairosvg --break-system-packages`.")
 
+# PNG sidecar writing is opt-in, separate from whether cairosvg is
+# installed. Every SVG in output/ and test_output/ (and test_baselines/
+# on --update-baselines) gets a same-name .png next to it whenever this is
+# on — noisy for routine `--test` runs. Off by default; turn on with
+# `--png` for one run, or `ARTOL_WRITE_PNG=1` in the environment to make it
+# the standing default (e.g. while doing visual render debugging). `--no-png`
+# overrides an env-var default back off for a single run.
+_WRITE_PNG_ENV_DEFAULT = os.environ.get("ARTOL_WRITE_PNG", "").strip() == "1"
+
 from model import shell_category                                 # noqa: E402  (core)
 from rules import Rules                                          # noqa: E402  (core)
 from validator import validate                                   # noqa: E402  (core)
-from render import layout_to_svg, archplan_to_svg                # noqa: E402  (core)
+from render import layout_to_svg, archplan_to_svg, compose_floor_svgs  # noqa: E402  (core)
 
 from topology import load_topology, validate_topology, mirror_topology_x, swap_master_standard_in_topology, apply_no_master_transform  # noqa: E402  (solver)
 from solver import solve, AdjustmentError                        # noqa: E402  (solver)
@@ -94,7 +103,9 @@ _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
                  "no_master", "dirty_kitchen", "service_area", "lanai", "patio",
                  "num_baths", "powder_room",
                  # Tier 2 additions (2026-06-25)
-                 "kitchen_back_door")
+                 "kitchen_back_door",
+                 # Tier 3 additions (2026-07-20)
+                 "dining_counter")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm", "set_max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -284,7 +295,9 @@ def _strip_carport_from_topology(topo):
         match_widths=list(topo.match_widths),
         private_area_floor=topo.private_area_floor,
         zone_balance_rooms=topo.zone_balance_rooms,
+        storeys=topo.storeys,
         kitchen_rear_pin=topo.kitchen_rear_pin,
+        kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
@@ -296,6 +309,7 @@ def _strip_carport_from_topology(topo):
         lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
         building_voids=new_voids,
         fallback_topology=topo.fallback_topology,
+        fallback_below_buildable_sqm=topo.fallback_below_buildable_sqm,
     )
 
 
@@ -321,7 +335,9 @@ def _strip_carport_void_only(topo):
         match_widths=list(topo.match_widths),
         private_area_floor=topo.private_area_floor,
         zone_balance_rooms=topo.zone_balance_rooms,
+        storeys=topo.storeys,
         kitchen_rear_pin=topo.kitchen_rear_pin,
+        kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
@@ -333,6 +349,7 @@ def _strip_carport_void_only(topo):
         lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
         building_voids=new_voids,
         fallback_topology=topo.fallback_topology,
+        fallback_below_buildable_sqm=topo.fallback_below_buildable_sqm,
     )
 
 
@@ -361,7 +378,9 @@ def _strip_setback_element(topo, element_type: str):
         match_widths=list(topo.match_widths),
         private_area_floor=topo.private_area_floor,
         zone_balance_rooms=topo.zone_balance_rooms,
+        storeys=topo.storeys,
         kitchen_rear_pin=topo.kitchen_rear_pin,
+        kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
@@ -373,6 +392,7 @@ def _strip_setback_element(topo, element_type: str):
         lot_adjustment_profiles=list(topo.lot_adjustment_profiles),
         building_voids=list(topo.building_voids or []),
         fallback_topology=topo.fallback_topology,
+        fallback_below_buildable_sqm=topo.fallback_below_buildable_sqm,
     )
 
 
@@ -448,10 +468,102 @@ def _merge_lot_profile(topo, env_w: float, env_h: float, brief_adj: dict,
     return base, None
 
 
+_STOREY_TITLES = {1: "GROUND FLOOR", 2: "SECOND FLOOR", 3: "THIRD FLOOR"}
+
+
+def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
+                        area_caps, topology_filename, verbose):
+    """Post-solve pipeline for storeys > 1 (MULTISTOREY_V2_DESIGN.md, D3).
+
+    The joint solve placed all floors' rooms in one Layout sharing the x/y
+    plane, so every downstream single-storey pass (validate, snap_gaps,
+    alcove claims, architecturalize) would misread cross-floor coincidence
+    as overlap. Split into per-storey sub-layouts + topology views, run each
+    floor through the exact 1s post-passes, then merge issues (floor-
+    prefixed) and scores (summed) back onto the parent layout. Room objects
+    are SHARED between parent and sub-layouts, so in-place snaps propagate
+    automatically. Returns (n_snaps_total, merged_issues, total_score);
+    attaches layout.archplans = [(floor_title, plan), ...].
+    """
+    from model import Layout as _Layout
+    from validator import Issue as _Issue
+    from topology import storey_view
+    from snap_gaps import claim_ensuite_alcove, claim_dead_strips
+
+    merged_issues, total_score, n_snaps_total, archplans = [], 0.0, 0, []
+    stair_ids = {r.id for r in topo.rooms if r.type == "stairs"}
+    for s in range(1, topo.storeys + 1):
+        title = _STOREY_TITLES.get(s, f"FLOOR {s}")
+        sub_topo = storey_view(topo, s)
+        sub = _Layout(
+            lot=lot,
+            rooms=[r for r in layout.rooms if r.storey == s],
+            elements=list(layout.elements) if s == 1 else [],
+            carport_side=layout.carport_side,
+        )
+        sub.building_void_rects = void_rects
+        issues, score = validate(sub, rules)
+        errs = [i for i in issues if i.severity == "error"]
+        if errs:
+            raise RuntimeError(
+                f"hand-authored topology {topology_filename} failed "
+                f"validation on {title}: " + "; ".join(str(e) for e in errs[:3]))
+        claim_ensuite_alcove(sub, sub_topo, verbose=verbose,
+                             max_area_caps=area_caps)
+        matched_x_pairs = []
+        if sub_topo.match_bedroom_widths:
+            m_id = next((r.id for r in sub_topo.rooms
+                         if r.type == "master_bedroom"), None)
+            s_id = next((r.id for r in sub_topo.rooms
+                         if r.type == "bedroom_standard"), None)
+            if m_id and s_id:
+                matched_x_pairs.append((m_id, s_id))
+        if sub_topo.match_bath_widths:
+            e_id = next((r.id for r in sub_topo.rooms
+                         if r.type == "ensuite_bath"), None)
+            c_id = next((r.id for r in sub_topo.rooms
+                         if r.type == "common_bath"), None)
+            if e_id and c_id:
+                matched_x_pairs.append((e_id, c_id))
+        sub, n_snaps = snap_gaps(sub, verbose=verbose, void_rects=void_rects,
+                                 matched_x_pairs=matched_x_pairs,
+                                 max_area_caps=area_caps,
+                                 frozen_ids=stair_ids)
+        n_snaps_total += n_snaps
+        claim_void_alcoves(sub, void_rects=void_rects, verbose=verbose)
+        # Dead strips beside the stair column (partial-height slivers no
+        # full-edge snap can reach) become L-alcoves of an adjacent room.
+        claim_dead_strips(sub, void_rects=void_rects, verbose=verbose)
+        plan = architecturalize(
+            sub, sub_topo,
+            door_host=getattr(brief, "door_host", None),
+            kitchen_back_door=(getattr(brief, "kitchen_back_door", True)
+                               if s == 1 else False),
+            dining_counter=getattr(brief, "dining_counter", True))
+        sub.archplan = plan
+        archplans.append((title, plan))
+        issues, score = validate(sub, rules)
+        errs = [i for i in issues if i.severity == "error"]
+        if errs:
+            raise RuntimeError(
+                f"hand-authored topology {topology_filename} failed "
+                f"post-snap validation on {title}: "
+                + "; ".join(str(e) for e in errs[:3]))
+        merged_issues.extend(
+            _Issue(i.severity, i.code, f"[{title}] {i.msg}") for i in issues)
+        total_score += score
+    layout.archplans = archplans
+    layout.archplan = None
+    layout.issues = merged_issues
+    layout.score = round(total_score, 4)
+    return n_snaps_total, merged_issues, layout.score
+
+
 def _run_hand_authored(brief: Brief, topology_filename: str,
                        adjustments: dict = None, verbose: bool = True,
                        deterministic: bool = False,
-                       _fallback_warning: str = None):
+                       _fallback_warning: str = None,
+                       _fallback_note: str = None):
     """Load named topology, solve, validate. No API call. `deterministic`
     pins the solver to single-threaded + fixed random seed so test mode
     can byte-diff the SVG against a baseline.
@@ -529,6 +641,28 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         kitchen_side = "right"
     else:                           # ccp right (default)
         kitchen_side = "right"
+    # Compact-shell fallback: below the topology's declared buildable-area
+    # threshold, skip straight to the fallback sibling WITHOUT attempting a
+    # solve — the primary would typically still be feasible, just wasteful
+    # (e.g. a GF hall eating 15% of a compact floor). This is design intent,
+    # not failure, so it lands as a suggestion (unlike the infeasibility
+    # fallback's warning). Checked after the carport transforms so `env` is
+    # final (a front carport bumps the front setback).
+    if (topo.fallback_topology
+            and topo.fallback_below_buildable_sqm
+            and env.w * env.h < topo.fallback_below_buildable_sqm - 1e-9
+            and _fallback_warning is None and _fallback_note is None):
+        note = (f"compact shell {env.w:.1f}x{env.h:.1f} m "
+                f"({env.w * env.h:.1f} m² < "
+                f"{topo.fallback_below_buildable_sqm:.0f} m² threshold) — "
+                f"using compact sibling '{topo.fallback_topology}' instead "
+                f"of '{topology_filename}'")
+        if verbose:
+            print(f"  {note}")
+        return _run_hand_authored(
+            brief, topo.fallback_topology, adjustments=adjustments,
+            verbose=verbose, deterministic=deterministic,
+            _fallback_note=note)
     # Optional external spaces: strip setback elements not requested in brief.
     # Default is off for all except porch (porch has no setback element yet —
     # it is always rendered as a front-entry landing by the renderer).
@@ -614,6 +748,48 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # (a setback element overlapping a void is intentional).
     void_rects = _topology_void_rects(topo, lot)
     layout.building_void_rects = void_rects
+    # Multi-storey: the joint layout holds every floor's rooms in one x/y
+    # plane, so the single-storey validate below would misread cross-floor
+    # coincidence as overlap (and double-count occupancy). Hand off to the
+    # per-storey pipeline instead — it runs the same validate/snap/archplan
+    # sequence once per floor and merges the results.
+    if topo.storeys > 1:
+        ms_area_caps = {}
+        for room in topo.rooms:
+            knobs = merged_adj.get(room.type) if merged_adj else None
+            if knobs and "max_area_sqm" in knobs:
+                ms_area_caps[room.id] = float(knobs["max_area_sqm"])
+        n_snaps, issues, score = _finish_multistorey(
+            layout, topo, brief, rules, lot, void_rects, ms_area_caps,
+            topology_filename, verbose)
+        if _fallback_warning is not None:
+            from validator import Issue as _Issue
+            layout.issues.insert(0, _Issue(
+                "warning", "topology_fallback", _fallback_warning))
+        if _fallback_note is not None:
+            from validator import Issue as _Issue
+            layout.issues.insert(0, _Issue(
+                "suggestion", "compact_fallback", _fallback_note))
+        if tiered_dropped:
+            from validator import Issue as _Issue
+            layout.issues.insert(0, _Issue(
+                "warning", "tiered_preferred_dropped",
+                f"preferred_apply adjustments did not fit "
+                f"'{topology_filename}' on this shell — relaxed to base "
+                f"auto_apply"))
+        if verbose:
+            warns = [i for i in layout.issues if i.severity == "warning"]
+            sugg = [i for i in layout.issues if i.severity == "suggestion"]
+            snap_note = f" ({n_snaps} snap(s))" if n_snaps else ""
+            print(f"  COMPLIANT ({topo.storeys} storeys)  score={score:.2f}  "
+                  f"{len(warns)} warn  {len(sugg)} sugg{snap_note}")
+            for w in warns:
+                print(f"    [WARN] {w.msg}")
+        reason = (f"[hand-authored] using {topology_filename} "
+                  f"({topo.storeys}-storey, no API call)")
+        if _fallback_warning is not None:
+            reason += " (fallback)"
+        return layout, topo, reason
     issues, score = validate(layout, rules)
     errs = [i for i in issues if i.severity == "error"]
     if errs:
@@ -666,7 +842,8 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # to the layout — downstream rendering reuses it instead of rebuilding.
     plan = architecturalize(layout, topo,
                             door_host=getattr(brief, "door_host", None),
-                            kitchen_back_door=getattr(brief, "kitchen_back_door", True))
+                            kitchen_back_door=getattr(brief, "kitchen_back_door", True),
+                            dining_counter=getattr(brief, "dining_counter", True))
     layout.archplan = plan
     if n_snaps:
         # Re-validate to refresh the score with the now-larger room areas.
@@ -685,6 +862,10 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         from validator import Issue as _Issue
         layout.issues.insert(0, _Issue(
             "warning", "topology_fallback", _fallback_warning))
+    if _fallback_note is not None:
+        from validator import Issue as _Issue
+        layout.issues.insert(0, _Issue(
+            "suggestion", "compact_fallback", _fallback_note))
     if tiered_dropped:
         from validator import Issue as _Issue
         layout.issues.insert(0, _Issue(
@@ -766,7 +947,8 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     layout, n_snaps = snap_gaps(layout, verbose=False, void_rects=void_rects)
     plan = architecturalize(layout, topo,
                             door_host=getattr(brief, "door_host", None),
-                            kitchen_back_door=getattr(brief, "kitchen_back_door", True))
+                            kitchen_back_door=getattr(brief, "kitchen_back_door", True),
+                            dining_counter=getattr(brief, "dining_counter", True))
     layout.archplan = plan
     issues, score = validate(layout, rules)
     hard = [i for i in issues if i.severity == "error"]
@@ -822,7 +1004,7 @@ def _run_ai(brief: Brief, adjustments: dict = None, verbose: bool = True,
     )
 
 
-def _write(name, layout, topo, reason, rel_dir="", out_root=None):
+def _write(name, layout, topo, reason, rel_dir="", out_root=None, write_png=False):
     """Write the architectural plan SVG + PNG. Mirrors the brief's relative
     path under `out_root` (defaults to the canonical OUT dir). Test runs
     point this at TEST_OUT_DIR or TEST_BASELINES_DIR instead. Overwrites
@@ -831,14 +1013,22 @@ def _write(name, layout, topo, reason, rel_dir="", out_root=None):
     out_dir = os.path.join(base, rel_dir) if rel_dir else base
     os.makedirs(out_dir, exist_ok=True)
 
-    # Reuse the plan that the run/realize step attached after snap_gaps;
+    # Multi-storey results carry one plan PER FLOOR (layout.archplans);
+    # composite them side-by-side into the single output SVG. Single-storey
+    # results reuse the plan the run/realize step attached after snap_gaps;
     # rebuild only if it wasn't cached (defensive).
-    plan = getattr(layout, "archplan", None) or architecturalize(layout, topo)
+    archplans = getattr(layout, "archplans", None)
+    if archplans:
+        svg_doc = compose_floor_svgs(
+            [(title, archplan_to_svg(p)) for title, p in archplans])
+    else:
+        plan = getattr(layout, "archplan", None) or architecturalize(layout, topo)
+        svg_doc = archplan_to_svg(plan)
     svg_path = os.path.join(out_dir, f"{name}.svg")
     with open(svg_path, "w", encoding="utf-8") as f:
-        f.write(archplan_to_svg(plan))
+        f.write(svg_doc)
     print(f"  wrote {svg_path}")
-    if _HAS_CAIROSVG:
+    if write_png and _HAS_CAIROSVG:
         png_path = os.path.join(out_dir, f"{name}.png")
         try:
             cairosvg.svg2png(url=svg_path, write_to=png_path, output_width=560)
@@ -849,7 +1039,8 @@ def _write(name, layout, topo, reason, rel_dir="", out_root=None):
     print(f"  topology id: {topo.id}")
 
 
-def _run_tests(update_baselines: bool = False, brief_filter: str = None) -> int:
+def _run_tests(update_baselines: bool = False, brief_filter: str = None,
+               write_png: bool = False) -> int:
     """Run every brief in briefs/test/ through the hand-authored solver +
     architectural-plan pipeline. Renders go to test_output/ (or
     test_baselines/ when --update-baselines is set).
@@ -890,7 +1081,8 @@ def _run_tests(update_baselines: bool = False, brief_filter: str = None) -> int:
         # warning / suggestion counts for human inspection.
         warns = sum(1 for i in layout.issues if i.severity == "warning")
         sugg  = sum(1 for i in layout.issues if i.severity == "suggestion")
-        _write(name, layout, topo, reason, rel_dir=rel_dir, out_root=out_root)
+        _write(name, layout, topo, reason, rel_dir=rel_dir, out_root=out_root,
+              write_png=write_png)
         print(f"  PASS  ({warns} warn, {sugg} sugg)")
         n_pass += 1
 
@@ -927,15 +1119,25 @@ def _parse_args(argv=None):
                         "checked into git) instead of test_output/. Use after "
                         "an intentional renderer or topology change to refresh "
                         "the human-eye baseline.")
+    png_group = p.add_mutually_exclusive_group()
+    png_group.add_argument("--png", action="store_true",
+                   help="Also write a .png next to every .svg (requires "
+                        "cairosvg). Off by default — set ARTOL_WRITE_PNG=1 "
+                        "in the environment to make this the standing "
+                        "default instead of passing --png every time.")
+    png_group.add_argument("--no-png", action="store_true",
+                   help="Suppress PNG writing for this run even if "
+                        "ARTOL_WRITE_PNG=1 is set in the environment.")
     return p.parse_args(argv)
 
 
 def main(argv=None):
     args = _parse_args(argv)
+    write_png = False if args.no_png else (args.png or _WRITE_PNG_ENV_DEFAULT)
 
     if args.test:
         sys.exit(_run_tests(update_baselines=args.update_baselines,
-                            brief_filter=args.brief))
+                            brief_filter=args.brief, write_png=write_png))
     if args.update_baselines:
         print("note: --update-baselines only does anything with --test; ignoring.")
 
@@ -973,7 +1175,7 @@ def main(argv=None):
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
-        _write(name, layout, topo, reason, rel_dir=rel_dir)
+        _write(name, layout, topo, reason, rel_dir=rel_dir, write_png=write_png)
 
     # Section 2 — AI briefs.
     for name, brief, adjustments, rel_dir in ai_briefs:
@@ -983,7 +1185,7 @@ def main(argv=None):
         except RuntimeError as e:
             print(f"FAILED: {e}")
             continue
-        _write(name, layout, topo, reason, rel_dir=rel_dir)
+        _write(name, layout, topo, reason, rel_dir=rel_dir, write_png=write_png)
 
 
 if __name__ == "__main__":

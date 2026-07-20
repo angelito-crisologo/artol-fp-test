@@ -1,0 +1,26 @@
+{
+  "intent": "First 2-STOREY 3BR smoke test \u2014 wide rear-sideways-stair, distributed baths, canonical 12x10 lot, no carport. 8x6 envelope per floor (48 m\u00b2 footprint, 96 m\u00b2 gross \u2014 mid-band for 3BR/2-bath 80-120 m\u00b2). Exercises three bedrooms on one upper floor: master + br2 street-facing at the front, br3 at the rear, and the landing hall as a compact mid-band CORE with all five doors radiating from it (three bedrooms, bath, stair arrival) \u2014 plus the sideways stair run, full-width front great room with dining counter, and the upper bath near the GF wet bay.",
+  "lot_width": 12.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "all three bedrooms upstairs",
+    "master and second bedroom street-facing at the front",
+    "compact hall-core upstairs, not a long corridor",
+    "sideways stair along the rear band",
+    "full-width great room across the front with dining counter",
+    "one T&B per floor",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/3br/wide/2s_3br_wd_rear_stair_baths_ds_gr.json",
+  "dining_counter": false
+}

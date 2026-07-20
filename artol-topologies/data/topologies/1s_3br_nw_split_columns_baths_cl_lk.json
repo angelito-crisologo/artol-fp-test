@@ -1,0 +1,275 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_nw_split_columns_baths_cl_lk",
+  "label": "Narrow-shell 3BR / baths CLUSTERED, SPLIT COLUMNS (zero-corridor) \u2014 the COMPACT CHAMPION of the narrow family: public spine runs down the west column (living, dining-kitchen, hall node, master), bedrooms + clustered bath block stack in the east column. lk style, no full corridor. Designed to solve 6.0 x 12.0 m (72 m\u00b2).",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "living",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "lk style \u2014 living (front-west, hosts entry) flows rear into the dining-kitchen; together they are the west public spine"
+    },
+    {
+      "a": "hall",
+      "b": "kitchen",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the hall node sits at the rear end of the dining-kitchen \u2014 open mouth, no door (public spine continues into it)"
+    },
+    {
+      "a": "br2",
+      "b": "living",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "br2 (front-east) doors west off the living room \u2014 the compact concession of this parti, same move as the squarish hall_core"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 (mid-east) doors west into the hall node"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master (rear-west) doors north into the hall node"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common T&B (east, beside the node) doors west into the hall \u2014 guests reach it without crossing bedrooms"
+    },
+    {
+      "a": "common",
+      "b": "ensuite",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "clustered bath block in the east column \u2014 common (front) and ensuite (rear) share one plumbing wall"
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite sits east of master's rear position \u2014 interior door through the column wall"
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "standards stack front-to-rear in the east column \u2014 wall only, no door"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "kitchen",
+      "b": "common",
+      "weight": 15,
+      "note": "kitchen (west column) and the bath block (east column) overlap at mid-depth \u2014 align them so both columns' wet points share one transverse under-slab run"
+    }
+  ],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "right",
+    "private_rooms": [
+      "br2",
+      "br3",
+      "common",
+      "ensuite"
+    ],
+    "public_rooms": [
+      "living",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": null,
+  "match_bedroom_widths": true,
+  "left_anchored": [
+    "living",
+    "kitchen",
+    "master"
+  ],
+  "right_anchored": [
+    "br2",
+    "br3",
+    "common",
+    "ensuite"
+  ],
+  "rear_anchored": [
+    "master",
+    "ensuite"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "living",
+      "kitchen",
+      "hall",
+      "master"
+    ],
+    [
+      "br2",
+      "br3",
+      "common",
+      "ensuite"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_split_columns_baths_cl_lk",
+      "when": {
+        "buildable_area_lt_sqm": 78
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.0
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5,
+          "max_area_sqm": 3.2
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 9.5
+        },
+        "master_bedroom": {
+          "max_area_sqm": 13.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.5
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "This topology IS the compact floor of the narrow family \u2014 no fallback. At 6.0 x 12.0 m external (internal ~5.7 m) the columns split ~2.9/2.8: standards hold 2.8 m clear width at 9-9.5 m\u00b2, master caps at 13 m\u00b2, both baths compress toward hard mins. Below 5.7 m internal width the east-column bedrooms break 2.8 m clear \u2014 the parti fails, and so does every 1-storey 3BR narrow shell."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR narrow catalog topology #1 \u2014 SPLIT COLUMNS, the COMPACT CHAMPION and the",
+    "declared fallback of the whole narrow family. Natural floor band ~72-84 m\u00b2.",
+    "Designed against the compact test: 10.0 x 16.0 m lot (2.0 m setbacks all",
+    "sides) \u2192 6.0 x 12.0 m shell (72 m\u00b2). Solves canonical 6.5 x 13.0 with room",
+    "to spare. Regime: single-detached, NO firewalls \u2014 both 2.0 m side yards are",
+    "code courts, so BOTH columns side-vent along the full depth. This parti is",
+    "impossible in the firewall/rowhouse regime.",
+    "",
+    "Layout intent (canonical, west = left, front = bottom):",
+    "  Rear:  [master        | ensuite      ]",
+    "  ..     [HALL node     | common T&B   ]",
+    "  ..     [dining-kitchen| br3          ]",
+    "  ..     [living        | br2          ]",
+    "  Front: [  (entry)     |              ]",
+    "",
+    "Program: no corridor at all. The west column is the public spine \u2014 living",
+    "(entry) flowing into dining-kitchen (lk), ending in a 1.0 m hall node, with",
+    "master at the rear-west corner. The east column stacks br2, br3, the common",
+    "T&B and the ensuite front-to-rear. Every circulation meter does double duty",
+    "as living space; that is what buys 3BR at 72 m\u00b2.",
+    "",
+    "Doors: br2 off the living room (bedroom_to_public \u2014 the one concession),",
+    "br3 + common + master off the hall node. Ensuite through the column wall",
+    "from master.",
+    "",
+    "Plumbing: common+ensuite clustered on one wall (stack 1) at the rear-east;",
+    "kitchen sits diagonally across at mid-west, softly aligned so one transverse",
+    "run serves both. Dirty kitchen + service in the 2.0 m rear setback.",
+    "",
+    "Ventilation: west rooms vent west yard, east rooms vent east yard, master +",
+    "ensuite also rear \u2014 every habitable room has an exterior wall (the",
+    "no-firewall premise makes the whole east column legal).",
+    "",
+    "Carport policy (per brief, deferred): adding a carport later widens ONE side",
+    "setback 2.0 \u2192 3.0 m (lot width +1.0 m). Topology unchanged \u2014 mirror so the",
+    "public column faces the carport side."
+  ]
+}

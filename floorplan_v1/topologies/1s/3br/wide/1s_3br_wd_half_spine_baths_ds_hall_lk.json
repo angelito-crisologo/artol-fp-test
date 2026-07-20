@@ -1,0 +1,286 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_wd_half_spine_baths_ds_hall_lk",
+  "label": "Wide-shell 3BR / baths DISTRIBUTED with HALF-SPINE hall, living-kitchen public band (lk style) — the COMPACT CHAMPION of the wide family: spine runs only over the private east half, public west half is one open lk band. Designed to solve the 11.0 x 7.5 m BP 220 shell and down to ~10.5 x 7.2 m (76 m²).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "living",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "lk style — living (front-west, hosts entry) and kitchen (rear-west) are one open band; dining folds into the living side"
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is an alcove on master's rear edge — interior door from master"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master (front-east) doors north into the half-spine"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors south into the half-spine"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 doors south into the half-spine at its east end"
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "standard pair side-by-side in the rear band — wall only, no door"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common T&B doors south into the half-spine at its west end"
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "common backs onto the kitchen — stack 1, one shared plumbing wall"
+    },
+    {
+      "a": "hall",
+      "b": "living",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the half-spine's west mouth opens into the living room — 0.9 m minimum single-person mouth (compact envelope cannot afford wider)"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "ensuite",
+      "b": "common",
+      "weight": 20,
+      "note": "ensuite alcove sits across the spine from common — keep them aligned so both branches ride one under-slab run"
+    },
+    {
+      "a": "br2",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the shared bath beside the standard pair"
+    }
+  ],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "br2",
+      "br3",
+      "common",
+      "hall"
+    ],
+    "public_rooms": [
+      "living",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": null,
+  "match_bedroom_widths": true,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": [
+    "living",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "master",
+    "br3"
+  ],
+  "rear_anchored": [
+    "kitchen",
+    "common",
+    "br2",
+    "br3"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "living",
+      "kitchen"
+    ],
+    [
+      "living",
+      "hall",
+      "common"
+    ],
+    [
+      "master",
+      "hall",
+      "br2"
+    ],
+    [
+      "master",
+      "hall",
+      "br3"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_half_spine_baths_ds_hall_lk",
+      "when": {
+        "buildable_area_lt_sqm": 90
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5,
+          "max_area_sqm": 3.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 10.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 13.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.5
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "This topology IS the compact fallback of the wide 3BR family, so its own profile bites late (90 m²) and caps hard: master 13 m², standards 10 m², ensuite capped at 3.5 m² so the living band keeps >= 13 m². Hall floors at 0.95 m. At the 76 m² floor (10.5 x 7.2) everything sits on hard minimums with a ~14 m² living-kitchen — tight but code-legal under BP 220."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR wide catalog topology #3 — HALF-SPINE, the COMPACT CHAMPION and the",
+    "declared fallback of #1 (center_spine) and #2 (side_split). Natural floor",
+    "band ~76-92 m². Designed against the BP 220 test case: 14.0 x 11.0 m lot",
+    "(1.5 m sides/front, 2.0 m rear) → 11.0 x 7.5 m shell (82.5 m²). Solves down",
+    "to ~10.5 x 7.2 m (76 m²). No fallback — this is the floor of the family.",
+    "",
+    "Layout intent (canonical, west = left):",
+    "  Rear:  [kitchen | common T&B | br2  | br3          ]",
+    "  Spine: [ (open) | -- HALL (0.95 m, east half) ---- ]",
+    "  Front: [living (entry)      | master     : ensuite ]",
+    "",
+    "Program: same two-band section as center_spine but the corridor only spans",
+    "the private east half — the west half is a full-depth open lk band (living",
+    "front, kitchen rear, dining folded into living). Cutting the spine's west",
+    "run saves ~3.5 m² of circulation, which is exactly what lets this parti",
+    "clear 76-82 m² shells where center_spine fails (~88 m² floor).",
+    "",
+    "Circulation: spine mouths west into the living room and serves common, br2,",
+    "br3 (north side) and master (south side). Every bedroom still doors onto",
+    "circulation, not the LDK — no privacy concession despite the compact size.",
+    "",
+    "Ventilation: all bedrooms + living on front/rear walls; common vents high",
+    "window over the service area; NBC Rule 7/8 clean.",
+    "",
+    "Plumbing: kitchen+common wet wall is stack 1; master's ensuite alcove sits",
+    "directly across the spine from common (soft proximity keeps them aligned) so",
+    "both baths ride one under-slab branch — effectively 1.5 stacks, cheapest",
+    "after front_back_split's single stack in the squarish family.",
+    "",
+    "Fit rule: frontage >= 10.5 m (living 4.3 + master 3.3 + br widths behind),",
+    "depth >= 7.2 m (3.1 + 0.95 + 3.0 + walls). Carport: NCP base form; on the",
+    "14 x 11 test lot use a front-parallel carport in the 1.5 m + street verge or",
+    "widen one side setback to 3.0 m and drop shell width to 10.5 m. Mirror when",
+    "brief.carport_side='left'."
+  ]
+}

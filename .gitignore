@@ -31,3 +31,11 @@ floorplan_v1/cache/
 *.swp
 *.swo
 *~
+
+# Python virtual environment (local, machine-specific)
+.venv/
+
+# Claude Code local settings / agent-skill symlinks (machine-local, point
+# into .venv/ which isn't committed)
+.claude/
+.agents/

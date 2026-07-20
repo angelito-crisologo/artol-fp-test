@@ -1,0 +1,271 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_nw_front_back_split_baths_ds_hall_gr",
+  "label": "Narrow-shell 3BR / baths DISTRIBUTED with transverse MID-HALL + rear spur — full-width bands front-to-rear: great_room (entry), wet band (kitchen + common + passage), transverse hall, master + ensuite band, standard pair at the rear. Canonical-size parti with paired bedrooms instead of a full corridor. gr style.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "kitchen fills the west of the wet band directly behind the great_room — open connection (gr style)"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the hall's east passage rises past the wet band to mouth into the great_room's rear-east corner (codebase rule: hallway↔great_room is always open)"
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "kitchen (west) and common T&B (east) share the wet band's dividing wall — stack 1"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common doors south into the transverse hall"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master (west of its band) doors north into the transverse hall"
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite sits center-east of master's band, vertically aligned with common across the hall — interior door from master"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 (rear-west) doors onto the spur terminus — the hall's east spur runs past ensuite to the rear band"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 (rear-east) doors onto the spur terminus beside br2"
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "the standard pair shares the rear band side-by-side — wall only"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "ensuite",
+      "b": "common",
+      "weight": 25,
+      "note": "ensuite and common are separated only by the 1.0 m hall — keep them stacked so both baths ride one under-slab run despite the ds designation"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "br2",
+      "br3"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/3br/narrow/1s_3br_nw_split_columns_baths_cl_lk.json",
+  "match_bedroom_widths": true,
+  "bedroom_band_fills_width": true,
+  "left_anchored": [
+    "kitchen",
+    "master",
+    "br2"
+  ],
+  "right_anchored": [
+    "common",
+    "br3"
+  ],
+  "rear_anchored": [
+    "br2",
+    "br3"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen",
+      "hall",
+      "master",
+      "br2"
+    ],
+    [
+      "great",
+      "common",
+      "hall",
+      "ensuite",
+      "br3"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_front_back_split_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 85
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5,
+          "max_area_sqm": 3.2
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 13.5
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Depth is the budget here: 3.2 (great) + 2.1 (wet band) + 1.0 (hall) + 3.5 (master band) + 3.1 (rear pair) = ~12.9 m. The bands can shave to ~12.3 m total before rooms hit hard mins; below that, or below ~6.2 m width (rear pair 3.0+3.2), fall back to split_columns."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "br3"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR narrow catalog topology #3 — FRONT_BACK split with transverse mid-hall",
+    "and rear spur. Natural floor band ~78-90 m²; designed against the canonical",
+    "test: 10.5 x 17.0 m lot (2.0 m setbacks) → 6.5 x 13.0 m shell (84.5 m²).",
+    "Regime: single-detached, no firewalls — this parti DEPENDS on it (see below).",
+    "",
+    "Layout intent (west = left, front = bottom):",
+    "  Rear:  [br2          | br3               ]",
+    "  ..     [master       | ensuite | SPUR    ]",
+    "  ..     [---- transverse HALL ----        ]",
+    "  ..     [kitchen      | common  | passage ]",
+    "  Front: [great_room (entry, full width)   ]",
+    "",
+    "Program: five full-width bands, no long corridor. Great_room fronts the",
+    "street; the wet band behind it packs kitchen (west, open to great) and",
+    "common T&B, with a 1.0 m passage on the east linking great_room to the",
+    "transverse hall. The hall serves common, master and the east spur, which",
+    "runs past the ensuite to the rear standard pair. Master sits mid-depth —",
+    "buffered from both the street and the kids' rooms.",
+    "",
+    "Why no-firewall matters: master and ensuite occupy a MID-DEPTH band with no",
+    "front or rear wall — they vent through the 2.0 m side yards (legal courts",
+    "for a single-storey under PD 1096 Rule 7/8). In the firewall regime this",
+    "band would be landlocked and the parti dies.",
+    "",
+    "Plumbing: kitchen+common share stack 1; ensuite is nominally ds but sits",
+    "directly across the 1.0 m hall from common (soft weight 25) — in practice",
+    "one under-slab run. Note the dirty kitchen lands behind br3, not the",
+    "kitchen — the service path runs along the east side yard.",
+    "",
+    "Differentiator vs side_corridor (#2): bedrooms pair in bands instead of",
+    "stacking on a column, so the standard pair gets rear-yard windows and the",
+    "master gets a quiet mid position; the cost is the dog-leg circulation",
+    "(passage → hall → spur). Prefer this on briefs valuing rear-facing kids'",
+    "rooms; prefer #2 when the kitchen must own the service edge.",
+    "",
+    "Carport policy (deferred): one side setback 2.0 → 3.0 m later (lot +1.0 m);",
+    "mirror so the passage/spur side faces the carport."
+  ]
+}

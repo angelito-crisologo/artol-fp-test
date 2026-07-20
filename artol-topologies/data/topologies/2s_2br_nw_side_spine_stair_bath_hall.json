@@ -1,0 +1,288 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_2br_nw_side_spine_stair_bath_hall",
+  "label": "Narrow-shell 2-STOREY 2BR / 2 baths, SIDE-SPINE STAIR \u2014 straight stair hugs the left wall as the circulation spine on both floors. Ground floor: open great room (entry, dining folds in \u2014 gr style) at front, kitchen at rear, common T&B between them off the hall. Second floor: master at front, standard bedroom at rear, second T&B off the landing hall. Stairwell occupies the identical rectangle on both floors. The hall earns its keep from ~8x11 lots up; below 28 m\u00b2/floor buildable the runner auto-routes to the hall-less compact sibling (fallback_below_buildable_sqm).",
+  "target_shell": "narrow",
+  "storeys": 2,
+  "rooms": [
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true,
+      "storey": 1
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "storey": 1
+    },
+    {
+      "id": "bath1",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "stair",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom",
+      "storey": 2
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms",
+      "storey": 2
+    },
+    {
+      "id": "bath2",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "hall2",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "stairwell",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "hall",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "GF: hall's front mouth opens from the great room \u2014 no door"
+    },
+    {
+      "a": "hall",
+      "b": "stair",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_boarding",
+      "note": "GF: the hall must meet the flight at its BOTTOM end \u2014 the solver picks the ascent direction and holds boarding + arrival to opposite ends of the run (multi-storey v2 landing fix, 2026-07-18)"
+    },
+    {
+      "a": "hall",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "GF: common T&B door opens off the hall's rear leg (the drawn 'Passage')"
+    },
+    {
+      "a": "hall",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "open_plan",
+      "note": "GF: kitchen is reached from the hall's rear leg \u2014 dining and kitchen are NOT directly adjacent (bath band between them)"
+    },
+    {
+      "a": "kitchen",
+      "b": "bath1",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "GF: T&B backs onto the kitchen head wall (drawn shared edge 1.5 m) \u2014 single GF plumbing bay; kitchen keeps its rear service door"
+    },
+    {
+      "a": "stair",
+      "b": "stairwell",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_vertical",
+      "note": "VERTICAL circulation edge, not a wall: stair (GF flight) and stairwell (2F opening) occupy the IDENTICAL rectangle on their respective floors. Present so the adjacency graph is connected (2F rooms reachable from entry). The v1 solver would wrongly read this as a same-floor shared wall \u2014 this topology must not be solved until multi-storey v2 interprets kind='stair_vertical' as a cross-floor rect-equality constraint."
+    },
+    {
+      "a": "stairwell",
+      "b": "hall2",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_arrival",
+      "note": "2F: the upstairs hall must meet the stairwell at the TOP end of the flight \u2014 you step off the last tread into circulation, never against a bedroom wall (the reference drawing got this wrong: its hall flanked only the bottom of the opening)"
+    },
+    {
+      "a": "hall2",
+      "b": "master",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: master door on the hall's front edge (master holds the full-width front band)"
+    },
+    {
+      "a": "hall2",
+      "b": "br2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: rear bedroom door on the hall's rear edge"
+    },
+    {
+      "a": "hall2",
+      "b": "bath2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "2F: second T&B door opens east off the hall (drawn shared edge 1.5 m)"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "bath2",
+      "b": "br2",
+      "weight": 15,
+      "note": "2F: keep the bath against the rear bedroom's front wall (drawn) \u2014 bath block buffers the bedroom from the landing"
+    }
+  ],
+  "entry_point": "great",
+  "fallback_topology": "2s/2br/narrow/2s_2br_nw_side_spine_stair_bath.json",
+  "fallback_below_buildable_sqm": 28,
+  "aspect_overrides": {
+    "stairs": 4.0
+  },
+  "lot_adjustment_profiles": [
+    {
+      "name": "stair_run_geometry",
+      "when": {
+        "buildable_area_lt_sqm": 99999
+      },
+      "auto_apply": {
+        "stairs": {
+          "min_greatest_dim_m": 3.5,
+          "max_least_dim_m": 1.2
+        }
+      },
+      "rationale": "ALWAYS-ON (the 99999 trigger): a straight stair's run is riser math the solver cannot derive \u2014 3.0 m floor-to-floor at 15 x 200 mm risers needs 14 x 250 mm treads = 3.5 m. min_greatest_dim_m pins the run; max_least_dim_m 1.2 keeps the flight a flight (0.9 m drawn, 1.1 m preferred ceiling). Applies to both stair rooms (same type), which the stair_vertical rect-equality keeps identical anyway."
+    }
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "bath1",
+      "kitchen"
+    ],
+    [
+      "great",
+      "stair"
+    ],
+    [
+      "master",
+      "hall2"
+    ],
+    [
+      "master",
+      "bath2",
+      "br2"
+    ],
+    [
+      "master",
+      "stairwell"
+    ]
+  ],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "notes": [
+    "2-STOREY narrow catalog topology #1 \u2014 SIDE-SPINE STAIR (Variant A of the",
+    "2026-07-18 four-variant reference set). Converted 2026-07-18 from a fully-",
+    "dimensioned reference spec (fixed coordinates on an 8 x 12 lot) into the",
+    "topology-v0.1 adjacency-graph schema; the original spec is preserved in",
+    "the session scratchpad and wherever it was drafted.",
+    "",
+    "RUNNABLE since 2026-07-18 \u2014 first topology on the multi-storey v2",
+    "pipeline (MULTISTOREY_V2_DESIGN.md): one joint CP-SAT solve with a",
+    "no-overlap group per storey, `storeys: 2` + per-room `storey: 1|2`",
+    "consumed by the loader, the kind='stair_vertical' adjacency enforcing",
+    "identical stair/stairwell rectangles across floors, per-floor",
+    "validate/snap/archplan post-passes, and a side-by-side composite SVG",
+    "(GROUND FLOOR | SECOND FLOOR). The always-on 'stair_run_geometry'",
+    "profile pins the straight run at 3.5 m (riser math the solver cannot",
+    "derive); stairs are frozen during gap-snapping so the flights stay",
+    "identical (design decision D6). Cross-floor wet-stack proximity is a",
+    "known v2 gap \u2014 see design doc, out of scope this phase.",
+    "",
+    "Landing fix + gr conversion + 8x10 target (2026-07-18, later same day):",
+    "  - `stair_boarding` / `stair_arrival` adjacency kinds (with the",
+    "    solver's per-pair ascent decision) now guarantee boarding and",
+    "    arrival at OPPOSITE ends of the run \u2014 the reference drawing had the",
+    "    flight topping out against br2's wall with the upstairs hall at the",
+    "    wrong end. The solver resolves it by ascending REAR-to-FRONT:",
+    "    board at the flight's rear end off the hall, arrive at hall2's",
+    "    front-band landing serving master / bath2 / br2.",
+    "  - Ground floor converted lk -> gr: the reference's separate living +",
+    "    dining could never fit the 8x10 target lot (GF hard minimums",
+    "    6+6+3+1.2+1.5+2.6 = 26.3 m\u00b2 > the 24 m\u00b2 4x6 buildable), so dining",
+    "    folds into one open great_room. No dining counter is possible in",
+    "    this parti \u2014 great_room and kitchen never share a wall (the bath",
+    "    band sits between) \u2014 so dining furniture lives in the great room.",
+    "  - Verified COMPLIANT at 8x10 (canonical, 100% coverage both floors)",
+    "    and 8x12 (roomier; the old canonical).",
+    "",
+    "Canonical layout (8 x 10 lot, 2 m setbacks, 4 x 6 buildable per floor):",
+    "  GF:  Front: [great room (entry, full width)      ]",
+    "       Mid:   [stair | hall | T&B                  ]",
+    "       Rear:  [stair | hall | kitchen              ]  kitchen rear-pinned",
+    "  2F:  Front: [master (full width)                 ]",
+    "       Mid:   [stairwell | hall2 landing | T&B     ]",
+    "       Rear:  [stairwell | br2                     ]",
+    "Stair: straight, left wall, 0.9 m wide, >= 3.5 m run, 15 risers @ 200 mm",
+    "(= PD 1096 hard max, zero margin) / 250 mm treads, ascending rear-to-",
+    "front per the solver's landing decision. Stairwell rectangle identical",
+    "on both floors (enforced, not just verified).",
+    "",
+    "Conversion audit findings against the reference spec (2026-07-18):",
+    "  - Reference dining was 5.6 m\u00b2 \u2014 BELOW the 6.0 m\u00b2 dining_room hard",
+    "    minimum (moot after the gr conversion, kept for the record).",
+    "  - The spec claims 'fully_stacked' plumbing but its own coordinates",
+    "    put the 2F bath ~1.5 m FORWARD of the GF bath (same east x-band,",
+    "    zero vertical overlap; kitchen has br2 above). Converted as-drawn;",
+    "    a v2 wet-stack proximity term should pull bath2 over bath1.",
+    "  - The drawn GF 'Hall'+'Passage' slivers (1.08 / 1.56 m\u00b2) and 2F",
+    "    'Hall'+'Hall 2' (0.90 / 1.95 m\u00b2) are each merged into ONE hallway",
+    "    room per floor \u2014 separately they'd violate the 1.5 m\u00b2 hallway",
+    "    minimum; merged they pass.",
+    "  - No carport (reference classification carport: false) \u2014 no carport",
+    "    setback element or building void is declared; briefs for this",
+    "    topology should be ncp. Rear service/laundry yard kept as an",
+    "    opt-in service_area element.",
+    "  - Name/token note: the id's `bath` token undercounts the program",
+    "    (two common baths, one per floor \u2014 `baths_ds` territory under the",
+    "    locked 1s convention). Kept as-imported; renaming is a catalog",
+    "    decision for the 2s naming pass.",
+    "  - Gross floor area 64 m\u00b2 (~57 net) sits below the locked 2BR/2-bath",
+    "    45-65/65-80 m\u00b2 bands, which were calibrated single-storey; the 2s",
+    "    floor-area bands are an open convention decision.",
+    "",
+    "App-matcher note: surfaces in ai/match.py as a narrow 2BR/2-bath",
+    "candidate and solves when selected. Its three sibling reference specs",
+    "(front_stair_foyer, mid_core_ustair, rear_stair_understair) remain",
+    "unconverted and list as 0-bedroom candidates that match nothing."
+  ]
+}

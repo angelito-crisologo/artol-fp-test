@@ -66,6 +66,15 @@ class Brief:
     # Set False only to explicitly seal the kitchen's rear wall.
     kitchen_back_door: bool = True
 
+    # Dining counter: render the counter_divider band + stools on any
+    # open-plan edge the TOPOLOGY declares one for (e.g. great_room<->kitchen
+    # with counter_divider: true). Default on — honor the topology's design
+    # intent. Set False to suppress every counter on this solve without
+    # touching the topology file; cannot force a counter where the topology
+    # doesn't declare one (the render needs the >= 2.1 m seam the topology
+    # guarantees at solve time — see MULTISTOREY_V2_DESIGN.md).
+    dining_counter: bool = True
+
     # Dirty kitchen: open-air cooking area in rear setback. Default off.
     dirty_kitchen: bool = False
 

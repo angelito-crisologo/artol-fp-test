@@ -1,0 +1,284 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_l_wrap_baths_ds_hall_gr",
+  "label": "Squarish 3BR / baths DISTRIBUTED, private L-WRAP with west-flank HALL \u2014 standard pair stacked on the west flank (br2 front, br3 rear), master wraps the rear-center with ensuite against the kitchen wall; great_room + kitchen hold the front-right/rear-right corner (gr style). Maximum bedroom separation; suits corner lots.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is an alcove on master's east side \u2014 interior door from master"
+    },
+    {
+      "a": "ensuite",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "ensuite shares the kitchen's west wall \u2014 first wet stack at the rear-right"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 door opens south into the hall"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 door opens north into the hall"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "the hall elbows east at its rear end to reach master's front wall \u2014 master's door does NOT face the great_room"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common T&B sits east of the hall in the middle band \u2014 second wet stack"
+    },
+    {
+      "a": "common",
+      "b": "br2",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "bath block buffers br2 from the great_room"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "hall's east face is an open mouth into the great_room (codebase rule: hallway\u2194great_room is always open)"
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen are one open LDK (gr style); kitchen at the rear of the public corner"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "br3",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the shared bath near the rear standard"
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "weight": 15,
+      "note": "pull the second wet stack toward the kitchen run where the shell allows"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "br2",
+      "br3",
+      "common",
+      "master",
+      "ensuite"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "match_bedroom_widths": true,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": [
+    "br2",
+    "hall",
+    "br3"
+  ],
+  "right_anchored": [
+    "great",
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "br3",
+    "master",
+    "ensuite",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "br2",
+      "hall",
+      "br3"
+    ],
+    [
+      "great",
+      "master"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_l_wrap_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 110
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 16.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Same tier shape as hall_core (#1). The L-wrap carries the longest hall of the family, so the hall floor (0.95 m) is the constraint most often hit; if the elbow to master cannot hold 0.95 m clear, fall back to front_back_split (#3)."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "3BR squarish catalog topology #4 \u2014 private L-WRAP. Natural floor band",
+    "~94-108 m\u00b2; minimum feasible shell ~9.5 x 10.0 m. The roomiest parti of the",
+    "four \u2014 pick it when the brief values bedroom separation over floor economy.",
+    "",
+    "Layout intent (canonical, brief.carport_side='right'):",
+    "  Rear:  [br3   | master : ensuite | kitchen ]",
+    "  Mid:   [HALL | common  | great_room        ]",
+    "  Front: [br2   | great_room (entry)         ]",
+    "",
+    "Program: the private zone forms an L \u2014 standard pair stacked on the west",
+    "flank (br2 front-left, br3 rear-left) with the hall between them, master",
+    "wrapping the rear-center. The public gr corner (great_room hosting entry,",
+    "kitchen behind it) fills the front-right/rear-right. The hall runs",
+    "north-south between the standards, mouths east into the great_room, and",
+    "elbows east at its rear end to pick up master's door and the common T&B.",
+    "",
+    "Separation: master shares NO wall with either standard bedroom \u2014 the widest",
+    "acoustic split available in a squarish 3BR shell (multi-generation briefs,",
+    "rentable-room briefs).",
+    "",
+    "Corner-lot fit: bedrooms hold the west + rear walls, public holds front +",
+    "east \u2014 on a corner lot orient the public corner to the street intersection",
+    "and every habitable room still gets an outdoor wall. No landlocked rooms.",
+    "",
+    "Plumbing: distributed \u2014 ensuite rides the kitchen wall (stack 1), common sits",
+    "mid-band off the hall (stack 2, softly pulled toward the kitchen).",
+    "",
+    "Watch-outs: longest hall of the family (~3.5-4.5 m incl. elbow) and the",
+    "elbow constraint in the compact profile. When brief.carport_side='left',",
+    "mirror the topology."
+  ]
+}

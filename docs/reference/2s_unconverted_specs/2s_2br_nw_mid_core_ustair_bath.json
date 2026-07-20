@@ -1,0 +1,239 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_2br_nw_mid_core_ustair_bath",
+  "label": "Narrow-shell 2-storey 2BR / 2 baths, MID-CORE U-STAIR \u2014 transverse U-stair and bath band form a central core; living front and dining-kitchen rear below, both bedrooms span the full interior width above with windows on three sides. Near-zero corridor waste; plumbing fully stacked.",
+  "target_shell": "narrow",
+  "storeys": 2,
+  "meta": {
+    "topology_id": "2s_2br_nw_mid_core_ustair_bath",
+    "title": "Variant B - Mid-core U-stair",
+    "context": "Philippines residential (NBC / PD 957 compliant)",
+    "units": "meters",
+    "coordinate_system": {
+      "origin": "front-left corner of lot",
+      "x": "across frontage, left to right",
+      "y": "from front (south, road side) toward rear (north)",
+      "drawing_convention": "front of lot at bottom of sketch (south)"
+    },
+    "created": "2026-07-18"
+  },
+  "classification": {
+    "storeys": 2,
+    "bedrooms": 2,
+    "lot_shape": "narrow",
+    "attachment": "detached",
+    "carport": false
+  },
+  "envelope": {
+    "lot": {
+      "width": 8.0,
+      "depth": 12.0,
+      "area_sqm": 96.0
+    },
+    "setbacks": {
+      "front": 2.0,
+      "rear": 2.0,
+      "side_left": 2.0,
+      "side_right": 2.0
+    },
+    "shell": {
+      "x": 2.0,
+      "y": 2.0,
+      "width": 4.0,
+      "depth": 8.0,
+      "footprint_sqm": 32.0
+    },
+    "walls": {
+      "exterior_thickness": 0.15,
+      "interior_thickness": 0.1
+    },
+    "interior_clear": {
+      "width": 3.7,
+      "depth": 7.7,
+      "area_per_floor_sqm": 28.49
+    },
+    "storeys": 2,
+    "floor_to_floor": 3.0,
+    "gross_floor_area_sqm": 64.0,
+    "outdoor_zones": [
+      {
+        "name": "front yard / entry court",
+        "location": "front setback",
+        "size": "8.0 x 2.0"
+      },
+      {
+        "name": "service / laundry yard",
+        "location": "rear setback",
+        "size": "8.0 x 2.0"
+      },
+      {
+        "name": "side breezeways",
+        "location": "side setbacks",
+        "size": "2.0 x 12.0 each"
+      }
+    ]
+  },
+  "room_schema": "x, y = lot coordinates of room's front-left corner; w = width (x-dir); d = depth (y-dir); areas in sqm",
+  "variant": {
+    "id": "B",
+    "name": "Mid-core U-stair",
+    "concept": "Transverse U-stair and T&B band form a central core; both bedrooms span the full interior width with windows on three sides. Near-zero corridor waste.",
+    "stair": {
+      "type": "U_with_half_landing",
+      "location": "central band, transverse",
+      "width": 0.9,
+      "flight_run": 1.75,
+      "risers": 16,
+      "riser_height": 0.1875,
+      "tread": 0.25,
+      "ascent": "enter from living (front), half-landing right, arrive at rear-left of core",
+      "under_stair": "storage below upper flight"
+    },
+    "plumbing": "fully_stacked",
+    "floors": {
+      "ground": [
+        {
+          "name": "Living",
+          "type": "public",
+          "x": 2.15,
+          "y": 2.15,
+          "w": 3.7,
+          "d": 2.6,
+          "area": 9.62
+        },
+        {
+          "name": "Corridor",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 4.75,
+          "w": 0.9,
+          "d": 1.8,
+          "area": 1.62,
+          "notes": "links living to rear zone past stair"
+        },
+        {
+          "name": "Stair flights",
+          "type": "circulation",
+          "x": 3.05,
+          "y": 4.75,
+          "w": 1.9,
+          "d": 1.8,
+          "area": 3.42
+        },
+        {
+          "name": "Stair landing",
+          "type": "circulation",
+          "x": 4.95,
+          "y": 4.75,
+          "w": 0.9,
+          "d": 1.8,
+          "area": 1.62
+        },
+        {
+          "name": "Hall",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 6.55,
+          "w": 2.2,
+          "d": 1.3,
+          "area": 2.86
+        },
+        {
+          "name": "T&B",
+          "type": "wet",
+          "x": 4.35,
+          "y": 6.55,
+          "w": 1.5,
+          "d": 1.3,
+          "area": 1.95
+        },
+        {
+          "name": "Dining-Kitchen",
+          "type": "public_wet",
+          "x": 2.15,
+          "y": 7.85,
+          "w": 3.7,
+          "d": 2.0,
+          "area": 7.4,
+          "notes": "open plan; counter on rear wall; service door to rear yard"
+        }
+      ],
+      "second": [
+        {
+          "name": "Bedroom 1",
+          "type": "private",
+          "x": 2.15,
+          "y": 2.15,
+          "w": 3.7,
+          "d": 2.6,
+          "area": 9.62,
+          "notes": "full width; front + both side windows"
+        },
+        {
+          "name": "Corridor",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 4.75,
+          "w": 0.9,
+          "d": 1.8,
+          "area": 1.62,
+          "notes": "stair arrival"
+        },
+        {
+          "name": "Stair void",
+          "type": "void",
+          "x": 3.05,
+          "y": 4.75,
+          "w": 2.8,
+          "d": 1.8,
+          "area": 5.04
+        },
+        {
+          "name": "Hall",
+          "type": "circulation",
+          "x": 2.15,
+          "y": 6.55,
+          "w": 2.2,
+          "d": 1.3,
+          "area": 2.86
+        },
+        {
+          "name": "T&B",
+          "type": "wet",
+          "x": 4.35,
+          "y": 6.55,
+          "w": 1.5,
+          "d": 1.3,
+          "area": 1.95
+        },
+        {
+          "name": "Bedroom 2",
+          "type": "private",
+          "x": 2.15,
+          "y": 7.85,
+          "w": 3.7,
+          "d": 2.0,
+          "area": 7.4,
+          "notes": "full width; rear + both side windows"
+        }
+      ]
+    },
+    "entry": {
+      "location": "front wall, center",
+      "x": 3.6,
+      "y": 2.0
+    },
+    "tradeoffs": {
+      "pros": [
+        "lowest circulation waste",
+        "both bedrooms full width",
+        "fully stacked plumbing",
+        "easiest to extend to 3BR"
+      ],
+      "cons": [
+        "smallest living room of the set",
+        "U-stair slightly costlier than straight"
+      ]
+    }
+  }
+}

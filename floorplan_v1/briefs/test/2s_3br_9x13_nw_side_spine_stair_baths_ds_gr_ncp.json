@@ -1,0 +1,25 @@
+{
+  "intent": "2-STOREY 3BR narrow side-spine-stair smoke test on the canonical 9x13 lot, no carport. 5x9 envelope per floor (45 m\u00b2 footprint, 90 m\u00b2 gross \u2014 in the 3BR/2-bath 80-120 band). Exercises three bedrooms above a 5 m-wide floor: master full-width front, stairwell + landing hall as the left/mid circulation spine, br2 mid-right, br3 rear; the GF kitchen-as-rear-column trick preserving the dining-counter seam on a deep hall-less floor; and the dead-strip rectangle decomposition (the kitchen claims the rear-left rect as an L-pantry).",
+  "lot_width": 9.0,
+  "lot_depth": 13.0,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "all three bedrooms upstairs, each with an exterior wall",
+    "master full-width at the front",
+    "circulation as a compact side spine, not a full-width corridor",
+    "kitchen column at the rear keeping the dining counter seam",
+    "one T&B per floor",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/3br/narrow/2s_3br_nw_side_spine_stair_baths_ds_gr.json",
+  "dining_counter": false
+}

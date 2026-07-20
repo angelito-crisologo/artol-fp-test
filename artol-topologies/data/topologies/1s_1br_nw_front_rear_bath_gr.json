@@ -1,0 +1,188 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_nw_front_rear_bath_gr",
+  "label": "Narrow-shell 1BR / 1 bath, FRONT-REAR \u2014 the bedroom owns the full-width rear band; in front of it, a full-depth great room column (hosts the entry) runs beside a wet column with the kitchen above the bath on one plumbing wall (bath at the front corner, door off the great room). Dining at a counter on the kitchen/great seam. Based on the narrow-fp-02 reference plan (3.2 x 7.0 m micro-unit).",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "bedroom",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "bedroom's only door \u2014 opens south from the full-width rear band into the great room column. 1.2 m floor = 0.9 m clear door + frames."
+    },
+    {
+      "a": "kitchen",
+      "b": "bedroom",
+      "min_shared_wall_m": 0.9,
+      "kind": "wall_only",
+      "note": "the kitchen's rear edge meets the bedroom band's underside on the left column \u2014 geometry-only shared wall, no door. Keeps the seam between the front zone and the rear band continuous."
+    },
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "bath (front) and kitchen (above it) stack in the left column on one plumbing wall \u2014 shared wall only, no door."
+    },
+    {
+      "a": "bath",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "bath's only door \u2014 opens east into the great room near the entry, matching the reference plan. No bath-into-kitchen sanitary trade-off in this topology."
+    },
+    {
+      "a": "kitchen",
+      "b": "great",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "counter_divider": true,
+      "counter_side": "great",
+      "note": "kitchen and great room sit SIDE-BY-SIDE (vertical seam) \u2014 open plan with a dining counter along the shared edge, band + 2 stools inside the great room (counter_side) so the kitchen keeps its full work aisle; mirrors the reference plan's counter-attached table. min_shared_wall_m 2.1 = 2 x 0.6 m seats + 0.9 m pass. Requires ldk_horizontal."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "private_area_floor": false,
+  "kitchen_rear_pin": false,
+  "ldk_horizontal": true,
+  "aspect_overrides": {
+    "great": 2.3
+  },
+  "match_bedroom_widths": false,
+  "match_widths": [
+    [
+      "bath",
+      "kitchen"
+    ]
+  ],
+  "left_anchored": [
+    "bedroom",
+    "bath",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "bedroom",
+    "great"
+  ],
+  "rear_anchored": [
+    "bedroom"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "bath",
+      "kitchen",
+      "bedroom"
+    ],
+    [
+      "great",
+      "bedroom"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_front_rear_bath_gr",
+      "when": {
+        "buildable_area_lt_sqm": 45
+      },
+      "auto_apply": {
+        "common_bath": {
+          "min_area_sqm": 2.6,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 9.5
+        }
+      },
+      "rationale": "Compact super-deep unit (canonical 4x8 m envelope, 32 sqm \u2014 reference plan is 22.4). Same tier values as the other 1BR topologies: bath floors at 2.6 sqm and caps at 4.5 so snap_gaps can't balloon it; bedroom caps at 9.5 \u2014 with the full 4 m width anchored to both side walls, that pins the rear band's depth at ~2.4 m and pushes the freed depth into the great room."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Third 1BR entry in the narrow catalog, and the first use of the locked",
+    "'front_rear' strategy token: the bedroom owns the FULL-WIDTH rear band,",
+    "and everything else sits in front of it. Modeled on the narrow-fp-02",
+    "reference plan (a 3.2 x 7.0 m / 22.4 sqm Brazilian micro-unit): bedroom",
+    "across the rear with a service/laundry area behind it, living in the",
+    "middle with a counter-attached table, kitchen run along one side wall,",
+    "bath at the front corner, entry on the front wall beside the bath.",
+    "",
+    "Layout intent (front at bottom, canonical 4 x 8 m envelope):",
+    "  Rear:   [BEDROOM  4.0 x ~2.4  (full width)      ]",
+    "  Middle: [KITCHEN 1.5x~3.6 | GREAT ROOM (cont.)  ]",
+    "  Front:  [BATH    1.5x~2.0 | GREAT ~2.5 full-depth]",
+    "                               [porch/entry]",
+    "",
+    "Canonical fit: 8 x 12 m lot with standard 2 m setbacks -> 4 x 8 m envelope",
+    "(ratio 0.5, 'super_deep' category, 32 sqm floor). Roomier than the 24-25",
+    "sqm tiny-house set \u2014 the ~14 sqm great room clears the couch+TV+dining",
+    "furnishability band, though dining stays at the counter per the reference.",
+    "",
+    "Global-rule overrides (all topology-scoped):",
+    "  - kitchen_rear_pin: false \u2014 the bedroom owns the rear wall; the kitchen",
+    "    sits mid-column with the bath in front of it. Same flag as the",
+    "    front_back_split sibling; briefs should set kitchen_back_door: false",
+    "    (the kitchen has no exterior rear wall).",
+    "  - ldk_horizontal: true \u2014 kitchen beside the great room (vertical seam),",
+    "    and the kitchen sits in the LEFT half (symmetry break would flip it).",
+    "  - private_area_floor: false \u2014 bedroom ~9.4 sqm vs great+kitchen ~19.6.",
+    "  - aspect_overrides great 2.3 \u2014 the full-depth great column runs",
+    "    ~2.5 x 5.65 (2.26:1), past the strict 1.8 cap (its width stays under",
+    "    the 3.0 m chunky-relax threshold).",
+    "",
+    "No zone_split: the full-width bedroom crosses both columns, so no single",
+    "straight private/public line exists \u2014 the two front_to_rear_stacks",
+    "([bath, kitchen, bedroom] and [great, bedroom]) plus side anchors pin the",
+    "structure instead. The bedroom is anchored to BOTH side walls, which",
+    "forces its full-width span; with the 9.5 sqm cap that pins the rear",
+    "band's depth at ~2.4 m.",
+    "",
+    "Wet stack: bath and kitchen share one vertical plumbing wall; the rear",
+    "service_area (laundry, per the reference's washer) sits in the rear",
+    "setback behind the bedroom. No dirty kitchen declared \u2014 the kitchen has",
+    "no rear exposure.",
+    "",
+    "Bath door opens into the GREAT room (as in the reference) \u2014 no",
+    "bath-into-kitchen sanitary warning.",
+    "",
+    "No fallback declared \u2014 the other narrow 1BR topologies have different",
+    "structural patterns (corridor shotgun, stepped front-back split) rather",
+    "than being relaxations of this one."
+  ]
+}

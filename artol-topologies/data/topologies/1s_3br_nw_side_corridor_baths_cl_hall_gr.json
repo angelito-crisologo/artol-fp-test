@@ -1,0 +1,279 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_nw_side_corridor_baths_cl_hall_gr",
+  "label": "Narrow-shell 3BR / baths CLUSTERED with SIDE CORRIDOR and full wet strip \u2014 the GENEROUS sibling of the side_corridor family: kitchen, common T&B and ensuite form one contiguous east strip; master owns the full rear band as a retreat opening to a rear lanai. Open great_room + kitchen (gr style). Tuned for 7.0 x 14.0-15.0 m shells.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "kitchen heads the east strip behind the great_room, open over a counter (gr style) \u2014 at generous widths it earns a breakfast ledge"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "corridor mouths into the great_room (codebase rule: hallway\u2194great_room is always open)"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors east into the corridor"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 doors east into the corridor"
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "standards stack front-to-rear in the west column \u2014 wall only"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's door terminates the corridor \u2014 the full rear band is the retreat"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common doors west into the corridor, midway between the standards and the great_room"
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "kitchen \u2192 common on the east strip, first shared plumbing wall"
+    },
+    {
+      "a": "common",
+      "b": "ensuite",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "common \u2192 ensuite continues the strip: kitchen + common + ensuite form ONE contiguous wet run \u2014 the clustered signature of this sibling"
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is the strip's rear cell, entered on its south wall from master's band"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "br3",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the shared bath across the corridor from the rear standard"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "br2",
+      "br3",
+      "master",
+      "ensuite"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/3br/narrow/1s_3br_nw_side_corridor_baths_ds_hall_gr.json",
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "left_anchored": [
+    "br2",
+    "br3"
+  ],
+  "right_anchored": [
+    "kitchen",
+    "common",
+    "ensuite"
+  ],
+  "rear_anchored": [
+    "master"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "br2",
+      "br3",
+      "master"
+    ],
+    [
+      "great",
+      "hall",
+      "master"
+    ],
+    [
+      "kitchen",
+      "common",
+      "ensuite"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_side_corridor_baths_cl_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 95
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "master_bedroom": {
+          "max_area_sqm": 16.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.5
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Generous-first topology: the profile triggers already at 95 m\u00b2 because the three-cell strip (kitchen + common + ensuite) wants ~7.5 m of depth on its own. Ensuite entering from the master band costs the strip an extra interior door offset \u2014 below ~88 m\u00b2 that geometry stops paying and the ds sibling takes over (fallback), keeping the family solvable down the size ladder."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "master"
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR narrow catalog topology #4 \u2014 SIDE CORRIDOR, CLUSTERED strip: the",
+    "GENEROUS sibling of #2. Natural floor band ~86-100 m\u00b2; designed against the",
+    "generous test: 11.0 x 19.0 m lot (2.0 m setbacks) \u2192 7.0 x 15.0 m shell",
+    "(105 m\u00b2); happiest at 7.0 x 14.0-15.0. Regime: single-detached, no firewalls.",
+    "",
+    "Layout intent (west = left, front = bottom):",
+    "  Rear:  [master (full width, rear lanai)        ]",
+    "  ..     [br3     | HALL | ensuite               ]",
+    "  ..     [br2     | HALL | common T&B            ]",
+    "  ..     [        |      | kitchen               ]",
+    "  Front: [great_room (entry, full width)         ]",
+    "",
+    "Program: same three-sub-column parti as #2 but the east strip runs the full",
+    "depth as one wet bay \u2014 kitchen, common T&B, then ensuite, each sharing a",
+    "plumbing wall (single stack + vent for the entire house, the cheapest wet",
+    "layout of all twelve 3BR topologies). Master owns the full rear band and",
+    "opens through the rear wall to a lanai in the 2.0 m rear setback \u2014 the",
+    "deep-lot reward move. At 7.0 m width the west column holds 3.3 m bedrooms,",
+    "the corridor 1.0 m, the strip 2.2 m.",
+    "",
+    "Ventilation: west column vents west, strip vents east, master vents rear +",
+    "both sides. The generous depth also buys a linen/storage run along the",
+    "corridor at 14 m+ shells.",
+    "",
+    "Ensuite access: entered from master's band on the strip's south face \u2014 the",
+    "strip's rear cell belongs to the master suite even though it plumbs with",
+    "the service strip.",
+    "",
+    "Downscale behavior: below ~88 m\u00b2 the three-cell strip stops fitting \u2014",
+    "fallback to #2 (ds sibling), which drops the ensuite out of the strip into",
+    "master's alcove. Chain continues #2 \u2192 split_columns for compact shells.",
+    "",
+    "Carport policy (deferred): one side setback 2.0 \u2192 3.0 m later (lot +1.0 m);",
+    "mirror so the strip faces the carport for the shortest service path."
+  ]
+}

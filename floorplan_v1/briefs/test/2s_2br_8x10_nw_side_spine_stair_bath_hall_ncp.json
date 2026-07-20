@@ -1,0 +1,25 @@
+{
+  "intent": "COMPACT-FALLBACK AUTO-SWITCH proof: the HALL variant requested on an 8x10 lot (4x6 = 24 m\u00b2/floor, below its fallback_below_buildable_sqm: 28 threshold) must auto-route to the hall-less compact sibling with a compact_fallback suggestion attached \u2014 the hall isn't worth 15% of a compact floor even though it would technically fit. Expected result: identical plan to the direct hall-less brief, plus the routing note.",
+  "lot_width": 8.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "straight side-spine stair on the left wall",
+    "open great room (dining folds in) at front, kitchen at rear",
+    "both bedrooms upstairs, master at front",
+    "one T&B per floor",
+    "step off the stair into upstairs circulation, never a bedroom wall",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "2s/2br/narrow/2s_2br_nw_side_spine_stair_bath_hall.json",
+  "dining_counter": false
+}

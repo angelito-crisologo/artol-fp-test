@@ -1,0 +1,270 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_nw_side_corridor_baths_ds_hall_gr",
+  "label": "Narrow-shell 3BR / baths DISTRIBUTED with SIDE CORRIDOR and service strip — the canonical narrow parti: bedroom column west, 1.0 m corridor center, wet/service strip east; great_room (entry) spans the full front, master spans the full rear. Open great_room + kitchen (gr style). Tuned for the 6.5 x 13.0 m canonical shell.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "kitchen occupies the front of the east strip, open to the great_room over a counter (gr style)"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the corridor's front end mouths into the great_room (codebase rule: hallway↔great_room is always open)"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 (west column, first bedroom) doors east into the corridor"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 (west column, behind br2) doors east into the corridor"
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "standards stack front-to-rear in the west column — wall only"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master spans the full rear band — its door sits at the corridor's rear terminus"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common T&B (east strip, behind kitchen) doors west into the corridor"
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "kitchen and common stack on the east strip sharing the plumbing wall — stack 1"
+    },
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is an alcove at master's rear-west corner (west + rear yard venting) — stack 2, interior door from master"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "ensuite",
+      "b": "common",
+      "weight": 15,
+      "note": "pull master's alcove toward the east strip where depth allows, shortening the branch between the two stacks"
+    },
+    {
+      "a": "br3",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the shared bath directly across the corridor from the rear standard"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "br2",
+      "br3",
+      "master",
+      "ensuite"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/3br/narrow/1s_3br_nw_split_columns_baths_cl_lk.json",
+  "match_bedroom_widths": true,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": [
+    "br2",
+    "br3"
+  ],
+  "right_anchored": [
+    "kitchen",
+    "common"
+  ],
+  "rear_anchored": [
+    "master",
+    "ensuite"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "br2",
+      "br3",
+      "master"
+    ],
+    [
+      "great",
+      "hall",
+      "master"
+    ],
+    [
+      "kitchen",
+      "common",
+      "master"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_side_corridor_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 85
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "master_bedroom": {
+          "max_area_sqm": 14.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "The corridor + strip section costs 3.2 + 0.95 + 1.8 = ~6.0 m internal width — exactly the canonical 6.5 m shell's interior. Below that, the strip pinches under 1.8 m and the parti loses to split_columns; fall back rather than relax further. Master capped at 14 m² so the full-width rear band doesn't starve the standards."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR narrow catalog topology #2 — SIDE CORRIDOR with service strip, the",
+    "canonical narrow parti. Natural floor band ~80-92 m²; designed against the",
+    "canonical test: 10.5 x 17.0 m lot (2.0 m setbacks) → 6.5 x 13.0 m shell",
+    "(84.5 m²). Regime: single-detached, no firewalls.",
+    "",
+    "Layout intent (west = left, front = bottom):",
+    "  Rear:  [ensuite : master (full width)        ]",
+    "  ..     [br3     | HALL | common T&B          ]",
+    "  ..     [br2     | HALL | kitchen             ]",
+    "  Front: [great_room (entry, full width)       ]",
+    "",
+    "Program: three sub-columns behind the full-width great_room — bedroom column",
+    "west (~3.2 m: br2, br3), corridor center (~1.0 m), service strip east",
+    "(~1.9 m: kitchen open to great over the counter, then common T&B). The",
+    "corridor dies into master's door; master rewards the walk with the full",
+    "6.5 m rear band and rear-yard windows. Dirty kitchen + service sit in the",
+    "2.0 m rear setback behind the strip.",
+    "",
+    "Plumbing: kitchen+common share the east strip wall (stack 1); ensuite is",
+    "master's rear-west alcove (stack 2) — distributed, with a soft pull to",
+    "shorten the branch. Ventilation: west column vents the west yard, strip",
+    "vents east, master vents rear — no landlocked rooms (no-firewall premise).",
+    "",
+    "Scaling: at the generous shell (7.0 x 14+) the strip widens to a real galley",
+    "and the corridor gains storage; at compact it loses to split_columns —",
+    "fallback declared.",
+    "",
+    "Carport policy (deferred): widening one side setback 2.0 → 3.0 m (lot +1.0 m)",
+    "adds the carport later; mirror so the strip faces the carport side and the",
+    "kitchen/dirty-kitchen service path stays on the driveway."
+  ]
+}

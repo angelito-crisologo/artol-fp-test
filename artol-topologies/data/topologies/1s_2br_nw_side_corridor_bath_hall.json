@@ -1,0 +1,207 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_nw_side_corridor_bath_hall",
+  "label": "Narrow-shell 2BR / 1 bath, SIDE-CORRIDOR SHOTGUN \u2014 a single hallway runs the full depth of the house along one side; great_room, standard, master, common bath, and kitchen bud off it one after another from front (street) to rear, in that order. No room is ever reached through another room.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "open_plan",
+      "note": "hall's front end opens into great_room \u2014 no door, codebase rule: hallway\u2194public is always open-plan. This is also where the main entry sits."
+    },
+    {
+      "a": "great",
+      "b": "standard",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_public_wall",
+      "note": "great's rear wall = standard's front wall \u2014 geometry-only, NO door. Standard's actual access is the hall; this keeps the building a clean rectangle at the seam."
+    },
+    {
+      "a": "standard",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "standard's only door \u2014 opens onto the corridor."
+    },
+    {
+      "a": "standard",
+      "b": "master",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "standard and master stack directly front-to-rear along the room column \u2014 shared wall only, no door."
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's only door \u2014 opens onto the corridor. Master sits closer to the front than the rear pair (common bath + kitchen), same front-of-bedroom-wing convention used throughout the squarish/wide catalog."
+    },
+    {
+      "a": "master",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "master and common bath sit next in the sequence \u2014 shared wall only, no door. Acts as the acoustic buffer between the bedroom pair and the wet rooms at the rear."
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common bath's only door \u2014 opens onto the corridor. Both bedrooms reach it by walking the corridor, never through each other."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall \u2014 common bath and kitchen cluster at the rear end of the house, same wet-stack convention used in every other topology in the catalog."
+    },
+    {
+      "a": "kitchen",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "open_plan",
+      "note": "corridor's rear end opens into kitchen \u2014 no door. Kitchen is the terminal room of the shotgun sequence."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "standard",
+      "b": "common",
+      "weight": 20,
+      "note": "mild pull toward keeping standard's bath trip short, even though both bedrooms reach common with equal ease via the corridor."
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": true,
+  "left_anchored": [
+    "great",
+    "standard",
+    "master",
+    "common",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "hall"
+  ],
+  "rear_anchored": [
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "standard",
+      "master",
+      "common",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_side_corridor_bath_hall",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "hallway": {
+          "min_least_dim_m": 0.95,
+          "max_least_dim_m": 1.1
+        },
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "bedroom_standard": {
+          "max_least_dim_m": 3.2
+        },
+        "master_bedroom": {
+          "max_least_dim_m": 3.5
+        }
+      },
+      "preferred_apply": {
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Narrow lots spend their entire buildable width on ONE room column plus the corridor, so the corridor is pinned tight (0.95-1.1 m, just above the PH 0.9 m minimum) to leave as much of the remaining ~4-4.5 m for the room column itself. Bedroom least-dim is capped rather than floored here \u2014 on a narrow lot the constraint is width scarcity, not room size, so bedrooms are kept from ballooning sideways and instead should gain area from extra depth if the lot allows it."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Narrow-shell catalog topology \u2014 first entry for the 'narrow' target_shell (frontage ~6-8 m, depth ~15-20 m, roughly 1:2.2-1:3). Every squarish/wide topology splits the lot into two columns side by side; a narrow lot usually doesn't have the width budget for that, so this reuses the vertical-split idiom's DOORS and RULES but arranges the rooms in a single front-to-rear column instead, served by one corridor running the full depth along one side.",
+    "",
+    "Layout intent (canonical, corridor on the right):",
+    "  [GREAT (entry) | hall] \u2014 [STANDARD | hall] \u2014 [MASTER | hall] \u2014 [COMMON | hall] \u2014 [KITCHEN | hall]",
+    "  front / street  ---------------------------------------------------------->  rear",
+    "",
+    "This is deliberately the most conservative of the three narrow options: it reuses every door/hall idiom already validated in the squarish 'cl_hall_gr' family (bedroom_door, bath_door, hallway-always-open) rather than inventing anything new \u2014 just stretched lengthwise instead of applied as a mid-band strip.",
+    "",
+    "Trade-off: the corridor runs the ENTIRE depth of the house, so its area cost is paid once per room rather than once total. On the narrowest lots this can eat a meaningful share of the buildable width. See 1s_2br_nw_front_carport_spine_bath.json for a variant that shrinks the hall to just the bedroom wing.",
+    "",
+    "No carport declared \u2014 NCP form. Narrow lots rarely have side-setback room for a carport; a front-loaded covered parking bay can be added by trimming great_room's front depth and adding a building_void, similar to the front-carport option.",
+    "",
+    "Side setbacks: assumes at least one side approaches a firewall/party-wall condition (PD 1096) with no window openings on that face \u2014 the corridor side is a reasonable place to put that wall, since a corridor doesn't need windows the way a bedroom does.",
+    "",
+    "No fallback declared yet \u2014 first draft, not yet validated against a smaller-lot fallback."
+  ]
+}

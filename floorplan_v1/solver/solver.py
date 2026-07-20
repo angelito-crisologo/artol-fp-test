@@ -402,8 +402,16 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         void_yiv.append(vyi)
 
     # ---------- no overlap among rooms (+ building voids) ----------
-    model.AddNoOverlap2D(list(xiv.values()) + void_xiv,
-                         list(yiv.values()) + void_yiv)
+    # Multi-storey: one no-overlap group PER STOREY — rooms on different
+    # floors share the x/y plane and may freely coincide in plan. Building
+    # voids join every group (conservative: the upper shell does not
+    # cantilever over a carport notch — design decision D5). For the 1s
+    # catalog this reduces to exactly the old single global constraint.
+    storey_of_room = {r.id: r.storey for r in topology.rooms}
+    for s in range(1, topology.storeys + 1):
+        s_ids = [rid for rid in xiv if storey_of_room.get(rid, 1) == s]
+        model.AddNoOverlap2D([xiv[rid] for rid in s_ids] + void_xiv,
+                             [yiv[rid] for rid in s_ids] + void_yiv)
 
     # ---------- window access: each habitable room touches the envelope boundary ----------
     for r in topology.rooms:
@@ -472,7 +480,12 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     kitchen_front_override = (
         zs is not None and zs.axis == "horizontal" and zs.private_side == "rear"
     )
+    # Multi-storey: both pins are GROUND-FLOOR rules (the dirty kitchen sits
+    # in the rear setback at grade; the entry is on the street side at
+    # grade) — rooms on upper storeys are exempt.
     for r in topology.rooms:
+        if r.storey != 1:
+            continue
         if r.type == "kitchen":
             if kitchen_front_override and r.id in zs.public_rooms:
                 pass   # topology explicitly wants kitchen in the front band
@@ -521,16 +534,21 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
                     if rid in ry_end: model.Add(ry_end[rid] <= split)
 
     # ---------- master-bigger-than-standard hard rule ----------
-    # PH convention: the master bedroom is always larger than the other
+    # PH convention: the master bedroom is always larger than EVERY other
     # bedroom. Without this, priority weights only bias the objective; the
     # solver can still leave master at its hard minimum if other rooms grow
     # to absorb the available space. Enforce a strict ordering with a small
     # 1 sqm margin so master is meaningfully (not just incidentally) larger.
+    # Applied against ALL standard bedrooms (3BR+ programs have two or
+    # more — constraining only the first left the others free to outgrow
+    # the master, observed live on a squarish 2s 3BR at 10x10).
     master_id = next((r.id for r in topology.rooms if r.type == "master_bedroom"), None)
-    standard_id = next((r.id for r in topology.rooms if r.type == "bedroom_standard"), None)
+    standard_ids = [r.id for r in topology.rooms if r.type == "bedroom_standard"]
+    standard_id = standard_ids[0] if standard_ids else None
     if master_id is not None and standard_id is not None:
         margin_u2 = int(round(1.0 * 10000 / (GRID_CM * GRID_CM)))   # 1 sqm in grid units²
-        model.Add(area[master_id] >= area[standard_id] + margin_u2)
+        for sid in standard_ids:
+            model.Add(area[master_id] >= area[sid] + margin_u2)
 
         # Optional design intent: bedrooms share the same width. Used by
         # topologies where the geometry should look symmetric (e.g., bath block
@@ -652,8 +670,12 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # assume the LDK is a front-to-rear column (the catalog's default) and
     # actively contradict a topology whose LDK is meant to sit side-by-side
     # across a horizontal band instead (e.g. a front-back-split design).
+    # Multi-storey: LDK arrangement is a ground-floor concern (upper floors
+    # of the 2s catalog have no LDK rooms; if one ever does, these
+    # vertical-stacking rules would wrongly couple it to the GF kitchen).
     def _room_id_of_type(rt):
-        return next((r.id for r in topology.rooms if r.type == rt), None)
+        return next((r.id for r in topology.rooms
+                     if r.type == rt and r.storey == 1), None)
     kitchen_id_g = _room_id_of_type("kitchen")
     great_id     = _room_id_of_type("great_room")
     dining_id    = _room_id_of_type("dining_room")
@@ -718,8 +740,18 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     # typically pins kitchen's side explicitly via left_anchored/right_anchored
     # or zone_split instead, and this hard left/right-half split can directly
     # conflict with that self-declared placement.
-    kitchen_id = next((r.id for r in topology.rooms if r.type == "kitchen"), None)
-    if kitchen_id is not None and not topology.ldk_horizontal:
+    # Also skipped when the topology opts out via kitchen_side_pin: false —
+    # for topologies whose canonical form puts the kitchen on the NON-carport
+    # side (e.g. the 3BR hall-core pinwheel: kitchen column left_anchored,
+    # carport right). There the anchor list already breaks the mirror
+    # symmetry, and this pin would contradict it outright: the anchor holds
+    # kitchen's x0 on the left wall while the pin pushes its center into the
+    # right half. Mirroring still works — mirror_topology_x swaps the anchor
+    # lists, so the pinned side flips with the carport.
+    kitchen_id = next((r.id for r in topology.rooms
+                       if r.type == "kitchen" and r.storey == 1), None)
+    if kitchen_id is not None and not topology.ldk_horizontal \
+            and topology.kitchen_side_pin:
         if kitchen_side == "right":
             # 2 * center_x(kitchen) >= 2 * center_x(envelope)
             model.Add(rx[kitchen_id] + rx_end[kitchen_id] >= ex0 + ex1)
@@ -727,9 +759,46 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
             # 2 * center_x(kitchen) <= 2 * center_x(envelope)
             model.Add(rx[kitchen_id] + rx_end[kitchen_id] <= ex0 + ex1)
 
+    # ---------- stair ascent / run-axis decisions (multi-storey v2) ----------
+    # One straight flight per stair_vertical pair. The solver picks the
+    # ascent DIRECTION (which end of the run is the bottom); boarding and
+    # arrival are then opposite ends of the same rectangle by construction:
+    # stair_boarding edges must meet the flight at the bottom end,
+    # stair_arrival edges must meet the stairwell at the top end. This is
+    # what makes the model reject plans where the climb tops out against a
+    # bedroom wall with the upstairs hall at the wrong end.
+    #   asc  = True  -> bottom at the LOW coordinate end of the run axis
+    #   rv   = True  -> run axis is vertical (depth >= width; the always-on
+    #                   stair-run profile makes this comparison strict)
+    STAIR_END_ZONE_U = _u(1.0)   # a flank neighbor "meets an end" if its
+                                 # shared-wall overlap reaches within 1.0 m
+                                 # of that end (last tread + step-off width)
+    stair_asc, stair_rv = {}, {}
+    stairs_type_ids = {r.id for r in topology.rooms if r.type == "stairs"}
+    for adj in topology.adjacencies:
+        if adj.kind == "stair_vertical":
+            asc = model.NewBoolVar(f"stair_asc_{adj.a}_{adj.b}")
+            rv = model.NewBoolVar(f"stair_rv_{adj.a}_{adj.b}")
+            model.Add(rh[adj.a] >= rw[adj.a]).OnlyEnforceIf(rv)
+            model.Add(rh[adj.a] < rw[adj.a]).OnlyEnforceIf(rv.Not())
+            for rid in (adj.a, adj.b):
+                stair_asc[rid] = asc
+                stair_rv[rid] = rv
+
     # ---------- adjacency: shared wall of length >= min_shared_wall_m ----------
     for adj in topology.adjacencies:
         a, b = adj.a, adj.b
+        # Multi-storey vertical link: stair flight (GF) and stairwell opening
+        # (upper floor) occupy the IDENTICAL rectangle — a rect-equality, not
+        # a shared wall. The rooms are on different storeys, so the shared-
+        # wall disjunction below would be meaningless (and, combined with
+        # per-storey no-overlap, satisfiable in degenerate ways).
+        if adj.kind == "stair_vertical":
+            model.Add(rx[a] == rx[b])
+            model.Add(ry[a] == ry[b])
+            model.Add(rw[a] == rw[b])
+            model.Add(rh[a] == rh[b])
+            continue
         L = max(_u(adj.min_shared_wall_m), 1)
         # 4 orientations: a-right==b-left, a-left==b-right, a-rear==b-front, a-front==b-rear
         vr = model.NewBoolVar(f"adj_{a}_{b}_R")
@@ -762,6 +831,47 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         model.Add(right_hr - left_hr >= L).OnlyEnforceIf(hr)
 
         model.AddBoolOr([vr, vl, hf, hr])
+
+        # ---- stair boarding / arrival end constraints (multi-storey v2) ----
+        # On top of the shared wall above, the circulation neighbor must meet
+        # the stair at the correct END of the run: boarding at the bottom,
+        # arrival at the top (opposite ends, tied by the pair's shared ascent
+        # bool). An end-cap orientation (neighbor beyond the end wall) fixes
+        # the ascent direction outright; a flank orientation (neighbor along
+        # the run) must have its overlap reach within STAIR_END_ZONE_U of
+        # that end. All conditions are enforced per (orientation, run-axis,
+        # required-end) literal combination.
+        if adj.kind in ("stair_boarding", "stair_arrival"):
+            S = a if a in stairs_type_ids else b
+            if S in stair_asc:
+                asc, rv = stair_asc[S], stair_rv[S]
+                end_low = asc if adj.kind == "stair_boarding" else asc.Not()
+                end_high = end_low.Not()
+                s_is_a = (S == a)
+                Z = STAIR_END_ZONE_U
+                # Vertical run: hf/hr are end-caps, vr/vl are flanks.
+                #   hf wall sits at a.y0 == b.y1 -> S's LOW end iff S is a.
+                #   hr wall sits at a.y1 == b.y0 -> S's HIGH end iff S is a.
+                wall_low_y  = hf if s_is_a else hr
+                wall_high_y = hr if s_is_a else hf
+                model.AddBoolOr([end_low]).OnlyEnforceIf([wall_low_y, rv])
+                model.AddBoolOr([end_high]).OnlyEnforceIf([wall_high_y, rv])
+                model.Add(bot_v <= ry[S] + Z).OnlyEnforceIf([vr, rv, end_low])
+                model.Add(top_v >= ry_end[S] - Z).OnlyEnforceIf([vr, rv, end_high])
+                model.Add(bot_vl <= ry[S] + Z).OnlyEnforceIf([vl, rv, end_low])
+                model.Add(top_vl >= ry_end[S] - Z).OnlyEnforceIf([vl, rv, end_high])
+                # Horizontal run: vr/vl are end-caps, hf/hr are flanks.
+                #   vr wall sits at a.x1 == b.x0 -> S's HIGH end iff S is a.
+                #   vl wall sits at a.x0 == b.x1 -> S's LOW end iff S is a.
+                wall_low_x  = vl if s_is_a else vr
+                wall_high_x = vr if s_is_a else vl
+                rh_ = rv.Not()
+                model.AddBoolOr([end_low]).OnlyEnforceIf([wall_low_x, rh_])
+                model.AddBoolOr([end_high]).OnlyEnforceIf([wall_high_x, rh_])
+                model.Add(left_hf <= rx[S] + Z).OnlyEnforceIf([hf, rh_, end_low])
+                model.Add(right_hf >= rx_end[S] - Z).OnlyEnforceIf([hf, rh_, end_high])
+                model.Add(left_hr <= rx[S] + Z).OnlyEnforceIf([hr, rh_, end_low])
+                model.Add(right_hr >= rx_end[S] - Z).OnlyEnforceIf([hr, rh_, end_high])
 
     # ---------- objective ----------
     # Three tiers:
@@ -886,8 +996,23 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         y0 = _m(solver.Value(ry[r.id]))
         x1 = _m(solver.Value(rx_end[r.id]))
         y1 = _m(solver.Value(ry_end[r.id]))
+        # Resolve the ascent direction for stair rooms (the solver picked it
+        # via the stair_asc / stair_rv bools). Store it as a lot-space unit
+        # vector pointing bottom -> top of the run, for the renderer's UP/DN
+        # travel arrow. asc=True means the bottom sits at the LOW coordinate
+        # end of the run axis; rv=True means the run is vertical (along y).
+        stair_up = None
+        if r.id in stair_asc:
+            asc = solver.Value(stair_asc[r.id]) == 1
+            rv = solver.Value(stair_rv[r.id]) == 1
+            if rv:
+                stair_up = (0.0, 1.0 if asc else -1.0)
+            else:
+                stair_up = (1.0 if asc else -1.0, 0.0)
         rooms.append(Room(r.id, r.type, Rect(x0, y0, x1, y1), r.zone,
-                          mechanical_vent=getattr(r, "mechanical_vent", False)))
+                          mechanical_vent=getattr(r, "mechanical_vent", False),
+                          storey=getattr(r, "storey", 1),
+                          stair_up=stair_up))
 
     # ---------- carport placement ----------
     # If the topology declares a building_void with consumed_by="carport",

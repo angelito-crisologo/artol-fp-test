@@ -1,0 +1,22 @@
+{
+  "intent": "3BR / 2 bath front-back split, clustered wet stack, MINIMUM-boundary smoke test, no carport. 13.3x13 lot gives a 9.3x9.0 envelope = 83.7 m\u00b2 floor \u2014 the verified minimum (width is the binding constraint). Full-width public band front (living + kitchen, lk style), full-width private band rear (all three bedrooms), single contiguous wet stack (kitchen-common-ensuite) beside the hall in the mid band.",
+  "lot_width": 13.3,
+  "lot_depth": 13.0,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "clustered baths (ensuite + common) in one wet stack",
+    "central hall",
+    "open-plan living + kitchen (lk style)",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/3br/squarish/1s_3br_sq_front_back_split_baths_cl_hall_lk.json"
+}

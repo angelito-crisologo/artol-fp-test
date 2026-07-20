@@ -1,0 +1,192 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_nw_front_back_split_bath_gr",
+  "label": "Narrow-shell 1BR / 1 bath, FRONT-BACK SPLIT \u2014 public front band (great room left with the entry, galley kitchen along the right wall) and private rear band (bedroom left, bath right). Kitchen and great room sit side-by-side with a dining counter (breakfast bar) dividing them; kitchen does NOT touch the rear wall \u2014 the bath stacks behind it on the plumbing line. Based on the narrow-fp-01 reference plan (4 x 6 m unit).",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "bedroom",
+      "min_shared_wall_m": 0.9,
+      "kind": "bedroom_to_public_wall",
+      "note": "bedroom (rear-left) and great room (front-left) stack in the left column \u2014 shared wall only, NO door (2026-07-16 revision: the door moved to the kitchen seam so the great room's rear wall stays solid/furnishable). Bedroom keeps this public adjacency for the validator's bedroom-access rule."
+    },
+    {
+      "a": "bedroom",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_door",
+      "note": "bedroom's only door \u2014 opens west-to-east into the kitchen aisle at the rear end of the galley (2026-07-16 revision, per client direction: entering the bedroom from the kitchen side frees the great room's full wall run for furniture). 1.2 m floor = 0.9 m clear door + frames."
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "counter_divider": true,
+      "counter_side": "great",
+      "note": "great room and galley kitchen sit SIDE-BY-SIDE in the front band (vertical seam) \u2014 open plan with a dining counter (breakfast bar) along the shared edge. counter_side: 'great' puts the band INSIDE the great room (kitchen keeps its full 1.5 m aisle), with the 2 stools beside it in the great room. min_shared_wall_m 2.1 = 2 x 0.6 m seats + 0.9 m pass-through. Requires ldk_horizontal (the default kitchen/great must-stack rule would forbid this arrangement)."
+    },
+    {
+      "a": "bedroom",
+      "b": "bath",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "bedroom and bath share the rear band side-by-side \u2014 shared wall only, no door, per the locked no-bath-through-bedroom rule."
+    },
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_door",
+      "note": "bath (rear-right) stacks directly behind the kitchen (front-right) on one plumbing line \u2014 shared wet wall AND the bath's only door, opening south into the kitchen aisle. Same guest-accessible-without-crossing-the-bedroom pattern as the squarish 1BR sibling."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "private_area_floor": false,
+  "kitchen_rear_pin": false,
+  "ldk_horizontal": true,
+  "aspect_overrides": {
+    "kitchen": 3.2
+  },
+  "match_bedroom_widths": false,
+  "match_widths": [
+    [
+      "bedroom",
+      "great"
+    ],
+    [
+      "kitchen",
+      "bath"
+    ]
+  ],
+  "left_anchored": [
+    "bedroom",
+    "great"
+  ],
+  "right_anchored": [
+    "kitchen",
+    "bath"
+  ],
+  "rear_anchored": [
+    "bedroom",
+    "bath"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "bedroom"
+    ],
+    [
+      "kitchen",
+      "bath"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_front_back_split_bath_gr",
+      "when": {
+        "buildable_area_lt_sqm": 60
+      },
+      "auto_apply": {
+        "common_bath": {
+          "min_area_sqm": 2.6,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 9.5
+        }
+      },
+      "rationale": "Ultra-compact narrow unit (reference plan is 24 sqm total). Bath floors at 2.6 sqm (client soft minimum \u2014 the reference Banheiro is ~2.7) and caps at 4.5 so snap_gaps can't balloon it. Bedroom caps at 9.5 (reference Quarto is ~8.6) so the freed area flows to the great room instead of an oversized bedroom crowding the public band."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Second 1BR entry in the narrow catalog, and the first FRONT-BACK SPLIT narrow",
+    "topology. Modeled on the narrow-fp-01 reference plan (a 4.00 x 6.00 m unit,",
+    "24 sqm): public front band with the entry into the great room (Sala de",
+    "Estar/Jantar) and a galley kitchen (Cozinha) along the right wall; private",
+    "rear band with the bedroom (Quarto, ~3.45 m deep) left and the bath",
+    "(Banheiro, ~1.80 m deep) right. Dining happens at a counter between kitchen",
+    "and great room (counter_divider with 2 stools), not at a table.",
+    "",
+    "Layout intent (front at bottom):",
+    "  Rear:  [BEDROOM        | BATH   ]",
+    "  Front: [GREAT ROOM ][|||| KITCHEN]   (|||| = dining counter + stools)",
+    "         [porch/entry]",
+    "",
+    "Canonical fit: 8 x 10 m lot with standard 2 m setbacks -> exactly the",
+    "reference's 4 x 6 m envelope (shell ratio 0.67, 'deep' category).",
+    "",
+    "Global-rule overrides this topology depends on (all topology-scoped,",
+    "zero effect on the rest of the catalog):",
+    "  - kitchen_rear_pin: false \u2014 the bath stacks BEHIND the kitchen, so the",
+    "    hardcoded kitchen-touches-rear-wall pin is impossible here. The",
+    "    zone_split horizontal escape can't be used instead: the front/rear",
+    "    seam is STEPPED (bedroom ~3.45 deep vs bath ~1.8; kitchen ~4.2 vs",
+    "    great ~2.55), and zone_split needs one straight split line. This flag",
+    "    was added for exactly this topology (2026-07-16).",
+    "  - ldk_horizontal: true \u2014 kitchen and great room are side-by-side; the",
+    "    default LDK must-stack rule and the kitchen-right-half symmetry break",
+    "    both contradict that.",
+    "  - private_area_floor: false \u2014 single bedroom (~8.6 sqm) can never",
+    "    outweigh great+kitchen (~12+ sqm); same rationale as the squarish",
+    "    1BR sibling.",
+    "  - aspect_overrides kitchen 3.2 \u2014 the reference galley runs ~1.4 x 4.2",
+    "    (3:1), past the catalog's 2.5:1 kitchen cap.",
+    "  - kitchen mechanical_vent \u2014 the galley's exterior walls are the front",
+    "    (entry side) and right; on tight envelopes the window may not reach",
+    "    the 10% floor, and the open counter edge borrows the great room's",
+    "    light anyway.",
+    "",
+    "match_widths [bedroom,great] + [kitchen,bath] gives one straight vertical",
+    "seam between the left and right columns (the reference has a slightly",
+    "stepped seam \u2014 bath wider than kitchen \u2014 but the clean grid is within",
+    "~15 cm of the reference proportions and far more robust to solve).",
+    "",
+    "No dirty kitchen declared \u2014 the kitchen fronts the street side, so there",
+    "is no sensible rear dirty-kitchen placement; briefs should also set",
+    "kitchen_back_door: false (the kitchen's rear wall is interior, shared",
+    "with the bath). service_area stays available in the rear setback behind",
+    "the bath (shares the plumbing line).",
+    "",
+    "No fallback declared \u2014 the squarish 1BR sibling targets a different",
+    "shell category, so a shell-mismatch fallback would be misleading."
+  ]
+}

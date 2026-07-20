@@ -1,0 +1,273 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_wd_side_split_baths_cl_hall_gr",
+  "label": "Wide-shell 3BR / baths CLUSTERED with wing HALL node \u2014 3BR extension of the 2BR wd side_split family: a 2x2 private wing on the west (master + br2 front, ensuite+common wet block + br3 rear) with a central hall node, LDK column on the east. Open-plan great_room + kitchen (gr style).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite sits directly behind master (rear-west of the wing) \u2014 interior door on master's rear wall"
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "clustered wet block \u2014 ensuite (west) and common (east) share one plumbing wall in the wing's rear row"
+    },
+    {
+      "a": "master",
+      "b": "br2",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master (front-west) and br2 (front-east of the wing) share the front row \u2014 wall only, no door"
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master doors east into the hall node"
+    },
+    {
+      "a": "br2",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors south into the hall node"
+    },
+    {
+      "a": "br3",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 (rear-east of the wing) doors south-west into the hall node"
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common bath's only door opens south into the hall \u2014 both standards and guests reach it via the hall"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "hall's east face is an open mouth into the great_room (codebase rule: hallway\u2194great_room is always open). 0.9 m minimum single-person mouth"
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room (front) + kitchen (rear) stack in the east LDK column (gr style)"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "common",
+      "b": "kitchen",
+      "weight": 15,
+      "note": "pull the wet block toward the kitchen column so the dirty-kitchen/service run stays on one rear bay"
+    },
+    {
+      "a": "br3",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the shared bath beside the rear standard"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "br2",
+      "br3",
+      "common",
+      "hall"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/3br/wide/1s_3br_wd_half_spine_baths_ds_hall_lk.json",
+  "match_bedroom_widths": false,
+  "match_bath_widths": true,
+  "left_anchored": [
+    "master",
+    "ensuite"
+  ],
+  "right_anchored": [
+    "great",
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "ensuite",
+    "common",
+    "br3",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "ensuite"
+    ],
+    [
+      "br2",
+      "hall",
+      "common"
+    ],
+    [
+      "br2",
+      "hall",
+      "br3"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_side_split_baths_cl_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 105
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 1.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 15.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.5
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "The wing needs ~6.5-7.0 m of frontage (two bedroom columns) plus the LDK column \u2014 frontage, not area, binds first. Hall node floors at 1.0 m clear. When preferred relaxes, baths compress toward the hard min but the kitchen galley never drops below 1.8 m. If frontage < ~11.5 m, fall back to half_spine."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "3BR wide catalog topology #2 \u2014 SIDE_SPLIT with 2x2 wing and clustered wet",
+    "block. Direct 3BR extension of 1s_2br_wd_side_split_bath_hall_gr (the wing",
+    "gains a second column; the single bath becomes an ensuite+common block).",
+    "Natural floor band ~90-104 m\u00b2; canonical test shell 12.0 x 8.0 m; needs",
+    "frontage >= ~11.5 m.",
+    "",
+    "Layout intent (canonical, west = left):",
+    "  Rear:   [ensuite | common | br3   | kitchen        ]",
+    "  Middle: [(master)| HALL node     | (great cont.)  ]",
+    "  Front:  [master  | br2           | great (entry)  ]",
+    "",
+    "Program: the private wing is a 2x2 grid \u2014 front row [master | br2], rear row",
+    "[wet block | br3] \u2014 with a hall node carved at its center-east, mouthing east",
+    "into the great_room. Every bedroom door and the common bath door face the",
+    "hall node: best privacy of the wide family (no bedroom doors off the LDK).",
+    "The east column is the public LDK: great_room front (hosts entry), kitchen",
+    "rear.",
+    "",
+    "Ventilation: master + br2 front wall, ensuite + br3 rear wall, common vents",
+    "via high window to the rear (behind the wet block) or mechanical per PD 1096.",
+    "",
+    "Plumbing: single clustered stack (ensuite+common share the wet wall), softly",
+    "pulled toward the kitchen column so all wet services and the rear-setback",
+    "dirty kitchen land within one bay.",
+    "",
+    "Carport: NCP base form; declare via brief. Mirror when",
+    "brief.carport_side='left'."
+  ]
+}

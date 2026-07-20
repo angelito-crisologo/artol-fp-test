@@ -1,0 +1,197 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_nw_front_carport_spine_bath",
+  "label": "Narrow-shell 2BR / 1 bath, FRONT CARPORT + PUBLIC SPINE — a full-width covered carport sits ahead of the house at the street. Behind it, great_room forms a public spine running back to the kitchen. A short hall (only as deep as the three rooms it serves, not the whole house) branches off the spine to reach master, common bath, and standard.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form one open LDK, kitchen at the rear — the spine's public half."
+    },
+    {
+      "a": "great",
+      "b": "hall",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "hall branches off the spine — open mouth, no door, codebase rule: hallway↔public is always open-plan. This hall only serves the three-room bedroom wing, NOT the whole house depth (unlike 1s_2br_nw_side_corridor_bath_hall)."
+    },
+    {
+      "a": "hall",
+      "b": "master",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's only door — opens onto the short wing hall. Master sits closest to the spine, first in the wing."
+    },
+    {
+      "a": "master",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "master and common bath sit next to each other in the wing — shared wall only, no door."
+    },
+    {
+      "a": "hall",
+      "b": "common",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common bath's door opens onto the wing hall."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "min_solid_wall_m": 0.5,
+      "note": "common bath sits at the wing's rear edge, directly beside kitchen (the spine's other rear-facing room) — shared plumbing wall, same wet-stack convention as the rest of the catalog. This is the payoff for putting common at the REAR of the wing instead of the front."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "standard sits at the rear-most end of the wing, past common bath — shared wall only, no door."
+    },
+    {
+      "a": "hall",
+      "b": "standard",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "standard's only door — opens onto the wing hall, same as master. Reached without passing through master or common."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": true,
+  "left_anchored": [
+    "great",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "hall",
+    "master",
+    "common",
+    "standard"
+  ],
+  "rear_anchored": [
+    "kitchen",
+    "standard"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "hall",
+      "master",
+      "common",
+      "standard"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_front_carport_spine_bath",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "hallway": {
+          "min_least_dim_m": 0.95,
+          "max_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        }
+      },
+      "preferred_apply": {
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Because the hall here is short (wing-only, ~2-2.5 m of depth instead of the full house), it's capped at 3.0 sqm rather than floored aggressively — the space savings vs. the side-corridor variant is the whole point of this layout, so the solver shouldn't let the hall creep back up to full-length proportions."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "front_setback",
+      "covered": true,
+      "width_m": 5.0,
+      "depth_m": 5.5,
+      "note": "full-width, front-loaded — narrow lots rarely have side-setback room for a carport, so it sits ahead of the house at the street instead of beside it. Width matches the lot's buildable width rather than a fixed 3.0 m single-bay."
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Narrow-shell catalog topology — front-loaded carport variant. Solves two narrow-lot problems at once: (1) no side-setback width for a carport, and (2) a full-depth corridor is expensive on a lot that's already width-starved.",
+    "",
+    "Layout intent (canonical, bedroom wing on the right):",
+    "  [CARPORT, full width, at street] -> [GREAT (entry)] -> [KITCHEN | (hall -> MASTER -> COMMON -> STANDARD)]",
+    "  front / street  ------------------------------------------------------------------------------------->  rear",
+    "",
+    "Reuses the same 'reach the bath by walking through the public zone' idiom as squarish's side_split_bath_gr family, but the public zone doing the connecting is the great_room+kitchen spine, not a great_room flanked by two bedroom columns. The bedroom wing branches off that spine through a SHORT hall — only as deep as the three rooms it serves, not the whole house depth. That's the space-saving difference from 1s_2br_nw_side_corridor_bath_hall, which pays the corridor's area cost across the entire house length.",
+    "",
+    "Common bath is deliberately placed at the REAR of the wing, next to kitchen, so it can share a wet-stack wall with kitchen — same plumbing-efficiency convention used everywhere else in the catalog. Standard ends up rear-most; master, being closer to the spine, gets the shorter walk to the entry.",
+    "",
+    "Requires a bit more buildable width than the side-corridor option, since the bedroom wing and the kitchen have to sit side by side for at least part of the house's depth (not fully single-file). Best suited to the wider end of 'narrow' — roughly 7-8 m frontage rather than 6 m.",
+    "",
+    "No fallback declared yet — first draft."
+  ]
+}

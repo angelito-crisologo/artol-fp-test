@@ -1,0 +1,198 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_nw_front_back_split_bath",
+  "label": "Narrow-shell 2BR / 1 bath, FRONT-BACK split, no courtyard, no hall — great_room + kitchen occupy the front, master + standard + common bath sit side by side across the rear, each dooring directly across the boundary wall. Revised from an earlier courtyard version at the user's request: the open-air light well is removed and the boundary simply closes up.",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "standard",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master and standard sit side by side across the rear band — shared wall only, no door."
+    },
+    {
+      "a": "standard",
+      "b": "common",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common bath sits at the far end of the rear band, next to standard — shared wall only, no door."
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "master's front wall = great's rear wall at the boundary — direct door, no hall."
+    },
+    {
+      "a": "standard",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's front wall overlaps great's rear wall — direct door. 1.2 m floor gives 0.8 m clear door + frame each side."
+    },
+    {
+      "a": "common",
+      "b": "great",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "door_host_group": "common_access",
+      "note": "common bath's door opens into great — DEFAULT host of the 'common_access' door-host group. Both bedrooms reach it by stepping out into the public zone and back in, same idiom as squarish's side_split_bath_gr, rotated 90 degrees for the narrow shell."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "door_host_group": "common_access",
+      "door_allowed": true,
+      "door_kind": "bath_door",
+      "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall — common bath sits behind kitchen's edge. ALTERNATE host of 'common_access': door placed here instead of great when this wall >= 1.5 m."
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form one open public band at the front — no separate dining room in this variant."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "standard",
+      "b": "common",
+      "weight": 20,
+      "note": "pull common toward standard's wall when there's slack."
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "master",
+      "standard",
+      "common"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "match_bedroom_widths": false,
+  "left_anchored": [
+    "master",
+    "great"
+  ],
+  "right_anchored": [
+    "common",
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master",
+    "standard",
+    "common"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "master"
+    ],
+    [
+      "great",
+      "standard"
+    ],
+    [
+      "kitchen",
+      "common"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_nw_front_back_split_bath",
+      "when": {
+        "buildable_area_lt_sqm": 80
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "master_bedroom": {
+          "max_least_dim_m": 3.2
+        },
+        "bedroom_standard": {
+          "max_least_dim_m": 2.8
+        }
+      },
+      "rationale": "This layout needs master + standard + common bath to fit SIDE BY SIDE across the rear band, which is the one thing a narrow lot has the least of (width). Both bedrooms are capped on least-dim so the solver doesn't try to widen them at the expense of feasibility; extra buildable width should go to depth/area instead where possible."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "side_setback",
+      "covered": false,
+      "behind": "kitchen",
+      "note": "kitchen is in the front band here (near the street), same consequence as 1s_2br_sq_front_back_split_baths_ds_lk — no rear wall behind kitchen to extend a service tail from, so dirty kitchen moves to the side setback on kitchen's side instead."
+    },
+    {
+      "type": "service_area",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Narrow-shell catalog topology — front-back split, revised at the user's request to remove the open-air courtyard from the original concept. Without the courtyard as a buffer, the public/private boundary simply closes into a single wall, and every private room doors directly across it into great_room — same circulation idiom as 1s_2br_sq_front_back_split_baths_ds_lk, minus the ensuite (single common bath here, matching the simpler 1-bath program used across all three narrow options).",
+    "",
+    "Layout intent (canonical form, front/street at the bottom):",
+    "  Rear (private):  [master | standard | common (wet-core w/ kitchen)]",
+    "  Front (public):  [great_room (entry)              | kitchen        ]",
+    "",
+    "IMPORTANT FEASIBILITY CAVEAT: this is the least natural fit of the three narrow options. Options 1 and 2 both stack rooms front-to-rear, which leans into a narrow lot's real advantage — depth is abundant, width is scarce. This option does the opposite: it needs master, standard, AND common bath to fit side by side across ONE row of width. On a true 6 m-frontage lot that's very tight (three rooms in maybe 4.5-5 m of buildable width). Recommend treating this as the option that wants the WIDER end of 'narrow' (8 m+ frontage) rather than the narrowest lots — or treat it as a candidate for a future 2-story version, where the rear band's footprint only has to hold one bedroom per floor instead of two side by side.",
+    "",
+    "Removing the courtyard also removes its light/ventilation benefit for the middle of the house — worth keeping in mind if the eventual buildable envelope puts common bath or an interior wall far from both the front and rear exterior walls.",
+    "",
+    "No carport declared — side setbacks on a narrow lot rarely have room for one; see 1s_2br_nw_front_carport_spine_bath.json for the front-loaded carport pattern, which could be adapted here too.",
+    "",
+    "No fallback declared yet — first draft."
+  ]
+}
