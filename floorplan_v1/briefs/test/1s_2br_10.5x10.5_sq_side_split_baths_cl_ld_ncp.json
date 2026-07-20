@@ -1,0 +1,22 @@
+{
+  "intent": "2BR / 2 baths clustered LDK smoke test, no carport. 10.5x10.5 lot gives a 6.5x6.5 envelope = 42.25 m2 floor -- the empirical minimum feasible size for this topology (10x10 is infeasible). Master ensuite + common bath share a wet-core plumbing wall; bath block sits between standard (front) and master (rear). Public side is a real living/dining/kitchen split (not open-plan great_room) -- living, dining, and kitchen stack front-to-rear in one column, the solver's default LDK arrangement.",
+  "lot_width": 10.5,
+  "lot_depth": 10.5,
+  "bedroom_count": 2,
+  "must_haves": [
+    "master ensuite",
+    "common bath publicly accessible from living",
+    "clustered baths (ensuite + common share a plumbing wall)",
+    "separate living, dining, and kitchen rooms stacked front-to-rear",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"
+}

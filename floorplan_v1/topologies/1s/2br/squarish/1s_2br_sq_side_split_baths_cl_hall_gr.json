@@ -129,7 +129,7 @@
       "kitchen"
     ]
   },
-  "fallback_topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json",
+  "fallback_topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json",
   "match_bedroom_widths": true,
   "match_bath_widths": true,
   "bedroom_band_fills_width": true,

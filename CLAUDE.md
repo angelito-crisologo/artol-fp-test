@@ -157,7 +157,12 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 
 - `1s_2br_sq_side_split_bath_gr` — single bath, private column left
 - `1s_2br_sq_side_split_bath_pwd_gr` — single bath + powder room, 4-room rear band; buildable width ≤ ~11 m
-- `1s_2br_sq_side_split_baths_cl_gr` — clustered baths (ensuite + common), private column
+- `1s_2br_sq_side_split_baths_cl_ld` — clustered baths (ensuite + common), private column;
+  standard front / master rear; public side is separate living/dining/kitchen (stacked, solver's
+  default LDK arrangement), not a great room. True min 10.5×10.5. Replaced
+  `1s_2br_sq_side_split_baths_cl_gr` (deleted 2026-07-20 — the LD split proved strictly better:
+  smaller true minimum than cl_gr's 11×11, 0-warning solves everywhere tested). See
+  [[squarish-2br-lot-size-sweep]].
 - `1s_2br_sq_side_split_baths_cl_hall_gr` — clustered baths with hall
 - `1s_2br_sq_side_split_baths_ds_gr` — distributed baths, great room
 - `1s_2br_sq_side_split_baths_ds_ld` — distributed baths, living/dining
@@ -283,6 +288,8 @@ earlier the same day, no-hall-in-1BR rule), and — added 2026-07-19/20 — 4
 3BR-squarish-fix briefs + 8 multi-storey briefs).
 
 ## Recently completed
+
+**Squarish 2BR bath-cluster topology: gr → ld swap, cl_gr deleted (2026-07-20):** `1s_2br_sq_side_split_baths_cl_gr` had its master repositioned to the rear this session (kitchen's `min_least_dim_m: 1.8` auto_apply floor was the confirmed binding constraint making 11×11 infeasible in the old master-at-front orientation — diagnosed via one-at-a-time constraint relaxation, not guesswork). While investigating, confirmed a living/dining/kitchen-stacked (LDK) version of the same private-column program is not just feasible but strictly better — smaller true minimum (10.5×10.5 vs 11×11) and clean 0-warning solves at every tested size. Built as new topology `1s_2br_sq_side_split_baths_cl_ld`, then `cl_gr` was fully deleted (topology file, 9 `briefs/test/` fixtures + baselines, 3 sweep fixtures) now that `cl_ld` supersedes it. Repointed the one live runtime dependency — `1s_2br_sq_side_split_baths_cl_hall_gr`'s `fallback_topology` — from `cl_gr` to `cl_ld` (was dormant, never actually triggered by any existing brief, but would have silently 404'd on a future infeasible-hall-variant brief if left dangling). Also updated `ai/prompt.py`'s few-shot example and `lot_size_sweep.py`'s topology list. `cl_ld` fixtures: 9-file hand-curated sweep set (`_min`/`_med`/`_max` + 3 near-square mirror pairs at 10.5×10.5/11×11/12×12). 67/67 regression, 26/26 sweep fixtures pass.
 
 **Door-swing hinge fix — room_a vs actual swing target (2026-07-20):** `architectural_plan.py::_door_for_adjacency` picked the hinge corner using `room_a`'s own geometry regardless of which room the door swings into — silently wrong whenever the swinger isn't flush-aligned with room_a (routine upstairs: a narrow `hall2` spine inset within wider bedrooms). Fixed to evaluate corner-reality against the actual swinger, requiring the hinge to coincide with the swinger's real wall bound (not just "the swinger has a corner somewhere"). Verified visually (installed `cairosvg` + `PIL` in `.venv` for this — a same-function data check can't catch this class of bug). Not 2s-specific; touched 5 single-storey topologies too (all user-confirmed fine). Full trail in [[multistorey-v2]]. 73/73 regression, 33 baselines refreshed.
 

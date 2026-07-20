@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MIN) for 1s_2br_sq_side_split_baths_cl_ld -- 10.5x10.5 m lot, 42.25 m2 buildable floor. Hand-picked (user-specified 10.5x10.5/11x11/12x12 progression for perfect-square shells), matching the topology's real empirical minimum (10x10 is infeasible) -- same lot as its briefs/test/ canonical brief.",
+  "lot_width": 10.5,
+  "lot_depth": 10.5,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"
+}

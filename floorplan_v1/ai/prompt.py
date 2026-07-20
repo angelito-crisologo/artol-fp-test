@@ -258,11 +258,14 @@ EXEMPLARS = [
      "room combines living, dining, and kitchen.",
      "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_gr.json"),
     ("2-bedroom where the two bathrooms cluster together between the bedrooms "
-     "and share a plumbing wall — the bath block sits BETWEEN master and the "
-     "standard bedroom, acting as the acoustic buffer between sleeping spaces. "
-     "Ensuite is on the master side, common on the standard-bedroom side with "
-     "a public door off the great room.",
-     "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json"),
+     "and share a plumbing wall — the bath block sits BETWEEN the standard "
+     "bedroom (front) and master (rear), acting as the acoustic buffer between "
+     "sleeping spaces. Ensuite is on the master side, common on the "
+     "standard-bedroom side. Public zone is a separate living, dining, and "
+     "kitchen stacked front-to-rear rather than a combined great room — a "
+     "public door off the living room, and the master opens onto the dining "
+     "room.",
+     "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"),
     ("2-bedroom with strict separation between the public side and the private "
      "side (bedrooms+baths). Traditional sala-comedor-kusina: separate living, "
      "dining, and kitchen rooms rather than a combined great room. Distributed "

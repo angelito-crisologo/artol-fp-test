@@ -109,16 +109,16 @@
     <div class="thumb-name">1s_2br_sq_side_split_bath_pwd_gr</div>
     <div class="thumb-meta">Squarish<span class="pill pass sm">Verified</span></div>
   </div>
-</a><a class="thumb-card" href="#/topology/1s_2br_sq_side_split_baths_cl_gr" data-topology="1s_2br_sq_side_split_baths_cl_gr" data-shape="squarish">
-  <div class="thumb-media"><img src="plans/1s_2br_sq_side_split_baths_cl_gr.svg" alt="Floor plan: 1s_2br_sq_side_split_baths_cl_gr" loading="lazy"></div>
-  <div class="thumb-info">
-    <div class="thumb-name">1s_2br_sq_side_split_baths_cl_gr</div>
-    <div class="thumb-meta">Squarish<span class="pill pass sm">Verified</span></div>
-  </div>
 </a><a class="thumb-card" href="#/topology/1s_2br_sq_side_split_baths_cl_hall_gr" data-topology="1s_2br_sq_side_split_baths_cl_hall_gr" data-shape="squarish">
   <div class="thumb-media"><img src="plans/1s_2br_sq_side_split_baths_cl_hall_gr.svg" alt="Floor plan: 1s_2br_sq_side_split_baths_cl_hall_gr" loading="lazy"></div>
   <div class="thumb-info">
     <div class="thumb-name">1s_2br_sq_side_split_baths_cl_hall_gr</div>
+    <div class="thumb-meta">Squarish<span class="pill pass sm">Verified</span></div>
+  </div>
+</a><a class="thumb-card" href="#/topology/1s_2br_sq_side_split_baths_cl_ld" data-topology="1s_2br_sq_side_split_baths_cl_ld" data-shape="squarish">
+  <div class="thumb-media"><img src="plans/1s_2br_sq_side_split_baths_cl_ld.svg" alt="Floor plan: 1s_2br_sq_side_split_baths_cl_ld" loading="lazy"></div>
+  <div class="thumb-info">
+    <div class="thumb-name">1s_2br_sq_side_split_baths_cl_ld</div>
     <div class="thumb-meta">Squarish<span class="pill pass sm">Verified</span></div>
   </div>
 </a><a class="thumb-card" href="#/topology/1s_2br_sq_side_split_baths_ds_gr" data-topology="1s_2br_sq_side_split_baths_ds_gr" data-shape="squarish">
@@ -3409,341 +3409,9 @@
 </div>
     </div>
   </div>
-</div></section><section class="route-detail" id="page-1s_2br_sq_side_split_baths_cl_gr" data-topology="1s_2br_sq_side_split_baths_cl_gr" hidden><a class="back-link" href="#/">← Back to catalog</a>
-<div class="entry-head">
-  <span class="entry-num">No. 12 / 45</span>
-  <h2>1s_2br_sq_side_split_baths_cl_gr</h2>
-  <span class="pill pass">Verified</span>
-</div>
-<div class="doc-sub"><span class="mono">1s_2br_sq_side_split_baths_cl_gr</span> · single-storey · Squarish · 2 bed · 2 bath</div>
-<p class="doc-desc">Squarish 2BR / 2 baths — ensuite + common share a plumbing wall; bath block sits BETWEEN master (front) and standard (rear). Open-plan great_room + kitchen.</p><div class="subsheet">
-  <div class="subsheet-head"><h3>Definition</h3><span class="subsheet-file">1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json</span></div>
-  <div class="sheet-body">
-    <div class="prose">
-      <h4>Room program</h4>
-      <div class="legend"><div class="legend-item"><span class="swatch" style="background:#d9ead3"></span>Bedroom</div><div class="legend-item"><span class="swatch" style="background:#ead1dc"></span>Bath (any zone)</div><div class="legend-item"><span class="swatch" style="background:#cfe2f3"></span>Public / LDK</div></div>
-      <h4>Design notes</h4>
-      <p>v2 catalog topology #2 — 2BR / 2 baths CLUSTERED. Covers the 65-72 m² floor band (PH mid-market, one rung above single_bath_gr).</p><p>Program: 2BR with master ensuite + common bath. Both baths share a plumbing wall (wet_core). The bath BLOCK sits between master (front) and standard (rear) — it functions as the acoustic+privacy buffer between sleeping spaces. Common bath is publicly accessible via a door to the great_room so guests and standard use it without going through master.</p><p>Layout intent (canonical form — brief.carport_side='right'):   Front: [master              | great_room                          ]   Mid:   [ensuite | common    | great_room                          ]   Rear:  [standard            | kitchen                             ]</p><p>Both ensuite and common sit in the MIDDLE band (y between master.y_end and standard.y_start). They share a vertical plumbing wall (wet_core). Ensuite is on the LEFT (master side), common on the RIGHT (great-room side). Standard sits at the rear, accessed from the great_room via a 1.2 m+ shared wall (gives door clearance + frame on each side).</p><p>Zone classification per v2 convention: both ensuite and common are 'private' (spatially they sit inside the private wing — the wet core IS the bath block between bedrooms). Kitchen is 'public' (open-plan with great_room). The 55/45 private/public ratio constraint then balances the wing distribution.</p><p>Carport: 3.0 m wide x 6.0 m deep (Item 2 default single carport). The 1 m width + 4 m depth that exceed the setbacks become a building_void on the front-right corner — same L-shape pattern as topology #1.</p><p>When the brief sets carport_side='left', the runner mirrors the topology so the wet-core bay flips to the other side.</p>
-      <h4>Key adjacencies</h4>
-      <ul class="adj-list"><li><b>master ↔ ensuite</b> — ensuite is master's exclusive — door opens from master, no other way in<span class="kind">ensuite_door</span></li><li><b>ensuite ↔ common</b> — shared plumbing wall between the two baths — keeps all wet stacks in one bay<span class="kind">wet_core</span></li><li><b>common ↔ standard</b> — common touches standard's south face — the bath block acts as the acoustic buffer between bedrooms<span class="kind">bath_to_bedroom_wall</span></li><li><b>master ↔ great</b> — master door faces the great_room<span class="kind">bedroom_to_public</span></li><li><b>standard ↔ great</b> — standard door — 1.2 m floor gives 0.8 m clear door + frame on each side<span class="kind">bedroom_to_public</span></li><li><b>common ↔ great</b> — common is publicly accessible (used by standard via the great_room; also a guest WC)<span class="kind">bath_door</span></li><li><b>great ↔ kitchen</b> — great_room + kitchen are one open LDK (gr style)<span class="kind">open_plan</span></li></ul>
-      <h3>Notable overrides</h3><ul class="override-list"><li>lot_adjustment_profiles — size-conditional room-size overrides (compact_sq_side_split_baths_cl_gr).</li><li>match_bedroom_widths — solver forces master.width == standard.width.</li><li>match_bath_widths — solver forces the bath rooms' widths to match.</li><li>bedroom_band_fills_width — the bedroom band is forced to fill the full envelope width.</li></ul>
-    </div>
-    <details class="code-panel">
-  <summary class="code-panel-summary">
-    <span class="disclosure-tri" aria-hidden="true"></span>
-    <span class="code-panel-file"><b>1s_2br_sq_side_split_baths_cl_gr.json</b></span>
-    <span class="code-panel-meta">241 lines · 7.2 KB</span>
-  </summary>
-  <div class="code-panel-toolbar"><a class="download-link" href="data/topologies/1s_2br_sq_side_split_baths_cl_gr.json" download>Download</a><button class="copy-btn" data-copy-target="topo-1s_2br_sq_side_split_baths_cl_gr" type="button">Copy</button></div>
-  <pre class="code-scroll"><code id="topo-1s_2br_sq_side_split_baths_cl_gr" class="lang-json">{
-  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
-  "id": "1s_2br_sq_side_split_baths_cl_gr",
-  "label": "Squarish 2BR / 2 baths \u2014 ensuite + common share a plumbing wall; bath block sits BETWEEN master (front) and standard (rear). Open-plan great_room + kitchen.",
-  "target_shell": "squarish",
-  "rooms": [
-    {
-      "id": "master",
-      "type": "master_bedroom",
-      "zone": "private",
-      "size_priority": "master_bedroom"
-    },
-    {
-      "id": "ensuite",
-      "type": "ensuite_bath",
-      "zone": "private",
-      "size_priority": "service_and_baths"
-    },
-    {
-      "id": "standard",
-      "type": "bedroom_standard",
-      "zone": "private",
-      "size_priority": "other_bedrooms"
-    },
-    {
-      "id": "common",
-      "type": "common_bath",
-      "zone": "private",
-      "size_priority": "service_and_baths"
-    },
-    {
-      "id": "great",
-      "type": "great_room",
-      "zone": "public",
-      "size_priority": "public_LDK",
-      "hosts_entry": true
-    },
-    {
-      "id": "kitchen",
-      "type": "kitchen",
-      "zone": "public",
-      "size_priority": "public_LDK"
-    }
-  ],
-  "adjacencies": [
-    {
-      "a": "master",
-      "b": "ensuite",
-      "min_shared_wall_m": 0.8,
-      "kind": "ensuite_door",
-      "note": "ensuite is master's exclusive \u2014 door opens from master, no other way in"
-    },
-    {
-      "a": "ensuite",
-      "b": "common",
-      "min_shared_wall_m": 1.2,
-      "kind": "wet_core",
-      "note": "shared plumbing wall between the two baths \u2014 keeps all wet stacks in one bay"
-    },
-    {
-      "a": "common",
-      "b": "standard",
-      "min_shared_wall_m": 0.8,
-      "kind": "bath_to_bedroom_wall",
-      "note": "common touches standard's south face \u2014 the bath block acts as the acoustic buffer between bedrooms"
-    },
-    {
-      "a": "master",
-      "b": "great",
-      "min_shared_wall_m": 0.8,
-      "kind": "bedroom_to_public",
-      "note": "master door faces the great_room"
-    },
-    {
-      "a": "standard",
-      "b": "great",
-      "min_shared_wall_m": 1.2,
-      "kind": "bedroom_to_public",
-      "note": "standard door \u2014 1.2 m floor gives 0.8 m clear door + frame on each side"
-    },
-    {
-      "a": "common",
-      "b": "great",
-      "min_shared_wall_m": 0.7,
-      "kind": "bath_door",
-      "note": "common is publicly accessible (used by standard via the great_room; also a guest WC)"
-    },
-    {
-      "a": "great",
-      "b": "kitchen",
-      "min_shared_wall_m": 1.5,
-      "kind": "open_plan",
-      "note": "great_room + kitchen are one open LDK (gr style)"
-    }
-  ],
-  "soft_proximities": [
-    {
-      "a": "master",
-      "b": "common",
-      "weight": 20,
-      "note": "secondary pull \u2014 keeps the master-adjacent side of the wet core close to master"
-    }
-  ],
-  "entry_point": "great",
-  "zone_split": {
-    "axis": "vertical",
-    "private_side": "left",
-    "private_rooms": [
-      "master",
-      "ensuite",
-      "standard",
-      "common"
-    ],
-    "public_rooms": [
-      "great",
-      "kitchen"
-    ]
-  },
-  "match_bedroom_widths": true,
-  "match_bath_widths": true,
-  "bedroom_band_fills_width": true,
-  "left_anchored": [
-    "master",
-    "ensuite",
-    "standard"
-  ],
-  "right_anchored": [
-    "kitchen"
-  ],
-  "rear_anchored": [
-    "standard"
-  ],
-  "front_to_rear_stacks": [
-    [
-      "master",
-      "ensuite",
-      "standard"
-    ],
-    [
-      "master",
-      "common",
-      "standard"
-    ],
-    [
-      "great",
-      "kitchen"
-    ]
-  ],
-  "lot_adjustment_profiles": [
-    {
-      "name": "compact_sq_side_split_baths_cl_gr",
-      "when": {
-        "buildable_area_lt_sqm": 85
-      },
-      "auto_apply": {
-        "kitchen": {
-          "min_least_dim_m": 1.8
-        }
-      },
-      "preferred_apply": {
-        "ensuite_bath": {
-          "min_area_sqm": 3.0
-        },
-        "common_bath": {
-          "min_area_sqm": 3.0
-        },
-        "kitchen": {
-          "min_least_dim_m": 2.0
-        }
-      },
-      "rationale": "Soft floors are tiered by priority. auto_apply (always): kitchen width floored at 1.8 m \u2014 still a usable galley (above PD 1096's 1.5 m hard minimum) and the lowest the solver may shrink kitchen to. preferred_apply (tried first, relaxed on infeasibility together as a group): baths at 3.0 m\u00b2 preferred-low AND kitchen at 2.0 m generous galley width. On the tightest lots the runner relaxes the whole preferred group, surfacing a 'tiered_preferred_dropped' warning. Bath priority is implicit in this split: even when preferred relaxes, kitchen never drops below 1.8 m \u2014 but baths CAN drop toward the 1.2 m\u00b2 hard min if absolutely necessary."
-    }
-  ],
-  "setback_elements": [
-    {
-      "type": "carport",
-      "location": "side_setback",
-      "covered": false,
-      "width_m": 3.0,
-      "depth_m": 6.0
-    },
-    {
-      "type": "dirty_kitchen",
-      "location": "rear_setback",
-      "covered": false,
-      "behind": "kitchen"
-    },
-    {
-      "type": "service_area",
-      "location": "rear_setback",
-      "covered": false
-    },
-    {
-      "type": "lanai",
-      "location": "side_setback",
-      "covered": false
-    }
-  ],
-  "building_voids": [
-    {
-      "id": "carport_cut",
-      "location": "front_right",
-      "width_m": 1.0,
-      "depth_m": 4.0,
-      "consumed_by": "carport"
-    }
-  ],
-  "notes": [
-    "v2 catalog topology #2 \u2014 2BR / 2 baths CLUSTERED. Covers the 65-72 m\u00b2 floor",
-    "band (PH mid-market, one rung above single_bath_gr).",
-    "",
-    "Program: 2BR with master ensuite + common bath. Both baths share a plumbing",
-    "wall (wet_core). The bath BLOCK sits between master (front) and standard",
-    "(rear) \u2014 it functions as the acoustic+privacy buffer between sleeping spaces.",
-    "Common bath is publicly accessible via a door to the great_room so guests",
-    "and standard use it without going through master.",
-    "",
-    "Layout intent (canonical form \u2014 brief.carport_side='right'):",
-    "  Front: [master              | great_room                          ]",
-    "  Mid:   [ensuite | common    | great_room                          ]",
-    "  Rear:  [standard            | kitchen                             ]",
-    "",
-    "Both ensuite and common sit in the MIDDLE band (y between master.y_end and",
-    "standard.y_start). They share a vertical plumbing wall (wet_core).",
-    "Ensuite is on the LEFT (master side), common on the RIGHT (great-room side).",
-    "Standard sits at the rear, accessed from the great_room via a 1.2 m+ shared",
-    "wall (gives door clearance + frame on each side).",
-    "",
-    "Zone classification per v2 convention: both ensuite and common are 'private'",
-    "(spatially they sit inside the private wing \u2014 the wet core IS the bath",
-    "block between bedrooms). Kitchen is 'public' (open-plan with great_room).",
-    "The 55/45 private/public ratio constraint then balances the wing distribution.",
-    "",
-    "Carport: 3.0 m wide x 6.0 m deep (Item 2 default single carport). The 1 m",
-    "width + 4 m depth that exceed the setbacks become a building_void on the",
-    "front-right corner \u2014 same L-shape pattern as topology #1.",
-    "",
-    "When the brief sets carport_side='left', the runner mirrors the",
-    "topology so the wet-core bay flips to the other side."
-  ]
-}
-</code></pre>
-</details>
-  </div>
-</div><div class="subsheet">
-  <div class="subsheet-head"><h3>Test brief</h3><span class="subsheet-file">test/1s_2br_12x12_sq_side_split_baths_cl_gr_ncp.json</span></div>
-  <div class="sheet-body">
-    <div class="prose">
-      <p>2BR / 2 baths clustered — LOWER band of the 65-72 m² floor range, NO CARPORT. 12x12 lot gives an 8x8 envelope = 64 m² floor (clean rectangle, no L-cut). Master ensuite + common bath share a wet-core plumbing wall; bath block sits between master (front) and standard (rear). Open-plan great room + kitchen.</p><p>Lot 12×12 m with 2 m front / 2 m rear / 2 m side setbacks gives a 8×8 m buildable envelope — 64 m² floor, requesting no carport. </p>
-      <table class="facts"><tr><th>Lot</th><td>12 × 12 m (144 m²)</td></tr><tr><th>Buildable envelope</th><td>8 × 8 m (64 m²)</td></tr><tr><th>Setbacks</th><td>2 / 2 / 2 / 2 m (front/rear/left/right)</td></tr><tr><th>Bedrooms requested</th><td>2</td></tr><tr><th>Carport</th><td>None requested</td></tr><tr><th>Occupancy class</th><td>R-1</td></tr></table>
-      <h4>Must-haves</h4><p>master ensuite · common bath publicly accessible from great room · clustered baths (ensuite + common share a plumbing wall) · open-plan great room + kitchen · no carport</p>
-    </div>
-    <details class="code-panel">
-  <summary class="code-panel-summary">
-    <span class="disclosure-tri" aria-hidden="true"></span>
-    <span class="code-panel-file"><b>1s_2br_12x12_sq_side_split_baths_cl_gr_ncp.json</b></span>
-    <span class="code-panel-meta">22 lines · 826 B</span>
-  </summary>
-  <div class="code-panel-toolbar"><a class="download-link" href="data/briefs/1s_2br_sq_side_split_baths_cl_gr.json" download>Download</a><button class="copy-btn" data-copy-target="brief-1s_2br_sq_side_split_baths_cl_gr" type="button">Copy</button></div>
-  <pre class="code-scroll"><code id="brief-1s_2br_sq_side_split_baths_cl_gr" class="lang-json">{
-  "intent": "2BR / 2 baths clustered \u2014 LOWER band of the 65-72 m\u00b2 floor range, NO CARPORT. 12x12 lot gives an 8x8 envelope = 64 m\u00b2 floor (clean rectangle, no L-cut). Master ensuite + common bath share a wet-core plumbing wall; bath block sits between master (front) and standard (rear). Open-plan great room + kitchen.",
-  "lot_width": 12.0,
-  "lot_depth": 12.0,
-  "bedroom_count": 2,
-  "must_haves": [
-    "master ensuite",
-    "common bath publicly accessible from great room",
-    "clustered baths (ensuite + common share a plumbing wall)",
-    "open-plan great room + kitchen",
-    "no carport"
-  ],
-  "avoid": [],
-  "occupancy_class": "R-1",
-  "setbacks": {
-    "front": 2.0,
-    "rear": 2.0,
-    "left": 2.0,
-    "right": 2.0
-  },
-  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json"
-}
-</code></pre>
-</details>
-  </div>
-</div><div class="subsheet">
-  <div class="subsheet-head"><h3>Rendered output</h3><span class="subsheet-file">[hand-authored] using 1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json (no API call)</span></div>
-  <div class="sheet-body">
-    <div class="plan-sheet">
-      <div class="plan-sheet-head"><span>Floor plan · metres</span>
-        <span><a class="download-link" href="plans/1s_2br_sq_side_split_baths_cl_gr.svg" download>Download SVG</a> · Front (street) at bottom</span></div>
-      <div class="plan-sheet-body"><img src="plans/1s_2br_sq_side_split_baths_cl_gr.svg" alt="Floor plan: 1s_2br_sq_side_split_baths_cl_gr"></div>
-    </div>
-    <div class="prose">
-      <h4>Validator result</h4>
-      <div class="chips"><div class="chip-row"><span class="chip warn">Warning</span><span class="chip-text">preferred_apply adjustments did not fit '1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json' on this shell — relaxed to base auto_apply (e.g., baths held to hard minimum instead of preferred-low) <span class="code-inline">(tiered_preferred_dropped)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">R-1 front setback 2.00 m is below the IRR Rule VIII Table VIII.2 baseline of 4.5 m (LGU zoning may permit smaller — verify locally) <span class="code-inline">(setback_below_irr_baseline)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">common_bath 'common' has no exterior wall — must use mechanical ventilation (mark room.mechanical_vent=True) <span class="code-inline">(bath_needs_mech_vent)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">great_room: 24.8 sqm below preferred 26.0 sqm (satisfaction 94%) <span class="code-inline">(below_preferred)</span></span></div></div>
-      <h4>Room dimensions</h4>
-      <table class="dims"><tr><th>Room</th><th class="num">W × D</th><th class="num">Area</th></tr>
-<tr><td><span class="room-tag" style="background:#d9ead3"></span>Master bedroom</td><td class="num">4.00 × 3.45 m</td><td class="num">13.80 m²</td></tr><tr><td><span class="room-tag" style="background:#ead1dc"></span>Ensuite bath</td><td class="num">2.00 × 1.55 m</td><td class="num">3.10 m²</td></tr><tr><td><span class="room-tag" style="background:#d9ead3"></span>Standard bedroom</td><td class="num">4.00 × 3.00 m</td><td class="num">12.00 m²</td></tr><tr><td><span class="room-tag" style="background:#ead1dc"></span>Common bath</td><td class="num">2.00 × 1.55 m</td><td class="num">3.10 m²</td></tr><tr><td><span class="room-tag" style="background:#cfe2f3"></span>Great room</td><td class="num">4.00 × 6.20 m</td><td class="num">24.80 m²</td></tr><tr><td><span class="room-tag" style="background:#cfe2f3"></span>Kitchen</td><td class="num">4.00 × 1.80 m</td><td class="num">7.20 m²</td></tr></table>
-      <div class="stat-strip">
-  <div class="stat"><div class="stat-label">Envelope</div><div class="stat-value">64.0<small>m²</small></div></div>
-  <div class="stat"><div class="stat-label">Footprint</div><div class="stat-value">64.0<small>m²</small></div></div>
-  <div class="stat"><div class="stat-label">Occupancy</div><div class="stat-value">44.4<small>%</small></div></div>
-  <div class="stat"><div class="stat-label">Objective score</div><div class="stat-value">23.3</div></div>
-</div>
-    </div>
-  </div>
 </div></section><section class="route-detail" id="page-1s_2br_sq_side_split_baths_cl_hall_gr" data-topology="1s_2br_sq_side_split_baths_cl_hall_gr" hidden><a class="back-link" href="#/">← Back to catalog</a>
 <div class="entry-head">
-  <span class="entry-num">No. 13 / 45</span>
+  <span class="entry-num">No. 12 / 45</span>
   <h2>1s_2br_sq_side_split_baths_cl_hall_gr</h2>
   <span class="pill pass">Verified</span>
 </div>
@@ -3758,7 +3426,7 @@
       <p>v2 catalog topology #2 HALL-VARIANT — 2BR / 2 baths CLUSTERED with a mid-band HALLWAY tucked between master (front) and standard (rear) inside the bath block. Floor band ~78-90 m² (the hall is small, but the wider middle band it sits in pushes the natural footprint up from topology #2's 65-72 m² band).</p><p>Program: same clustered bath block (ensuite + common share a wet_core) and same front-master / rear-standard stack as topology #2. The difference is a hallway sized into the middle band, east of common and west of the great_room. Master's door is on its north wall (opens into the hall). Standard's door is on its south wall (opens into the hall). Common's east-wall door opens into the hall. The hall's east wall is open to the great_room (no door — codebase rule auto-casts hallway↔great_room to open_plan).</p><p>Layout intent (canonical, brief.carport_side='right'):   Front: [master                              | great_room               ]   Mid:   [ensuite | common  | HALL            | great_room               ]   Rear:  [standard                            | kitchen                  ]</p><p>Stack constraint: the new ['master','hall','standard'] front-to-rear stack forces the hall into the middle band between master and standard (NOT a full-depth strip along the great_room's west wall — that was the v1 hall geometry, which the user rejected as 'a long strip that goes from outer wall to outer wall').</p><p>Hall sizing: ~1.0 m wide x ~2.0 m deep ≈ 2.0 m², inside the hallway hard minimum (1.5 m²) and at the low end of the soft preferred range (2.5-6.0 m²). The mid-band thickness is set by the bath block; with 2.0 m bath-block depth the hall lands at ~2.0 m² — tight but a usable PH corridor.</p><p>Privacy gain over topology #2: bedrooms (master, standard) share NO walls with the great_room — bedroom doors face the hall, not the LDK. Common bath is no longer publicly accessible from the great_room; it's reached through the hall.</p><p>Carport: 3.0 m wide x 6.0 m deep (Item 2 default). The 1 m x 4 m exceeding the setbacks becomes a front-right building_void — same L-shape pattern as topology #2.</p><p>When brief.carport_side='left', the runner mirrors the topology so the private wing flips to the right side.</p>
       <h4>Key adjacencies</h4>
       <ul class="adj-list"><li><b>master ↔ ensuite</b> — ensuite is master's exclusive — interior door from master, west side of the bath block<span class="kind">ensuite_door</span></li><li><b>ensuite ↔ common</b> — shared plumbing wall — wet stacks in one bay<span class="kind">wet_core</span></li><li><b>common ↔ standard</b> — common's north face touches standard — bath block is the acoustic+privacy buffer between bedrooms<span class="kind">bath_to_bedroom_wall</span></li><li><b>master ↔ hall</b> — master door opens north into the hall — 1.0 m floor = 0.8 m clear + 2x 0.10 m frame stops<span class="kind">bedroom_door</span></li><li><b>common ↔ hall</b> — common bath door opens east into the hall — 0.8 m bath leaf + frame<span class="kind">bath_door</span></li><li><b>standard ↔ hall</b> — standard door opens south into the hall — 1.0 m = 0.8 m clear + frame<span class="kind">bedroom_door</span></li><li><b>hall ↔ great</b> — hall's east wall is an open mouth into the great_room (no door — codebase rule: hallway↔great_room is always open). 1.2 m floor = two-person flow at the mouth<span class="kind">open_plan</span></li><li><b>great ↔ kitchen</b> — great_room + kitchen are one open LDK (gr style)<span class="kind">open_plan</span></li></ul>
-      <h3>Notable overrides</h3><ul class="override-list"><li>lot_adjustment_profiles — size-conditional room-size overrides (compact_sq_side_split_baths_cl_hall_gr).</li><li>match_bedroom_widths — solver forces master.width == standard.width.</li><li>match_bath_widths — solver forces the bath rooms' widths to match.</li><li>bedroom_band_fills_width — the bedroom band is forced to fill the full envelope width.</li><li>fallback_topology — if the solver reports infeasibility on the brief's lot, retries with <code class="mono">1s_2br_sq_side_split_baths_cl_gr</code>.</li></ul>
+      <h3>Notable overrides</h3><ul class="override-list"><li>lot_adjustment_profiles — size-conditional room-size overrides (compact_sq_side_split_baths_cl_hall_gr).</li><li>match_bedroom_widths — solver forces master.width == standard.width.</li><li>match_bath_widths — solver forces the bath rooms' widths to match.</li><li>bedroom_band_fills_width — the bedroom band is forced to fill the full envelope width.</li><li>fallback_topology — if the solver reports infeasibility on the brief's lot, retries with <code class="mono">1s_2br_sq_side_split_baths_cl_ld</code>.</li></ul>
     </div>
     <details class="code-panel">
   <summary class="code-panel-summary">
@@ -3898,7 +3566,7 @@
       "kitchen"
     ]
   },
-  "fallback_topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json",
+  "fallback_topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json",
   "match_bedroom_widths": true,
   "match_bath_widths": true,
   "bedroom_band_fills_width": true,
@@ -4102,6 +3770,321 @@
   <div class="stat"><div class="stat-label">Footprint</div><div class="stat-value">76.5<small>m²</small></div></div>
   <div class="stat"><div class="stat-label">Occupancy</div><div class="stat-value">47.1<small>%</small></div></div>
   <div class="stat"><div class="stat-label">Objective score</div><div class="stat-value">25.4</div></div>
+</div>
+    </div>
+  </div>
+</div></section><section class="route-detail" id="page-1s_2br_sq_side_split_baths_cl_ld" data-topology="1s_2br_sq_side_split_baths_cl_ld" hidden><a class="back-link" href="#/">← Back to catalog</a>
+<div class="entry-head">
+  <span class="entry-num">No. 13 / 45</span>
+  <h2>1s_2br_sq_side_split_baths_cl_ld</h2>
+  <span class="pill pass">Verified</span>
+</div>
+<div class="doc-sub"><span class="mono">1s_2br_sq_side_split_baths_cl_ld</span> · single-storey · Squarish · 2 bed · 2 bath</div>
+<p class="doc-desc">Squarish 2BR / 2 baths, LD style -- private column (standard front / ensuite+common middle band / master rear), public column splits into living (front) + dining (mid) + kitchen (rear), all stacked front-to-rear -- the solver's default LDK arrangement, no ldk_horizontal needed.</p><div class="subsheet">
+  <div class="subsheet-head"><h3>Definition</h3><span class="subsheet-file">1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json</span></div>
+  <div class="sheet-body">
+    <div class="prose">
+      <h4>Room program</h4>
+      <div class="legend"><div class="legend-item"><span class="swatch" style="background:#d9ead3"></span>Bedroom</div><div class="legend-item"><span class="swatch" style="background:#ead1dc"></span>Bath (any zone)</div><div class="legend-item"><span class="swatch" style="background:#cfe2f3"></span>Public / LDK</div></div>
+      <h4>Design notes</h4>
+      <p>Created 2026-07-20 as an LDK split (living/dining/kitchen stacked front-to-rear, the solver's default LDK arrangement) of this bath- cluster program. Originally a sibling of great_room-style 1s_2br_sq_side_split_baths_cl_gr, which this topology proved strictly better than (smaller true minimum -- 10.5x10.5 vs 11x11 -- and clean 0-warning solves at every tested size), so cl_gr was deleted the same day and this became the sole topology for the program. Private column: standard front, ensuite+common middle band, master rear.</p><p>Layout intent (canonical form -- brief.carport_side='right'):   Front: [standard            | living                              ]   Mid:   [ensuite | common    | dining                              ]   Rear:  [master              | kitchen                             ]</p><p>master's and standard's doors go to whichever public room occupies that geometric role: standard-&gt;living (front), master-&gt;dining (dining sits where a great room's rear portion would reach into master's zone). common's public door goes to living, matching standard's proximity ('standard can use it without going through master').</p><p>No lot_adjustment_profiles -- untuned, not needed at the verified canonical sizes (true min 10.5x10.5; 0-warning solves at 11x11 and 12x12).</p>
+      <h4>Key adjacencies</h4>
+      <ul class="adj-list"><li><b>master ↔ ensuite</b> — ensuite is master's exclusive -- door opens from master, no other way in. Unchanged from the gr sibling.<span class="kind">ensuite_door</span></li><li><b>ensuite ↔ common</b> — shared plumbing wall between the two baths -- keeps all wet stacks in one bay. Unchanged from the gr sibling.<span class="kind">wet_core</span></li><li><b>common ↔ standard</b> — common touches standard's south face -- the bath block acts as the acoustic buffer between bedrooms. Unchanged from the gr sibling.<span class="kind">bath_to_bedroom_wall</span></li><li><b>standard ↔ living</b> — standard's door -- opens into living, its front-most public neighbor. Takes over the role standard&lt;-&gt;great played in the gr sibling.<span class="kind">bedroom_to_public</span></li><li><b>master ↔ dining</b> — master's door -- opens into dining, its rear-most public neighbor (dining sits where great_room's rear portion used to reach into master's zone). Takes over the role master&lt;-&gt;great played in the gr sibling.<span class="kind">bedroom_to_public</span></li><li><b>common ↔ living</b> — common is publicly accessible via living (used by standard and guests). Takes over the role common&lt;-&gt;great played in the gr sibling.<span class="kind">bath_door</span></li><li><b>living ↔ dining</b> — living and dining stack front-to-rear -- open mouth, no wall (ld style).<span class="kind">open_plan</span></li><li><b>dining ↔ kitchen</b> — dining and kitchen stack front-to-rear -- open pass-through, matches the solver's default kitchen+dining-must-stack rule directly.<span class="kind">open_plan</span></li></ul>
+      <h3>Notable overrides</h3><ul class="override-list"><li>match_bedroom_widths — solver forces master.width == standard.width.</li><li>match_bath_widths — solver forces the bath rooms' widths to match.</li><li>bedroom_band_fills_width — the bedroom band is forced to fill the full envelope width.</li></ul>
+    </div>
+    <details class="code-panel">
+  <summary class="code-panel-summary">
+    <span class="disclosure-tri" aria-hidden="true"></span>
+    <span class="code-panel-file"><b>1s_2br_sq_side_split_baths_cl_ld.json</b></span>
+    <span class="code-panel-meta">224 lines · 6.5 KB</span>
+  </summary>
+  <div class="code-panel-toolbar"><a class="download-link" href="data/topologies/1s_2br_sq_side_split_baths_cl_ld.json" download>Download</a><button class="copy-btn" data-copy-target="topo-1s_2br_sq_side_split_baths_cl_ld" type="button">Copy</button></div>
+  <pre class="code-scroll"><code id="topo-1s_2br_sq_side_split_baths_cl_ld" class="lang-json">{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_side_split_baths_cl_ld",
+  "label": "Squarish 2BR / 2 baths, LD style -- private column (standard front / ensuite+common middle band / master rear), public column splits into living (front) + dining (mid) + kitchen (rear), all stacked front-to-rear -- the solver's default LDK arrangement, no ldk_horizontal needed.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive -- door opens from master, no other way in. Unchanged from the gr sibling."
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "shared plumbing wall between the two baths -- keeps all wet stacks in one bay. Unchanged from the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common touches standard's south face -- the bath block acts as the acoustic buffer between bedrooms. Unchanged from the gr sibling."
+    },
+    {
+      "a": "standard",
+      "b": "living",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's door -- opens into living, its front-most public neighbor. Takes over the role standard&lt;-&gt;great played in the gr sibling."
+    },
+    {
+      "a": "master",
+      "b": "dining",
+      "min_shared_wall_m": 0.8,
+      "kind": "bedroom_to_public",
+      "note": "master's door -- opens into dining, its rear-most public neighbor (dining sits where great_room's rear portion used to reach into master's zone). Takes over the role master&lt;-&gt;great played in the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "living",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common is publicly accessible via living (used by standard and guests). Takes over the role common&lt;-&gt;great played in the gr sibling."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining stack front-to-rear -- open mouth, no wall (ld style)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen stack front-to-rear -- open pass-through, matches the solver's default kitchen+dining-must-stack rule directly."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "master",
+      "b": "common",
+      "weight": 20,
+      "note": "secondary pull -- keeps the master-adjacent side of the wet core close to master. Unchanged from the gr sibling."
+    }
+  ],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "standard",
+      "common"
+    ],
+    "public_rooms": [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  },
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "bedroom_band_fills_width": true,
+  "left_anchored": [
+    "standard",
+    "ensuite",
+    "master"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "standard",
+      "ensuite",
+      "master"
+    ],
+    [
+      "standard",
+      "common",
+      "master"
+    ],
+    [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Created 2026-07-20 as an LDK split (living/dining/kitchen stacked",
+    "front-to-rear, the solver's default LDK arrangement) of this bath-",
+    "cluster program. Originally a sibling of great_room-style",
+    "1s_2br_sq_side_split_baths_cl_gr, which this topology proved strictly",
+    "better than (smaller true minimum -- 10.5x10.5 vs 11x11 -- and clean",
+    "0-warning solves at every tested size), so cl_gr was deleted the same",
+    "day and this became the sole topology for the program. Private column:",
+    "standard front, ensuite+common middle band, master rear.",
+    "",
+    "Layout intent (canonical form -- brief.carport_side='right'):",
+    "  Front: [standard            | living                              ]",
+    "  Mid:   [ensuite | common    | dining                              ]",
+    "  Rear:  [master              | kitchen                             ]",
+    "",
+    "master's and standard's doors go to whichever public room occupies",
+    "that geometric role: standard-&gt;living (front), master-&gt;dining (dining",
+    "sits where a great room's rear portion would reach into master's",
+    "zone). common's public door goes to living, matching standard's",
+    "proximity ('standard can use it without going through master').",
+    "",
+    "No lot_adjustment_profiles -- untuned, not needed at the verified",
+    "canonical sizes (true min 10.5x10.5; 0-warning solves at 11x11 and",
+    "12x12)."
+  ]
+}
+</code></pre>
+</details>
+  </div>
+</div><div class="subsheet">
+  <div class="subsheet-head"><h3>Test brief</h3><span class="subsheet-file">test/1s_2br_10.5x10.5_sq_side_split_baths_cl_ld_ncp.json</span></div>
+  <div class="sheet-body">
+    <div class="prose">
+      <p>2BR / 2 baths clustered LDK smoke test, no carport. 10.5x10.5 lot gives a 6.5x6.5 envelope = 42.25 m2 floor -- the empirical minimum feasible size for this topology (10x10 is infeasible). Master ensuite + common bath share a wet-core plumbing wall; bath block sits between standard (front) and master (rear). Public side is a real living/dining/kitchen split (not open-plan great_room) -- living, dining, and kitchen stack front-to-rear in one column, the solver's default LDK arrangement.</p><p>Lot 10.5×10.5 m with 2 m front / 2 m rear / 2 m side setbacks gives a 6.5×6.5 m buildable envelope — 42.25 m² floor, requesting no carport. </p>
+      <table class="facts"><tr><th>Lot</th><td>10.5 × 10.5 m (110.25 m²)</td></tr><tr><th>Buildable envelope</th><td>6.5 × 6.5 m (42.25 m²)</td></tr><tr><th>Setbacks</th><td>2 / 2 / 2 / 2 m (front/rear/left/right)</td></tr><tr><th>Bedrooms requested</th><td>2</td></tr><tr><th>Carport</th><td>None requested</td></tr><tr><th>Occupancy class</th><td>R-1</td></tr></table>
+      <h4>Must-haves</h4><p>master ensuite · common bath publicly accessible from living · clustered baths (ensuite + common share a plumbing wall) · separate living, dining, and kitchen rooms stacked front-to-rear · no carport</p>
+    </div>
+    <details class="code-panel">
+  <summary class="code-panel-summary">
+    <span class="disclosure-tri" aria-hidden="true"></span>
+    <span class="code-panel-file"><b>1s_2br_10.5x10.5_sq_side_split_baths_cl_ld_ncp.json</b></span>
+    <span class="code-panel-meta">22 lines · 1.0 KB</span>
+  </summary>
+  <div class="code-panel-toolbar"><a class="download-link" href="data/briefs/1s_2br_sq_side_split_baths_cl_ld.json" download>Download</a><button class="copy-btn" data-copy-target="brief-1s_2br_sq_side_split_baths_cl_ld" type="button">Copy</button></div>
+  <pre class="code-scroll"><code id="brief-1s_2br_sq_side_split_baths_cl_ld" class="lang-json">{
+  "intent": "2BR / 2 baths clustered LDK smoke test, no carport. 10.5x10.5 lot gives a 6.5x6.5 envelope = 42.25 m2 floor -- the empirical minimum feasible size for this topology (10x10 is infeasible). Master ensuite + common bath share a wet-core plumbing wall; bath block sits between standard (front) and master (rear). Public side is a real living/dining/kitchen split (not open-plan great_room) -- living, dining, and kitchen stack front-to-rear in one column, the solver's default LDK arrangement.",
+  "lot_width": 10.5,
+  "lot_depth": 10.5,
+  "bedroom_count": 2,
+  "must_haves": [
+    "master ensuite",
+    "common bath publicly accessible from living",
+    "clustered baths (ensuite + common share a plumbing wall)",
+    "separate living, dining, and kitchen rooms stacked front-to-rear",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"
+}
+</code></pre>
+</details>
+  </div>
+</div><div class="subsheet">
+  <div class="subsheet-head"><h3>Rendered output</h3><span class="subsheet-file">[hand-authored] using 1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json (no API call)</span></div>
+  <div class="sheet-body">
+    <div class="plan-sheet">
+      <div class="plan-sheet-head"><span>Floor plan · metres</span>
+        <span><a class="download-link" href="plans/1s_2br_sq_side_split_baths_cl_ld.svg" download>Download SVG</a> · Front (street) at bottom</span></div>
+      <div class="plan-sheet-body"><img src="plans/1s_2br_sq_side_split_baths_cl_ld.svg" alt="Floor plan: 1s_2br_sq_side_split_baths_cl_ld"></div>
+    </div>
+    <div class="prose">
+      <h4>Validator result</h4>
+      <div class="chips"><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">R-1 front setback 2.00 m is below the IRR Rule VIII Table VIII.2 baseline of 4.5 m (LGU zoning may permit smaller — verify locally) <span class="code-inline">(setback_below_irr_baseline)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">common_bath 'common' has no exterior wall — must use mechanical ventilation (mark room.mechanical_vent=True) <span class="code-inline">(bath_needs_mech_vent)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">master_bedroom: 9.4 sqm below preferred 12.0 sqm (satisfaction 57%) <span class="code-inline">(below_preferred)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">bedroom_standard: 7.0 sqm below preferred 9.0 sqm (satisfaction 33%) <span class="code-inline">(below_preferred)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">living_room: 8.6 sqm below preferred 16.0 sqm (satisfaction 26%) <span class="code-inline">(below_preferred)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">dining_room: 6.3 sqm below preferred 10.0 sqm (satisfaction 7%) <span class="code-inline">(below_preferred)</span></span></div><div class="chip-row"><span class="chip warn">Suggestion</span><span class="chip-text">kitchen: 4.7 sqm below preferred 6.0 sqm (satisfaction 55%) <span class="code-inline">(below_preferred)</span></span></div></div>
+      <h4>Room dimensions</h4>
+      <table class="dims"><tr><th>Room</th><th class="num">W × D</th><th class="num">Area</th></tr>
+<tr><td><span class="room-tag" style="background:#d9ead3"></span>Master bedroom</td><td class="num">3.50 × 2.70 m</td><td class="num">9.45 m²</td></tr><tr><td><span class="room-tag" style="background:#ead1dc"></span>Ensuite bath</td><td class="num">1.75 × 1.80 m</td><td class="num">3.15 m²</td></tr><tr><td><span class="room-tag" style="background:#d9ead3"></span>Standard bedroom</td><td class="num">3.50 × 2.00 m</td><td class="num">7.00 m²</td></tr><tr><td><span class="room-tag" style="background:#ead1dc"></span>Common bath</td><td class="num">1.75 × 1.80 m</td><td class="num">3.15 m²</td></tr><tr><td><span class="room-tag" style="background:#cfe2f3"></span>Living room</td><td class="num">3.00 × 2.85 m</td><td class="num">8.55 m²</td></tr><tr><td><span class="room-tag" style="background:#cfe2f3"></span>Dining room</td><td class="num">3.00 × 2.10 m</td><td class="num">6.30 m²</td></tr><tr><td><span class="room-tag" style="background:#cfe2f3"></span>Kitchen</td><td class="num">3.00 × 1.55 m</td><td class="num">4.65 m²</td></tr></table>
+      <div class="stat-strip">
+  <div class="stat"><div class="stat-label">Envelope</div><div class="stat-value">42.2<small>m²</small></div></div>
+  <div class="stat"><div class="stat-label">Footprint</div><div class="stat-value">42.2<small>m²</small></div></div>
+  <div class="stat"><div class="stat-label">Occupancy</div><div class="stat-value">38.3<small>%</small></div></div>
+  <div class="stat"><div class="stat-label">Objective score</div><div class="stat-value">13.3</div></div>
 </div>
     </div>
   </div>
@@ -8863,7 +8846,7 @@
       <h4>Room program</h4>
       <div class="legend"><div class="legend-item"><span class="swatch" style="background:#d9ead3"></span>Bedroom</div><div class="legend-item"><span class="swatch" style="background:#ead1dc"></span>Bath (any zone)</div><div class="legend-item"><span class="swatch" style="background:#cfe2f3"></span>Public / LDK</div></div>
       <h4>Design notes</h4>
-      <p>Wide-shell catalog topology — 2BR / 2 baths DISTRIBUTED, no hall. Sibling of 1s_2br_wd_side_split_baths_ds_hall_gr with the hall removed: both bedrooms door directly into the great room (same direct-access idiom master already used), and common bath picks up a second direct door onto the great room instead of routing through hall. Mirrors the squarish 1s_2br_sq_side_split_baths_ds_gr pattern, brought into the wide shell.</p><p>Floor band: roughly 65-85 sqm buildable — same territory as the hall variant and side_split_baths_cl_gr, sized against 14x11 to 15x12 m lots.</p><p>Layout intent (canonical form — brief.carport_side='right' or 'none'):   Rear band:   [standard          | common (wet)      | kitchen ]   Mid band:    [ensuite           |                   | great (cont.) ]   Front band:  [master            |   GREAT ROOM (direct doors from both bedrooms)  ]</p><p>Two sub-columns (no separate mid/hall column, unlike the hall variant):   - LEFT  (~3-3.5 m): [master front, ensuite mid, standard rear] — bedroom column, same distributed stack as squarish ds_gr/ds_ld   - RIGHT (~5.5-6.5 m): [great_room front+mid, kitchen rear] — LDK column, with common bath tucked at the rear boundary next to kitchen</p><p>Master and standard access: both door directly into the great room — no hall buffer for either bedroom.</p><p>Common bath access: ONE actual door, from the great room — the standard&lt;-&gt;common adjacency above is declared (for geometry pull) but always gets suppressed to a wall by architectural_plan.py's generic bedroom&lt;-&gt;common-bath rule, same as the squarish ds_gr sibling. So standard's route to the bath is through the great room, same as everyone else's.</p><p>Wet stack: common bath's east wall = kitchen's west wall (wet_core). Combined with the rear-setback dirty kitchen, all wet utilities land in one rear-east bay, same as every other topology in the catalog.</p><p>Carport: not declared in the base topology — NCP form, consistent with the other wide topologies. To add a side carport, add a building_void at front_right. For a front-parallel carport, brief.carport_side='front' bumps the front setback to 3 m. When brief.carport_side='left', the runner mirrors the topology so the LDK ends up on the left and the bedroom column on the right.</p><p>No fallback_topology declared — matches the squarish ds_gr sibling, which also omits one.</p>
+      <p>Wide-shell catalog topology — 2BR / 2 baths DISTRIBUTED, no hall. Sibling of 1s_2br_wd_side_split_baths_ds_hall_gr with the hall removed: both bedrooms door directly into the great room (same direct-access idiom master already used), and common bath picks up a second direct door onto the great room instead of routing through hall. Mirrors the squarish 1s_2br_sq_side_split_baths_ds_gr pattern, brought into the wide shell.</p><p>Floor band: roughly 65-85 sqm buildable — same territory as the hall variant and side_split_baths_cl_ld, sized against 14x11 to 15x12 m lots.</p><p>Layout intent (canonical form — brief.carport_side='right' or 'none'):   Rear band:   [standard          | common (wet)      | kitchen ]   Mid band:    [ensuite           |                   | great (cont.) ]   Front band:  [master            |   GREAT ROOM (direct doors from both bedrooms)  ]</p><p>Two sub-columns (no separate mid/hall column, unlike the hall variant):   - LEFT  (~3-3.5 m): [master front, ensuite mid, standard rear] — bedroom column, same distributed stack as squarish ds_gr/ds_ld   - RIGHT (~5.5-6.5 m): [great_room front+mid, kitchen rear] — LDK column, with common bath tucked at the rear boundary next to kitchen</p><p>Master and standard access: both door directly into the great room — no hall buffer for either bedroom.</p><p>Common bath access: ONE actual door, from the great room — the standard&lt;-&gt;common adjacency above is declared (for geometry pull) but always gets suppressed to a wall by architectural_plan.py's generic bedroom&lt;-&gt;common-bath rule, same as the squarish ds_gr sibling. So standard's route to the bath is through the great room, same as everyone else's.</p><p>Wet stack: common bath's east wall = kitchen's west wall (wet_core). Combined with the rear-setback dirty kitchen, all wet utilities land in one rear-east bay, same as every other topology in the catalog.</p><p>Carport: not declared in the base topology — NCP form, consistent with the other wide topologies. To add a side carport, add a building_void at front_right. For a front-parallel carport, brief.carport_side='front' bumps the front setback to 3 m. When brief.carport_side='left', the runner mirrors the topology so the LDK ends up on the left and the bedroom column on the right.</p><p>No fallback_topology declared — matches the squarish ds_gr sibling, which also omits one.</p>
       <h4>Key adjacencies</h4>
       <ul class="adj-list"><li><b>master ↔ ensuite</b> — ensuite is master's exclusive — door on master's north wall, ensuite sits directly behind master in the bedroom column's mid band. Same distributed-bath idiom as the squarish ds catalog, brought into the wide shell.<span class="kind">ensuite_door</span></li><li><b>ensuite ↔ standard</b> — ensuite's north wall touches standard's south wall — no door, acoustic+privacy buffer between the two bedrooms.<span class="kind">bath_to_bedroom_wall</span></li><li><b>master ↔ great</b> — master's east wall = great room's west wall in the front band — a real door, no hall buffer.<span class="kind">bedroom_to_public</span></li><li><b>standard ↔ great</b> — standard's east wall = great room's west wall in the rear band — a real door, no hall buffer. With the hall removed, both bedrooms access the great room directly, same as the squarish distributed-bath sibling.<span class="kind">bedroom_to_public</span></li><li><b>standard ↔ common</b> — declared for adjacency/geometry purposes (pulls common next to standard) but architectural_plan.py's generic bedroom&lt;-&gt;common-bath rule always suppresses this into a wall, never a door — common baths are never directly bedroom-accessible. Same no-op declaration exists on the squarish ds_gr sibling. Standard's only route to common is via the great room door below.<span class="kind">bath_door</span></li><li><b>common ↔ great</b> — common bath's ONLY actual door — opens onto the great room, mirrors the squarish distributed-bath sibling's common↔great door. With the hall removed and the standard↔common door suppressed (see above), this is the sole way in or out of common bath.<span class="kind">bath_door</span></li><li><b>common ↔ kitchen</b> — shared plumbing wall — common bath and kitchen stack at the rear.<span class="kind">wet_core</span></li><li><b>great ↔ kitchen</b> — great_room + kitchen form one open LDK (gr style) — consistent with every wide-shell topology in the catalog so far; the shell's shallower depth doesn't comfortably support a separate living+dining ('ld') split.<span class="kind">open_plan</span></li></ul>
       <h3>Notable overrides</h3><ul class="override-list"><li>lot_adjustment_profiles — size-conditional room-size overrides (compact_wd_side_split_baths_ds_gr).</li><li>match_bedroom_widths — solver forces master.width == standard.width.</li><li>ensuite_alcove_joins_master — the strip beside a narrower ensuite is folded into master as an L-shaped alcove.</li></ul>
@@ -9078,7 +9061,7 @@
   "notes": [
     "Wide-shell catalog topology \u2014 2BR / 2 baths DISTRIBUTED, no hall. Sibling of 1s_2br_wd_side_split_baths_ds_hall_gr with the hall removed: both bedrooms door directly into the great room (same direct-access idiom master already used), and common bath picks up a second direct door onto the great room instead of routing through hall. Mirrors the squarish 1s_2br_sq_side_split_baths_ds_gr pattern, brought into the wide shell.",
     "",
-    "Floor band: roughly 65-85 sqm buildable \u2014 same territory as the hall variant and side_split_baths_cl_gr, sized against 14x11 to 15x12 m lots.",
+    "Floor band: roughly 65-85 sqm buildable \u2014 same territory as the hall variant and side_split_baths_cl_ld, sized against 14x11 to 15x12 m lots.",
     "",
     "Layout intent (canonical form \u2014 brief.carport_side='right' or 'none'):",
     "  Rear band:   [standard          | common (wet)      | kitchen ]",

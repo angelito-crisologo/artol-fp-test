@@ -34,7 +34,7 @@ OUT_DIR = os.path.join(_HERE, "output")
 TOPOLOGIES = [
     "1s/2br/squarish/1s_2br_sq_side_split_bath_gr.json",
     "1s/2br/squarish/1s_2br_sq_side_split_bath_pwd_gr.json",
-    "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_gr.json",
+    "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json",
     "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_hall_gr.json",
     "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_gr.json",
     "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json",

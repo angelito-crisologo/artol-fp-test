@@ -54,6 +54,19 @@ _(empty — a full regen was run 2026-07-20, see Applied history)_
 
 ## Applied history
 
+**2026-07-20 — Full regen (45 topologies, 32 verified, 13 not yet tested) — cl_gr → cl_ld swap**
+Ran `tools/topology_catalog/build_catalog.py` to pick up the deletion of
+`1s_2br_sq_side_split_baths_cl_gr` and its replacement,
+`1s_2br_sq_side_split_baths_cl_ld` (net topology count unchanged: 45 in,
+45 out). Verified: HTML well-formed (div tag balance 1706/1706), `cl_ld`'s
+gallery card + detail page render with "Verified" status and its own SVG
+plan, `cl_gr` no longer appears as a topology entry (only survives as a
+historical mention inside `cl_ld`'s own prose notes, expected). The build
+script doesn't prune orphaned per-topology files for deleted topologies —
+manually deleted 3 leftover `cl_gr` artifacts it left behind
+(`data/topologies/`, `data/briefs/`, `plans/` — one file each) that the
+regen itself didn't touch.
+
 **2026-07-20 — Full regen (45 topologies, 32 verified, 13 not yet tested)**
 Ran `tools/topology_catalog/build_catalog.py` to pick up the four 1BR LDK
 siblings' new canonical `briefs/test/` entries (previously only had

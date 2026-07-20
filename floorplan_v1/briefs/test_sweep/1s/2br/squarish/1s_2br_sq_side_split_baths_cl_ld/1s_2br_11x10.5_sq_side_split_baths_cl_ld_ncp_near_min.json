@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (near-square, min-tier) for 1s_2br_sq_side_split_baths_cl_ld -- 11x10.5 m lot, 45.5 m2 buildable floor (envelope 7.0x6.5, ratio 1.077, still squarish shell). Hand-picked; floor area sits between this topology's ratio-1.00 min (42.25 m2) and med (49 m2), closer to min -- mirrors near_min (10.5x11, same tag, unique by filename dims) on the other side of ratio 1.00.",
+  "lot_width": 11.0,
+  "lot_depth": 10.5,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"
+}

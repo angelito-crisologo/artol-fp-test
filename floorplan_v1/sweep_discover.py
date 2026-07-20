@@ -96,6 +96,11 @@ SPECS = {
     # --topology=<either id>` would need a SPECS entry re-added first --
     # not doing that accidentally regenerates the 88 m2 max these hand-
     # picked numbers replaced.
+    # 1s_2br_sq_side_split_baths_cl_gr was deleted 2026-07-20 -- replaced by
+    # 1s_2br_sq_side_split_baths_cl_ld (smaller true minimum, cleaner
+    # solves; see CLAUDE.md session handoff). cl_ld's fixtures are hand-
+    # picked (min/med/max + near-square pairs at 10.5x10.5/11x11/12x12),
+    # deliberately not in SPECS, same pattern as the notes above.
 }
 
 

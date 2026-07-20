@@ -1,0 +1,203 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_side_split_baths_cl_ld",
+  "label": "Squarish 2BR / 2 baths, LD style -- private column (standard front / ensuite+common middle band / master rear), public column splits into living (front) + dining (mid) + kitchen (rear), all stacked front-to-rear -- the solver's default LDK arrangement, no ldk_horizontal needed.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive -- door opens from master, no other way in. Unchanged from the gr sibling."
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "shared plumbing wall between the two baths -- keeps all wet stacks in one bay. Unchanged from the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common touches standard's south face -- the bath block acts as the acoustic buffer between bedrooms. Unchanged from the gr sibling."
+    },
+    {
+      "a": "standard",
+      "b": "living",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's door -- opens into living, its front-most public neighbor. Takes over the role standard<->great played in the gr sibling."
+    },
+    {
+      "a": "master",
+      "b": "dining",
+      "min_shared_wall_m": 0.8,
+      "kind": "bedroom_to_public",
+      "note": "master's door -- opens into dining, its rear-most public neighbor (dining sits where great_room's rear portion used to reach into master's zone). Takes over the role master<->great played in the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "living",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "note": "common is publicly accessible via living (used by standard and guests). Takes over the role common<->great played in the gr sibling."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining stack front-to-rear -- open mouth, no wall (ld style)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen stack front-to-rear -- open pass-through, matches the solver's default kitchen+dining-must-stack rule directly."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "master",
+      "b": "common",
+      "weight": 20,
+      "note": "secondary pull -- keeps the master-adjacent side of the wet core close to master. Unchanged from the gr sibling."
+    }
+  ],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["master", "ensuite", "standard", "common"],
+    "public_rooms": ["living", "dining", "kitchen"]
+  },
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "bedroom_band_fills_width": true,
+  "left_anchored": [
+    "standard",
+    "ensuite",
+    "master"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master"
+  ],
+  "front_to_rear_stacks": [
+    ["standard", "ensuite", "master"],
+    ["standard", "common", "master"],
+    ["living", "dining", "kitchen"]
+  ],
+  "lot_adjustment_profiles": [],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Created 2026-07-20 as an LDK split (living/dining/kitchen stacked",
+    "front-to-rear, the solver's default LDK arrangement) of this bath-",
+    "cluster program. Originally a sibling of great_room-style",
+    "1s_2br_sq_side_split_baths_cl_gr, which this topology proved strictly",
+    "better than (smaller true minimum -- 10.5x10.5 vs 11x11 -- and clean",
+    "0-warning solves at every tested size), so cl_gr was deleted the same",
+    "day and this became the sole topology for the program. Private column:",
+    "standard front, ensuite+common middle band, master rear.",
+    "",
+    "Layout intent (canonical form -- brief.carport_side='right'):",
+    "  Front: [standard            | living                              ]",
+    "  Mid:   [ensuite | common    | dining                              ]",
+    "  Rear:  [master              | kitchen                             ]",
+    "",
+    "master's and standard's doors go to whichever public room occupies",
+    "that geometric role: standard->living (front), master->dining (dining",
+    "sits where a great room's rear portion would reach into master's",
+    "zone). common's public door goes to living, matching standard's",
+    "proximity ('standard can use it without going through master').",
+    "",
+    "No lot_adjustment_profiles -- untuned, not needed at the verified",
+    "canonical sizes (true min 10.5x10.5; 0-warning solves at 11x11 and",
+    "12x12)."
+  ]
+}
