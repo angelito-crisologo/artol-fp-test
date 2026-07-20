@@ -1,0 +1,21 @@
+{
+  "intent": "1BR / 1 bath wide LDK smoke test, no carport. 11x8 lot gives a 7x4 envelope = 28 m2 floor -- the LDK sibling of 1s_1br_wd_split_wing_bath_gr, which stays compact-only (min is always the gr topology's job; this ldk sibling is infeasible at the gr topology's 10x8 canonical). West wet column (bath front/kitchen rear) unchanged from the gr sibling; middle column now stacks living (front, hosts entry) + dining (rear) instead of one great_room, mirroring the west column's own front/rear split -- dining ends up beside kitchen, living beside bath. Bedroom's door is hinged at the rear end (door_placement: high_corner), matching the gr sibling's fix.",
+  "lot_width": 11.0,
+  "lot_depth": 8.0,
+  "bedroom_count": 1,
+  "must_haves": [
+    "single common bath",
+    "bath door opens into living, not kitchen",
+    "living and dining stacked front-to-rear, hosting the entry",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_split_wing_bath_ld.json"
+}

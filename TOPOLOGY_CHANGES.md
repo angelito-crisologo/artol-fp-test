@@ -54,6 +54,16 @@ _(empty — a full regen was run 2026-07-20, see Applied history)_
 
 ## Applied history
 
+**2026-07-20 — Full regen (45 topologies, 32 verified, 13 not yet tested)**
+Ran `tools/topology_catalog/build_catalog.py` to pick up the four 1BR LDK
+siblings' new canonical `briefs/test/` entries (previously only had
+`briefs/test_sweep/` fixtures, which the catalog build doesn't read).
+Verified: HTML well-formed, header stats match (45/32/13), all four
+(`1s_1br_sq_side_split_bath_ld`, `1s_1br_nw_front_back_split_bath_ld`,
+`1s_1br_wd_side_split_bath_ld`, `1s_1br_wd_split_wing_bath_ld`) now show
+"Verified" with rendered plans (spot-checked
+`1s_1br_wd_side_split_bath_ld`). Verified-count 28→32, unverified 17→13.
+
 **2026-07-20 — Full regen (45 topologies, 28 verified, 17 not yet tested)**
 Ran `tools/topology_catalog/build_catalog.py`. Verified: HTML well-formed
 (tag-balance check), header stats match (45/28/17), gallery card + detail

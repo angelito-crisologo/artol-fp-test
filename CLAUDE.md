@@ -171,6 +171,26 @@ added 2026-07-16 — full detail in [[br1-topology-catalog]]):
 - `wd_split_wing_bath_gr` — wide, 10×8, wet end-column
 - `wd_side_split_bath_gr` — wide, 10×8, wet rear band, least override-hungry
 
+**Min-is-gr / med+max-is-ld pattern (2026-07-20):** every `_gr` topology
+above is now restricted to a single compact/min canonical brief — larger
+lots use a new `_ld` sibling (separate living/dining/kitchen) instead:
+- `sq_side_split_bath_ld` — squarish, 11×11 canonical, feasible 10×10–12×12
+- `nw_front_back_split_bath_ld` — narrow, 9×11 canonical (tight — bedroom
+  and dining both near hard floors, but COMPLIANT), feasible 9×11–10×12
+- `wd_side_split_bath_ld` — wide, 11×8 canonical, feasible 11×8/12×9 only
+  (10×8 infeasible); needed `ldk_horizontal: true` (living sits beside
+  dining, not in front of it — conflicts with the solver's default LDK
+  stacking rule) and `mechanical_vent: true` on living
+- `wd_split_wing_bath_ld` — wide, 11×8 canonical, feasible at both med/max,
+  same `mechanical_vent` fix on living
+
+All four now have real `briefs/test/` canonical briefs + `test_baselines/`
+entries (graduated from `briefs/test_sweep/`-only proof-of-concept).
+`wd_split_wing_bath_gr` and its `_ld` sibling also got a door-hinge fix
+(`door_placement: "high_corner"` on the bedroom's door) moving it from
+next to the front entry to the rear near the kitchen/counter. Full trail
+in [[br1-topology-catalog]].
+
 **Locked rule (2026-07-20): no hall in any 1BR topology.** A hall earns its
 keep by keeping cross-bedroom traffic out of each other's way — with only
 one bedroom there's no cross-traffic to manage, so it's just circulation
@@ -253,12 +273,14 @@ above and [[multistorey-topology-authoring]] for how to author more):
   all-standards rule raised the 1s hall-core ccp minimum: its brief
   re-tuned 13.5×14 → 13.5×14.5; 9 baselines refreshed deliberately.
 
-**Test suite status:** 71 pass, 0 fail, 0 error (includes 17 minimum-boundary
+**Test suite status:** 75 pass, 0 fail, 0 error (includes 17 minimum-boundary
 briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]],
-6 1BR test briefs (down from 8 — `wd_side_split_bath_hall_gr` and
-`nw_side_corridor_bath_hall` both removed 2026-07-20, no-hall-in-1BR rule),
-and — added 2026-07-19/20 — 4 3BR-squarish-fix briefs +
-8 multi-storey briefs).
+10 1BR test briefs (6 gr/compact + 4 new ld/med — the four new LDK
+siblings graduated from `briefs/test_sweep/`-only to real `briefs/test/`
+canonical briefs 2026-07-20, each with a fresh `test_baselines/` entry;
+`wd_side_split_bath_hall_gr` and `nw_side_corridor_bath_hall` were removed
+earlier the same day, no-hall-in-1BR rule), and — added 2026-07-19/20 — 4
+3BR-squarish-fix briefs + 8 multi-storey briefs).
 
 ## Recently completed
 

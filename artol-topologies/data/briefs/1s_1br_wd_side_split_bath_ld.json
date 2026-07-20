@@ -1,0 +1,21 @@
+{
+  "intent": "1BR / 1 bath wide LDK smoke test, no carport. 11x8 lot gives a 7x4 envelope = 28 m2 floor -- the LDK sibling of 1s_1br_wd_side_split_bath_gr, which stays compact-only (min is always the gr topology's job; this ldk sibling is infeasible at the gr topology's 10x8 canonical). Full-depth bedroom column; living + dining side-by-side in the front band, bath + kitchen side-by-side in the rear band -- living stacks with bath, dining stacks with kitchen. Needed ldk_horizontal: true and mechanical_vent: true on living (window-area warning at some sizes).",
+  "lot_width": 11.0,
+  "lot_depth": 8.0,
+  "bedroom_count": 1,
+  "must_haves": [
+    "single common bath",
+    "bath door opens into kitchen",
+    "living and dining side-by-side, hosting the entry",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_side_split_bath_ld.json"
+}
