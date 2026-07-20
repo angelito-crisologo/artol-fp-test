@@ -90,4 +90,36 @@
   }
   window.addEventListener('hashchange', applyRoute);
   applyRoute();
+
+  var lightbox = document.createElement('div');
+  lightbox.className = 'lightbox-overlay';
+  lightbox.hidden = true;
+  lightbox.innerHTML = '<button class="lightbox-close" type="button" aria-label="Close">✕</button>' +
+    '<img class="lightbox-img" alt="">';
+  document.body.appendChild(lightbox);
+  var lightboxImg = lightbox.querySelector('.lightbox-img');
+  var lightboxReturnFocus = null;
+
+  function openLightbox(img){
+    lightboxImg.src = img.currentSrc || img.src;
+    lightboxImg.alt = img.alt || '';
+    lightbox.hidden = false;
+    lightboxReturnFocus = document.activeElement;
+    lightbox.querySelector('.lightbox-close').focus();
+  }
+  function closeLightbox(){
+    if (lightbox.hidden) return;
+    lightbox.hidden = true;
+    lightboxImg.src = '';
+    if (lightboxReturnFocus && lightboxReturnFocus.focus) lightboxReturnFocus.focus();
+  }
+
+  document.addEventListener('click', function(e){
+    var img = e.target.closest('.plan-sheet-body img');
+    if (img) { openLightbox(img); return; }
+    if (!lightbox.hidden && e.target.closest('.lightbox-overlay')) { closeLightbox(); }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+  });
 })();

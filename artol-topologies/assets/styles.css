@@ -198,7 +198,15 @@ pre.code-scroll::-webkit-scrollbar{width:9px; height:9px;} pre.code-scroll::-web
 .plan-sheet-head{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid var(--rule); background:var(--surface-sunk); font-family:var(--font-mono); font-size:10.5px; color:var(--ink-soft); letter-spacing:.03em; text-transform:uppercase;}
 .plan-sheet-head .download-link{text-transform:none; font-size:10.5px; border:none; padding:0; margin-right:4px;}
 .plan-sheet-body{padding:18px; display:flex; justify-content:center; background:var(--surface);}
-.plan-sheet-body img{width:100%; max-width:460px; height:auto; display:block;}
+.plan-sheet-body img{width:100%; max-width:460px; height:auto; display:block; cursor:zoom-in;}
+
+.lightbox-overlay{position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:5vh 5vw; background:rgba(10,12,15,.82); cursor:zoom-out;}
+.lightbox-overlay[hidden]{display:none;}
+.lightbox-img{max-width:100%; max-height:100%; background:#fff; box-shadow:0 12px 48px rgba(0,0,0,.5);}
+.lightbox-close{position:absolute; top:18px; right:22px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; color:var(--ink); background:var(--surface); border:1px solid var(--rule-strong); cursor:pointer;}
+.lightbox-close:hover{border-color:var(--accent); color:var(--accent-ink);}
+@media (prefers-reduced-motion:no-preference){.lightbox-overlay{animation:lightbox-fade .12s ease;}}
+@keyframes lightbox-fade{from{opacity:0;} to{opacity:1;}}
 
 table.dims{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:14px;}
 table.dims th{text-align:left; font-family:var(--font-mono); font-weight:600; font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); padding:6px 8px; border-bottom:1px solid var(--rule-strong);}
