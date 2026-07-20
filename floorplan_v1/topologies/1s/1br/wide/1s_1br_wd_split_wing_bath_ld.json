@@ -1,0 +1,158 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_wd_split_wing_bath_ld",
+  "label": "Wide-shell 1BR / 1 bath, LD style -- sibling of 1s_1br_wd_split_wing_bath_gr: same 3-column layout (west wet column, middle public column, east bedroom column), but the middle column's great_room splits into living (front, hosts entry) + dining (rear) stacked, mirroring the west column's own bath (front) + kitchen (rear) stack. Dining ends up side-by-side with kitchen (both rear row), living side-by-side with bath (both front row).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true,
+      "mechanical_vent": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "bath (front-west) and kitchen (rear-west) stack in the west column on one plumbing wall -- shared wall only, no door. Unchanged from the gr sibling."
+    },
+    {
+      "a": "bath",
+      "b": "living",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "bath's only door -- opens east into living near the entry, same role great played in the gr sibling. No bath-into-kitchen sanitary trade-off, same as the gr sibling."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining stack front-to-rear in the middle column -- open mouth, no wall (ld style). Mirrors the west column's own bath/kitchen stack."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen sit side-by-side (both in the rear row, middle vs west column) -- open pass-through, no wall."
+    },
+    {
+      "a": "bedroom",
+      "b": "living",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "door_placement": "high_corner",
+      "note": "bedroom's only door -- opens west into living. door_placement: high_corner (2026-07-20, matching the gr sibling's fix) hinges it at the REAR end of the living/bedroom seam (toward dining), away from the front entry door -- previously defaulted to the front (low) end, clustering both doors' swings right next to the entry."
+    },
+    {
+      "a": "bedroom",
+      "b": "dining",
+      "min_shared_wall_m": 0.9,
+      "kind": "wall_only",
+      "note": "bedroom is full-depth, so its west wall also borders dining (rear) -- shared wall only, no door."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "living",
+  "private_area_floor": false,
+  "ldk_horizontal": true,
+  "aspect_overrides": {
+    "bedroom": 2.0
+  },
+  "match_bedroom_widths": false,
+  "match_widths": [
+    ["bath", "kitchen"],
+    ["living", "dining"]
+  ],
+  "left_anchored": [
+    "bath",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "bedroom"
+  ],
+  "rear_anchored": [
+    "kitchen",
+    "dining"
+  ],
+  "front_to_rear_stacks": [
+    ["bath", "kitchen"],
+    ["living", "dining"]
+  ],
+  "lot_adjustment_profiles": [],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Sibling of 1s_1br_wd_split_wing_bath_gr, created 2026-07-20 to answer",
+    "whether an LDK split works for med/max wide lots if dining stacks front-",
+    "to-rear behind living (as opposed to the side_split_bath_ld sibling's",
+    "side-by-side living/dining, which needed ldk_horizontal to bypass a",
+    "hardcoded solver conflict). Here living/dining occupy the same front/rear",
+    "row split the west wet column already uses, so kitchen ends up beside",
+    "dining (both rear row) and bath beside living (both front row) --",
+    "ldk_horizontal is kept regardless, since the gr sibling already needs it",
+    "for the kitchen-on-the-west symmetry-break override, which incidentally",
+    "also skips the living/dining/kitchen default-stacking rule entirely.",
+    "",
+    "Layout intent (front at bottom):",
+    "  Rear:  [KITCHEN | DINING        | BEDROOM (cont.)]",
+    "  Front: [BATH    | LIVING        | BEDROOM        ]",
+    "                     [porch/entry]",
+    "",
+    "FEASIBILITY (2026-07-20): infeasible at min (10x8) -- min stays the gr",
+    "sibling's job by design, this topology is med/max only, same split as its",
+    "side_split_bath_ld cousin. Feasible at both 11x8 (med) and 12x9 (max).",
+    "living needed mechanical_vent: true -- at 11x8 it came back with 0.00 m2",
+    "window area (living's only exterior wall is the front, entry door",
+    "apparently consumed the whole segment); same accepted opt-out pattern",
+    "kitchen already uses everywhere in this catalog, and the same fix",
+    "side_split_bath_ld needed (there it hit at max instead of med -- which",
+    "specific size trips the window check isn't consistent, so the opt-out",
+    "is applied unconditionally rather than size-gated).",
+    "",
+    "No lot_adjustment_profiles yet -- untuned, both sizes solve clean without."
+  ]
+}

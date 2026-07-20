@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MAX) for 1s_1br_wd_split_wing_bath_ld -- 12x9 m lot, 40.0 m2 buildable floor. Round-number test point matching the gr sibling's max. living needed mechanical_vent: true to clear a window-area warning (applied unconditionally after the same issue showed up at a different size on this topology's side_split_bath_ld cousin).",
+  "lot_width": 12,
+  "lot_depth": 9,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_split_wing_bath_ld.json"
+}

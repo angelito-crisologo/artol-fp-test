@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MAX) for 1s_1br_nw_front_back_split_bath_ld -- 10x12 m lot, 48.0 m2 buildable floor. Hand-picked round-number test point (same 8x10/9x11/10x12 progression as the gr sibling). Solves comfortably here -- bedroom 10.0 m2, dining 10.0 m2 (both hit their preferred floor), living 18.0 m2 (mid-preferred), only 1 suggestion beyond the standard setback note.",
+  "lot_width": 10,
+  "lot_depth": 12,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/narrow/1s_1br_nw_front_back_split_bath_ld.json"
+}

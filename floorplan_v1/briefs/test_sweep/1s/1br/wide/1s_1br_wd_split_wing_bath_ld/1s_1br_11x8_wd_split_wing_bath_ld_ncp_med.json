@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MED) for 1s_1br_wd_split_wing_bath_ld -- 11x8 m lot, 28.0 m2 buildable floor. Round-number test point matching the gr sibling's med. min (10x8) is deliberately left to the gr sibling; this ldk sibling is infeasible there (confirmed empirically).",
+  "lot_width": 11,
+  "lot_depth": 8,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_split_wing_bath_ld.json"
+}

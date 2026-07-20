@@ -1,0 +1,16 @@
+{
+  "intent": "Sole sweep fixture for 1s_1br_wd_split_wing_bath_gr -- 10x8 m lot, 24.0 m2 buildable floor, matching this topology's canonical scale. Deliberately restricted to compact/min only (2026-07-20): larger sizes (med/max) are now served by the sibling LDK topology 1s_1br_wd_split_wing_bath_ld instead -- min is always the gr topology's job, ldk is med/max only (the ld sibling is infeasible at this 10x8 size, confirmed empirically).",
+  "lot_width": 10,
+  "lot_depth": 8,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/wide/1s_1br_wd_split_wing_bath_gr.json"
+}

@@ -1,0 +1,16 @@
+{
+  "intent": "Sole sweep fixture for 1s_1br_nw_front_rear_bath_gr -- 8x10 m lot, 24.0 m2 buildable floor, matching this topology's canonical scale. Deliberately restricted to this one compact point (2026-07-20): the bedroom is anchored to BOTH side walls (full-width by construction), which pins feasibility to a narrow ~7.5-8.0 m width corridor regardless of depth -- 9x11 and 10x12 (the round-number progression used for its sibling nw_front_back_split_bath_gr) are both infeasible here. No _med/_max siblings by design; larger sizes are expected to stay infeasible, not a gap to fill.",
+  "lot_width": 8,
+  "lot_depth": 10,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/narrow/1s_1br_nw_front_rear_bath_gr.json"
+}

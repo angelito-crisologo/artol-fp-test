@@ -60,7 +60,8 @@
       "b": "great",
       "min_shared_wall_m": 1.2,
       "kind": "bedroom_to_public",
-      "note": "bedroom's only door — opens west into the great room. Full-depth seam between the middle and east columns."
+      "door_placement": "high_corner",
+      "note": "bedroom's only door — opens west into the great room. Full-depth seam between the middle and east columns. door_placement: high_corner (2026-07-20) hinges it at the REAR end of the seam (near the kitchen/counter), away from the front entry door -- previously defaulted to the front (low) end, clustering both doors' swings right next to the entry."
     }
   ],
   "soft_proximities": [],

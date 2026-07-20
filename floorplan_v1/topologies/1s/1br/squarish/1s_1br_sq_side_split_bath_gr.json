@@ -227,6 +227,16 @@
     "starts at 45 sqm floor per floor-area-per-br, so larger lots should be offered",
     "2BR instead). 12.5x12.5 is achievable if ever needed by adding aspect_overrides",
     "{\"bath\": 2.5} (verified) -- the binding constraint there is bath's 2:1 aspect",
-    "cap limiting the private column's width."
+    "cap limiting the private column's width.",
+    "",
+    "RESTRICTED TO COMPACT SIZES (2026-07-20): this topology's own",
+    "briefs/test_sweep/ fixtures are now compact-only (8.5x8.5 and the",
+    "near-square-1.15 9.77x8.5 point; med/max removed). Larger lots are",
+    "expected to use the sibling LDK topology 1s_1br_sq_side_split_bath_ld",
+    "instead (full living/dining/kitchen split, feasible 10x10-12x12) rather",
+    "than this counter-divider great_room design stretched past its compact",
+    "scale -- same pattern as the narrow 1BR gr/ld siblings. This topology",
+    "itself still solves fine up to 12x12 (unchanged, no code removed), it's",
+    "just no longer the recommended choice there."
   ]
 }

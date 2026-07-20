@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (compact floor, near-square ratio 1.15) for 1s_1br_sq_side_split_bath_gr -- 9.77x8.5 m lot, 25.96 m2 buildable floor. Deliberately restricted to compact sizes only (2026-07-20) -- see the ratio-1.00 compact fixture's note for why; larger sizes (formerly r115_max at 12.07x10.5) are dropped, not superseded by an equivalent LD near-square variant yet.",
+  "lot_width": 9.77,
+  "lot_depth": 8.5,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json"
+}

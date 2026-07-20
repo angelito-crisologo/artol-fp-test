@@ -45,16 +45,14 @@ BRIEFS_SWEEP_DIR = os.path.join(_HERE, "briefs", "test_sweep")
 # `tag` is appended to filenames for non-primary ratio classes ("" for the
 # topology's natural/primary ratio -- no tag needed there).
 SPECS = {
-    "1s_1br_sq_side_split_bath_gr": {
-        "topology_path": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json",
-        "folder": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr",
-        "bedroom_count": 1,
-        "ratios": [
-            ("",     1.00, 6.0, 14.0, 0.5, "squarish", True),
-            ("r115", 1.15, 6.0, 14.0, 0.5, "squarish", False),
-            ("r085", 0.85, 8.0, 25.0, 0.5, "squarish", False),
-        ],
-    },
+    # 1s_1br_sq_side_split_bath_gr is deliberately NOT in SPECS (2026-07-20,
+    # same pattern as the narrow gr/ld siblings below). Its
+    # briefs/test_sweep/ fixtures were pruned back to compact-only
+    # (ratio-1.00 and near-square-1.15 "_compact" points; med/max removed)
+    # now that 1s_1br_sq_side_split_bath_ld covers larger sizes instead.
+    # Re-running `sweep_discover.py --topology=1s_1br_sq_side_split_bath_gr`
+    # would need a SPECS entry re-added first -- not doing that accidentally
+    # regenerates the med/max fixtures this restriction removed.
     "1s_1br_sq_side_split_bath_ld": {
         "topology_path": "1s/1br/squarish/1s_1br_sq_side_split_bath_ld.json",
         "folder": "1s/1br/squarish/1s_1br_sq_side_split_bath_ld",
@@ -65,6 +63,39 @@ SPECS = {
             ("r085", 0.85, 8.0, 25.0, 0.5, "squarish", False),
         ],
     },
+    # 1s_1br_nw_front_back_split_bath_gr and 1s_1br_nw_front_rear_bath_gr are
+    # deliberately NOT in SPECS (2026-07-20). Their briefs/test_sweep/
+    # fixtures were hand-curated instead of tool-discovered:
+    #   - front_back_split_bath_gr: user-specified round-number progression
+    #     8x10/9x11/10x12 (all verified feasible directly), not the tool's
+    #     empirically-discovered 8x10/9.6x12/11.2x14.
+    #   - front_rear_bath_gr: deliberately restricted to a single compact
+    #     8x10 fixture, no _med/_max. Its bedroom is anchored to BOTH side
+    #     walls (full-width by construction), which pins feasibility to a
+    #     narrow ~7.5-8.0 m width corridor regardless of depth -- the
+    #     fixed_widths sweep mode below (still useful as a pattern for
+    #     similar topologies) found it stays feasible out to 8x19/60 m2,
+    #     but that's well past this catalog's ~24-36 m2 working range for
+    #     1BR, so larger sizes are being left unexplored/infeasible on
+    #     purpose rather than characterized.
+    # Re-running `sweep_discover.py --topology=<either id>` would need a
+    # SPECS entry re-added first -- not doing that accidentally overwrites
+    # these intentional choices with auto-discovered ones.
+    # 1s_1br_wd_split_wing_bath_gr and 1s_1br_wd_side_split_bath_gr are
+    # deliberately NOT in SPECS (2026-07-20, same pattern as the narrow
+    # gr/ld siblings above). Both were originally ratio-shaped (canonical
+    # ratio 1.25 / 10x8, empirically feasible 10x8 up to 15x12/88 m2 --
+    # neither has a double-anchored room the way narrow front_rear_bath_gr
+    # does, confirmed via left/right_anchored inspection before sweeping).
+    # Their briefs/test_sweep/ fixtures are now hand-picked round numbers
+    # (10x8/11x8/12x9) instead: 88 m2 was judged too big for a 1BR program
+    # (past the 2BR/1bath 45 m2 floor-area knee) and tagged infeasible-by-
+    # policy, so max was pulled back to 12x9/40 m2 -- still comfortably
+    # inside the catalog's ~24-40 m2 working range for 1BR, all 3 points
+    # verified feasible directly. Re-running `sweep_discover.py
+    # --topology=<either id>` would need a SPECS entry re-added first --
+    # not doing that accidentally regenerates the 88 m2 max these hand-
+    # picked numbers replaced.
 }
 
 
@@ -104,12 +135,7 @@ def _pick_median(qualifying):
     return best
 
 
-def discover_ratio_class(topology_path, bedroom_count, ratio, depth_lo, depth_hi,
-                         step, require_shell, want_median):
-    runs = []
-    for depth in _sizes(depth_lo, depth_hi, step):
-        width = round(depth * ratio, 2)
-        runs.append(_try_one(topology_path, width, depth, bedroom_count))
+def _qualify_and_pick(runs, require_shell, want_median):
     qualifying = [r for r in runs if r["ok"] and r["shell"] == require_shell]
     if not qualifying:
         return None
@@ -120,9 +146,40 @@ def discover_ratio_class(topology_path, bedroom_count, ratio, depth_lo, depth_hi
     return points
 
 
+def discover_ratio_class(topology_path, bedroom_count, ratio, depth_lo, depth_hi,
+                         step, require_shell, want_median):
+    """Width scales with depth (width = depth * ratio) -- for topologies whose
+    feasibility tracks a fixed aspect ratio."""
+    runs = []
+    for depth in _sizes(depth_lo, depth_hi, step):
+        width = round(depth * ratio, 2)
+        runs.append(_try_one(topology_path, width, depth, bedroom_count))
+    return _qualify_and_pick(runs, require_shell, want_median)
+
+
+def discover_fixed_width_class(topology_path, bedroom_count, width, depth_lo, depth_hi,
+                               step, require_shell, want_median):
+    """Width held constant, only depth varies -- for topologies whose
+    feasibility is bounded by an absolute width window (not a ratio) and
+    where depth is otherwise free to grow, e.g. a shotgun/railroad narrow
+    plan where every room's width is pinned by the shell but rooms can
+    just get deeper. A ratio sweep can't find these: as depth grows at a
+    fixed ratio, width drifts away from the narrow tolerance window and
+    every point past the first misses."""
+    runs = []
+    for depth in _sizes(depth_lo, depth_hi, step):
+        runs.append(_try_one(topology_path, width, depth, bedroom_count))
+    return _qualify_and_pick(runs, require_shell, want_median)
+
+
 def _brief_json(topology_id, topology_path, bedroom_count, point, label, ratio, tag):
     w, d = point["width"], point["depth"]
-    ratio_note = "" if ratio == 1.00 else f" at a near-square ratio of {ratio}"
+    if ratio is None:
+        ratio_note = f" at a fixed width of {_fmt_num(point['width'])} m"
+    elif ratio == 1.00:
+        ratio_note = ""
+    else:
+        ratio_note = f" at a near-square ratio of {ratio}"
     return {
         "intent": (
             f"Sweep fixture ({label.upper()}{(' ' + tag) if tag else ''}) for "
@@ -146,26 +203,45 @@ def discover_topology(topology_id, spec):
     print(f"=== {topology_id} ===")
     out_dir = os.path.join(BRIEFS_SWEEP_DIR, spec["folder"])
     written = []
-    for tag, ratio, lo, hi, step, require_shell, want_median in spec["ratios"]:
-        points = discover_ratio_class(
-            spec["topology_path"], spec["bedroom_count"], ratio, lo, hi, step,
-            require_shell, want_median)
+
+    classes = []
+    for tag, ratio, lo, hi, step, require_shell, want_median in spec.get("ratios", []):
+        classes.append(dict(tag=tag, kind="ratio", param=ratio, lo=lo, hi=hi, step=step,
+                            require_shell=require_shell, want_median=want_median,
+                            desc=f"ratio {ratio}"))
+    for tag, width, lo, hi, step, require_shell, want_median in spec.get("fixed_widths", []):
+        classes.append(dict(tag=tag, kind="width", param=width, lo=lo, hi=hi, step=step,
+                            require_shell=require_shell, want_median=want_median,
+                            desc=f"fixed width {width}"))
+
+    for c in classes:
+        if c["kind"] == "ratio":
+            points = discover_ratio_class(
+                spec["topology_path"], spec["bedroom_count"], c["param"], c["lo"], c["hi"],
+                c["step"], c["require_shell"], c["want_median"])
+            ratio_for_brief = c["param"]
+        else:
+            points = discover_fixed_width_class(
+                spec["topology_path"], spec["bedroom_count"], c["param"], c["lo"], c["hi"],
+                c["step"], c["require_shell"], c["want_median"])
+            ratio_for_brief = None
         if points is None:
-            print(f"  ratio {ratio}: no feasible point classified as "
-                 f"'{require_shell}' in the swept range -- skipping, no files written")
+            print(f"  {c['desc']}: no feasible point classified as "
+                 f"'{c['require_shell']}' in the swept range -- skipping, no files written")
             continue
         os.makedirs(out_dir, exist_ok=True)
         for label, point in points.items():
-            suffix = "_".join(p for p in (tag, label) if p)
+            suffix = "_".join(p for p in (c["tag"], label) if p)
             fname = f"{_brief_stem(topology_id, point)}_ncp_{suffix}.json"
             fpath = os.path.join(out_dir, fname)
             with open(fpath, "w", encoding="utf-8") as f:
                 json.dump(_brief_json(topology_id, spec["topology_path"],
-                                      spec["bedroom_count"], point, label, ratio, tag),
+                                      spec["bedroom_count"], point, label, ratio_for_brief,
+                                      c["tag"]),
                          f, indent=2)
                 f.write("\n")
             written.append(fpath)
-            print(f"  ratio {ratio} {label}{(' ' + tag) if tag else ''}: "
+            print(f"  {c['desc']} {label}{(' ' + c['tag']) if c['tag'] else ''}: "
                  f"{point['width']}x{point['depth']} ({point['floor_area']} m2) "
                  f"-> {os.path.relpath(fpath, _HERE)}")
     return written

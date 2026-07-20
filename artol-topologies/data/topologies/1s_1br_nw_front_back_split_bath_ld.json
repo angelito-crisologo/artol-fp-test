@@ -1,0 +1,164 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_nw_front_back_split_bath_ld",
+  "label": "Narrow-shell 1BR / 1 bath, LD style -- sibling of 1s_1br_nw_front_back_split_bath_gr for lots too big to stay compact: full-width living room across the front (hosts entry), dining and kitchen side-by-side in a mid band behind it, bedroom and bath side-by-side in the rear band (same private-band layout as the gr sibling).",
+  "target_shell": "narrow",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living spans the full width; dining sits directly behind its left half -- open mouth into dining, no wall (ld style)."
+    },
+    {
+      "a": "living",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "living's other open mouth, into kitchen behind its right half. Two separate open-plan seams along one continuous rear wall of the living room (same pattern as a hallway opening onto two rooms elsewhere in this catalog)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen sit side-by-side in the mid band -- open pass-through, no wall (PH practice, matches the working _ld precedents)."
+    },
+    {
+      "a": "dining",
+      "b": "bedroom",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_door",
+      "note": "bedroom's only door -- opens into dining, its direct front neighbor in the same (left) column. Simpler than the gr sibling's kitchen-side door since dining is right there; no furniture-wall reason to route it further."
+    },
+    {
+      "a": "bedroom",
+      "b": "bath",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "bedroom and bath share the rear band side-by-side -- shared wall only, no door, per the locked no-bath-through-bedroom rule."
+    },
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_door",
+      "note": "bath (rear-right) stacks directly behind kitchen (mid-right) on one plumbing line -- shared wet wall AND the bath's only door, same wet-stack pattern as the gr sibling."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "living",
+  "private_area_floor": false,
+  "kitchen_rear_pin": false,
+  "ldk_horizontal": true,
+  "match_bedroom_widths": false,
+  "match_widths": [
+    [
+      "bedroom",
+      "dining"
+    ],
+    [
+      "kitchen",
+      "bath"
+    ]
+  ],
+  "left_anchored": [
+    "living",
+    "dining",
+    "bedroom"
+  ],
+  "right_anchored": [
+    "living",
+    "kitchen",
+    "bath"
+  ],
+  "rear_anchored": [
+    "bedroom",
+    "bath"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "living",
+      "dining",
+      "bedroom"
+    ],
+    [
+      "living",
+      "kitchen",
+      "bath"
+    ]
+  ],
+  "lot_adjustment_profiles": [],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Sibling of 1s_1br_nw_front_back_split_bath_gr, created 2026-07-20 for lots too",
+    "big to stay compact -- the gr sibling is now deliberately restricted to its",
+    "canonical 8x10 (see its own sweep fixture notes). This one trades the gr",
+    "sibling's counter-divider great_room for a real 3-band public sequence:",
+    "",
+    "  Front (full width): LIVING ROOM (entry)",
+    "  Mid:   [DINING | KITCHEN]",
+    "  Rear:  [BEDROOM | BATH ]",
+    "",
+    "living is double-anchored (left AND right) so it always spans the full",
+    "envelope width, the same mechanism the front_rear_bath_gr sibling uses to",
+    "pin its full-width bedroom. Behind it the building reverts to the gr",
+    "sibling's familiar two-column structure: dining stacks where great used to",
+    "be (left column, above bedroom), kitchen and bath are UNCHANGED from the gr",
+    "sibling (right column, kitchen mid above bath rear, one wet-plumbing line).",
+    "",
+    "bedroom's door now opens into dining (its direct front neighbor) rather",
+    "than reaching across to kitchen the way the gr sibling's does -- that",
+    "routing was specifically to keep the gr sibling's great_room wall clear",
+    "for furniture, which doesn't apply here since dining is a separate room.",
+    "",
+    "kitchen_rear_pin: false and ldk_horizontal: true carried over from the gr",
+    "sibling for the same structural reasons (bath stacks behind kitchen, not",
+    "the rear wall; dining/kitchen are side-by-side, not vertically stacked).",
+    "",
+    "No lot_adjustment_profiles yet -- untuned, pending real feasibility",
+    "testing at its intended med/max sizes (9x11, 10x12)."
+  ]
+}
