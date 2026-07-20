@@ -15,6 +15,10 @@ floorplan_v1/output/
 # floorplan_v1/test_baselines/ ARE committed for visual reference)
 floorplan_v1/test_output/
 
+# Manual min/med/max lot-size sweep scratch (re-rendered each sweep_test.py
+# run; the briefs/test_sweep/ fixtures themselves ARE committed)
+floorplan_v1/sweep_output/
+
 # LLM topology cache — brief-hash keyed, machine-local, not portable
 floorplan_v1/cache/
 

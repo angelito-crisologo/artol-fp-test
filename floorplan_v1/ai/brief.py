@@ -68,12 +68,17 @@ class Brief:
 
     # Dining counter: render the counter_divider band + stools on any
     # open-plan edge the TOPOLOGY declares one for (e.g. great_room<->kitchen
-    # with counter_divider: true). Default on — honor the topology's design
-    # intent. Set False to suppress every counter on this solve without
-    # touching the topology file; cannot force a counter where the topology
-    # doesn't declare one (the render needs the >= 2.1 m seam the topology
-    # guarantees at solve time — see MULTISTOREY_V2_DESIGN.md).
-    dining_counter: bool = True
+    # with counter_divider: true). None (default) — auto-decide: for most
+    # topologies this honors the topology's design intent (equivalent to
+    # True); 1s_1br_sq_side_split_bath_gr is size-conditional instead — the
+    # counter is only auto-enabled when the lot's smaller dimension is
+    # <=9 m (compact enough that the great_room can't fit a real dining
+    # nook), off above that (see run.py::_effective_dining_counter). An
+    # explicit True/False always wins over auto-decide for any topology;
+    # cannot force a counter where the topology doesn't declare one (the
+    # render needs the >= 2.1 m seam the topology guarantees at solve
+    # time — see MULTISTOREY_V2_DESIGN.md).
+    dining_counter: Optional[bool] = None
 
     # Dirty kitchen: open-air cooking area in rear setback. Default off.
     dirty_kitchen: bool = False

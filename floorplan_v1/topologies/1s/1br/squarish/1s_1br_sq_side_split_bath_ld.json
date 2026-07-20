@@ -1,0 +1,166 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_1br_sq_side_split_bath_ld",
+  "label": "Squarish 1BR / 1 bath, LD style — PROOF-OF-CONCEPT sibling of 1s_1br_sq_side_split_bath_gr: same private column (bedroom front / bath rear, left), but the public column splits into separate living / dining / kitchen (stacked front-to-rear) instead of one great_room + kitchen.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "bedroom",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "mechanical_vent": true
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "bedroom",
+      "b": "bath",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "bedroom (front) and bath (rear) stack vertically along the left wall -- shared wall only, no door between them, same as the gr sibling."
+    },
+    {
+      "a": "bedroom",
+      "b": "living",
+      "min_shared_wall_m": 0.9,
+      "kind": "bedroom_to_public",
+      "note": "bedroom's only door opens east into living -- the arrival room, same role great_room played in the gr sibling."
+    },
+    {
+      "a": "bath",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_door",
+      "note": "bath's only door opens onto kitchen, same as the gr sibling -- both are rear_anchored so they align at the rear wall regardless of the public column now stacking 3 rooms instead of 2."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining flow as one open public space -- no wall (ld style, matches the working 2BR _ld precedent)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining flows into kitchen -- open pass-through (PH practice, matches the working 2BR _ld precedent)."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": ["bedroom", "bath"],
+    "public_rooms": ["living", "dining", "kitchen"]
+  },
+  "private_area_floor": false,
+  "match_bedroom_widths": false,
+  "match_widths": [
+    ["bedroom", "bath"]
+  ],
+  "left_anchored": [
+    "bedroom",
+    "bath"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "bath",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    ["bedroom", "bath"],
+    ["living", "dining", "kitchen"]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_side_split_bath_ld",
+      "when": {
+        "buildable_area_lt_sqm": 100
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "common_bath": {
+          "min_area_sqm": 2.8,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "set_max_area_sqm": 20.0
+        }
+      },
+      "rationale": "PROOF-OF-CONCEPT: copied as-is from the gr sibling's compact_sq_side_split_bath_gr profile (same room types, same reasoning) pending real feasibility testing. Not yet tuned for the living/dining split specifically -- expect this to need adjustment once a real sweep is run."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 2.5,
+      "depth_m": 5.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "PROOF-OF-CONCEPT topology -- created 2026-07-20 to answer a feasibility question",
+    "(does a true living/dining/kitchen split work for a squarish 1BR program, or is",
+    "the counter_divider great_room approach the only thing that fits). NOT yet",
+    "swept for min/med/max, NOT yet added to briefs/test/, NOT yet in the published",
+    "artol-topologies catalog or CLAUDE.md. If it proves out, treat this file as a",
+    "draft to be tuned (lot_adjustment_profiles especially) before it graduates to a",
+    "real catalog entry.",
+    "",
+    "Direct sibling of 1s_1br_sq_side_split_bath_gr: identical private column",
+    "(bedroom front-left / bath rear-left). The public column swaps great_room +",
+    "kitchen (2-room open-plan) for living + dining + kitchen (3-room stack,",
+    "living front / dining mid / kitchen rear), following the same wiring pattern",
+    "as the working 1s_2br_sq_side_split_baths_ds_ld sibling: living/dining/kitchen",
+    "are NOT width-matched to each other (per that precedent, which lets the",
+    "public column's rooms vary in width rather than over-constraining a 3-way",
+    "match) -- only right_anchored on kitchen, not living/dining, for the same",
+    "over-constrained-anchors reason documented across this catalog's 3BR fixes."
+  ]
+}

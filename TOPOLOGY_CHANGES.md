@@ -50,7 +50,32 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
-_(empty — a full regen was run 2026-07-20, see Applied history)_
+**2026-07-20 — `dining_counter` auto-decide is now size-conditional for one topology (shared code)**
+`floorplan_v1/ai/brief.py` (`Brief.dining_counter` changed from `bool = True`
+to `Optional[bool] = None`) + `floorplan_v1/run.py` (new
+`_effective_dining_counter()`, wired into all 3 `architecturalize()` call
+sites). An explicit `True`/`False` on a brief still always wins. When
+unset, every topology still defaults to counter-on **except**
+`1s_1br_sq_side_split_bath_gr`, which now auto-decides from the lot's
+smaller dimension: counter on at ≤9 m, off above 9 m. Verified: 73/73
+regression pass, plus a direct boundary check (9×9→on, 10×10→off,
+9.77×8.5→on, 12.07×10.5→off, explicit overrides still win either
+direction). **No visible regen diff expected** — this topology's current
+canonical brief (9×9) stays ≤9 m, so its Output subsheet renders
+identically; logged for completeness/future-brief awareness, not because
+the published site is stale.
+
+**2026-07-20 — new proof-of-concept topology on disk, not yet a catalog entry**
+`floorplan_v1/topologies/1s/1br/squarish/1s_1br_sq_side_split_bath_ld.json`
+— an LD (separate living/dining/kitchen) sibling of
+`1s_1br_sq_side_split_bath_gr`, built to answer a feasibility question.
+Confirmed feasible (10×10–12×12 m primary range; swept via
+`sweep_discover.py`/`sweep_test.py`, NOT `briefs/test/` or `run.py --test`).
+Deliberately has no `briefs/test/` entry and isn't referenced anywhere in
+docs/memory yet. **Heads up:** because `build_catalog.py` walks the whole
+`topologies/` tree, a regen run right now would surface this as a new
+*unverified* gallery card — expected but premature until there's a
+decision on whether it graduates to a real catalog entry.
 
 ## Applied history
 

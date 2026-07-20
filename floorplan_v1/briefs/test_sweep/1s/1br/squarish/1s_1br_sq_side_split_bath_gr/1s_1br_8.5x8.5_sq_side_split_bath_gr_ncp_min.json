@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MIN) for 1s_1br_sq_side_split_bath_gr -- 8.5x8.5 m lot, 20.25 m2 buildable floor. Discovered empirically by sweep_discover.py; re-run that script to refresh if the solver or this topology changes.",
+  "lot_width": 8.5,
+  "lot_depth": 8.5,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json"
+}

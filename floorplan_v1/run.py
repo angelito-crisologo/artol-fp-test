@@ -470,6 +470,31 @@ def _merge_lot_profile(topo, env_w: float, env_h: float, brief_adj: dict,
 
 _STOREY_TITLES = {1: "GROUND FLOOR", 2: "SECOND FLOOR", 3: "THIRD FLOOR"}
 
+# Topology-specific size-conditional counter_divider default (2026-07-20):
+# below this lot dimension, 1s_1br_sq_side_split_bath_gr's great_room can't
+# fit a real dining nook, so the counter is worth it; above it, drop the
+# counter rather than imply a dining spot the room doesn't need help
+# reading as accommodating. See Brief.dining_counter's docstring.
+_COUNTER_SIZE_CONDITIONAL_TOPOLOGY = "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json"
+_COUNTER_COMPACT_DIM_THRESHOLD_M = 9.0
+
+
+def _effective_dining_counter(brief, topology_filename):
+    """Resolve Brief.dining_counter (None = auto-decide) to True/False.
+
+    An explicit True/False on the brief always wins. Auto-decide is
+    topology-specific: 1s_1br_sq_side_split_bath_gr turns the counter on
+    only when the lot's smaller dimension is <= 9 m; every other topology
+    (including AI-generated ones, which pass topology_filename=None) just
+    defaults to True, preserving this field's original always-on behavior.
+    """
+    explicit = getattr(brief, "dining_counter", None)
+    if explicit is not None:
+        return explicit
+    if topology_filename == _COUNTER_SIZE_CONDITIONAL_TOPOLOGY:
+        return min(brief.lot_width, brief.lot_depth) <= _COUNTER_COMPACT_DIM_THRESHOLD_M
+    return True
+
 
 def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
                         area_caps, topology_filename, verbose):
@@ -539,7 +564,7 @@ def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
             door_host=getattr(brief, "door_host", None),
             kitchen_back_door=(getattr(brief, "kitchen_back_door", True)
                                if s == 1 else False),
-            dining_counter=getattr(brief, "dining_counter", True))
+            dining_counter=_effective_dining_counter(brief, topology_filename))
         sub.archplan = plan
         archplans.append((title, plan))
         issues, score = validate(sub, rules)
@@ -843,7 +868,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     plan = architecturalize(layout, topo,
                             door_host=getattr(brief, "door_host", None),
                             kitchen_back_door=getattr(brief, "kitchen_back_door", True),
-                            dining_counter=getattr(brief, "dining_counter", True))
+                            dining_counter=_effective_dining_counter(brief, topology_filename))
     layout.archplan = plan
     if n_snaps:
         # Re-validate to refresh the score with the now-larger room areas.
@@ -948,7 +973,7 @@ def _try_realize(topo_dict: dict, brief: Brief, rules: Rules,
     plan = architecturalize(layout, topo,
                             door_host=getattr(brief, "door_host", None),
                             kitchen_back_door=getattr(brief, "kitchen_back_door", True),
-                            dining_counter=getattr(brief, "dining_counter", True))
+                            dining_counter=_effective_dining_counter(brief, None))
     layout.archplan = plan
     issues, score = validate(layout, rules)
     hard = [i for i in issues if i.severity == "error"]
