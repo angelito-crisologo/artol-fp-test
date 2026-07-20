@@ -77,6 +77,25 @@ docs/memory yet. **Heads up:** because `build_catalog.py` walks the whole
 *unverified* gallery card — expected but premature until there's a
 decision on whether it graduates to a real catalog entry.
 
+**2026-07-20 — two 1BR topologies REMOVED (locked rule: no hall in any 1BR program)**
+`1s_1br_wd_side_split_bath_hall_gr` (wide, 14×10) and
+`1s_1br_nw_side_corridor_bath_hall` (narrow, 8.5×12) are both deleted —
+topology JSON, `briefs/test/` fixture, and `test_baselines/` SVG all
+removed via `git rm`. Full trail in [[br1-topology-catalog]] memory.
+`lot_size_sweep_1br.py`'s wide/narrow SHAPES entries repointed to their
+hall-less siblings. 71/71 regression after both removals.
+
+**Gallery/catalog impact when next regenerated:**
+- **Header stats** and **1-bedroom accordion group** — topology count drops
+  by 2 (43→41 once the LD proof-of-concept above is excluded from a real
+  regen decision), verified count drops by 2 (30→28).
+- **Two gallery cards + detail pages disappear entirely** — no redirect
+  needed, they're just gone from the 1-bedroom group (narrow goes from 3→2
+  cards, wide from 3→2 cards).
+- Nothing else in the catalog references either removed id (verified via
+  repo-wide grep before deleting), so no dangling links elsewhere in
+  `index.html`.
+
 ## Applied history
 
 **2026-07-20 — Full regen (43 topologies, 30 verified, 13 not yet tested)**

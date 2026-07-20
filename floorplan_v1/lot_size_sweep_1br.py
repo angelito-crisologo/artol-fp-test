@@ -44,12 +44,24 @@ SHAPES = {
         "ratios": [(1.00, 6.0, 14.0, 0.5), (0.85, 8.0, 16.0, 1.0), (1.15, 6.0, 14.0, 1.0)],
     },
     "wide": {
-        "topology": "1s/1br/wide/1s_1br_wd_side_split_bath_hall_gr.json",
+        # 1s_1br_wd_side_split_bath_hall_gr was removed (2026-07-20) -- a
+        # hall doesn't make sense for a single bedroom, and its true
+        # feasibility floor (~51 m2) sat inside the 2BR/1bath floor band
+        # anyway, not really a 1BR-scaled program. side_split_bath_gr is
+        # the least override-hungry wide 1BR sibling and the new default.
+        "topology": "1s/1br/wide/1s_1br_wd_side_split_bath_gr.json",
         "ratios": [(1.40, 5.0, 12.0, 0.5), (1.60, 5.0, 12.0, 0.5), (1.30, 5.0, 12.0, 0.5)],
     },
     "narrow": {
-        "topology": "1s/1br/narrow/1s_1br_nw_side_corridor_bath_hall.json",
-        "ratios": [(0.45, 12.0, 22.0, 0.5), (0.35, 12.0, 22.0, 0.5), (0.55, 12.0, 22.0, 0.5)],
+        # 1s_1br_nw_side_corridor_bath_hall was removed (2026-07-20) -- same
+        # reasoning as the wide hall variant: a hall doesn't earn its keep
+        # for a single bedroom (4.4 m2 / ~12% of its floor spent on pure
+        # circulation vs. its hall-less siblings, which solve just as well
+        # without it). front_back_split_bath_gr is the new default, canonical
+        # 8x10 (ratio 0.8) -- ratio range/depth adjusted accordingly from the
+        # old hall variant's much deeper 8.5x12 canonical (ratio 0.71).
+        "topology": "1s/1br/narrow/1s_1br_nw_front_back_split_bath_gr.json",
+        "ratios": [(0.80, 6.0, 14.0, 0.5), (0.70, 6.0, 14.0, 0.5), (0.90, 6.0, 14.0, 0.5)],
     },
 }
 

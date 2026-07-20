@@ -96,15 +96,17 @@ and verified to a COMPLIANT solve at a canonical lot size. Full detail in
    bath left column, great room + kitchen right column, one straight
    vertical wall).
 2. **Narrow** (3 topologies): the pre-existing `nw_side_corridor_bath_hall`
-   (fixed a `left_anchored` bug, now solves 8.5×12 up), plus two new ones —
+   (fixed a `left_anchored` bug, now solves 8.5×12 up — removed 2026-07-20,
+   see the 1BR topologies list below), plus two new ones —
    `nw_front_back_split_bath_gr` (8×10, from `narrow-fp-01.png`) and
    `nw_front_rear_bath_gr` (8×10, from `narrow-fp-02.png`, full-width rear
    bedroom).
 3. **Wide** (2 new, alongside the pre-existing `wd_side_split_bath_hall_gr`
-   which needs ≥13.3×9.5): `wd_split_wing_bath_gr` (10×8, from
-   `wide-fp-01.png`, wet end-column) and `wd_side_split_bath_gr` (10×8,
-   user-requested variant — bath+kitchen rear band instead of end column,
-   bath doors into the kitchen per a later revision).
+   which needed ≥13.3×9.5 — removed 2026-07-20, see the 1BR topologies list
+   below): `wd_split_wing_bath_gr` (10×8, from `wide-fp-01.png`, wet
+   end-column) and `wd_side_split_bath_gr` (10×8, user-requested variant —
+   bath+kitchen rear band instead of end column, bath doors into the
+   kitchen per a later revision).
 4. **New dining-counter feature** (`counter_divider` adjacency flag) — all
    7 topologies use it instead of a full dining room (furnishability math:
    a great_room at its 6 m² hard minimum only fits a couch + TV, no
@@ -164,12 +166,26 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
 added 2026-07-16 — full detail in [[br1-topology-catalog]]):
 
 - `sq_side_split_bath_gr` — squarish, 9×9 lot, straight-cut 2×2 grid
-- `nw_side_corridor_bath_hall` — narrow, 8.5×12, shotgun corridor sequence
 - `nw_front_back_split_bath_gr` — narrow, 8×10, bedroom door via kitchen side
 - `nw_front_rear_bath_gr` — narrow, 8×10, full-width rear bedroom
-- `wd_side_split_bath_hall_gr` — wide, 14×10 (pre-existing, needs ≥13.3×9.5)
 - `wd_split_wing_bath_gr` — wide, 10×8, wet end-column
 - `wd_side_split_bath_gr` — wide, 10×8, wet rear band, least override-hungry
+
+**Locked rule (2026-07-20): no hall in any 1BR topology.** A hall earns its
+keep by keeping cross-bedroom traffic out of each other's way — with only
+one bedroom there's no cross-traffic to manage, so it's just circulation
+overhead stealing floor area from habitable rooms. Two topologies removed
+under this rule, both replaced in the catalog by their hall-less siblings
+above:
+- `wd_side_split_bath_hall_gr` (wide, 14×10) — true feasibility floor
+  (~13.3×9.5, 51 m²) sat inside the locked 2BR/1bath floor band anyway, not
+  a genuinely 1BR-scaled size.
+- `nw_side_corridor_bath_hall` (narrow, 8.5×12) — hall alone was 4.4 m²
+  (~12% of the 36 m² floor), directly correlating with great_room sitting
+  at only 15% of its preferred size; its hall-less siblings solve the same
+  shell at the same ~24–36 m² scale without that tax.
+
+See [[br1-topology-catalog]] for the full removal trail.
 
 All 1BR topologies use `private_area_floor: false` (a single bedroom can
 never outweigh the LDK under the hard "private ≥ public" rule) and the new
@@ -237,9 +253,11 @@ above and [[multistorey-topology-authoring]] for how to author more):
   all-standards rule raised the 1s hall-core ccp minimum: its brief
   re-tuned 13.5×14 → 13.5×14.5; 9 baselines refreshed deliberately.
 
-**Test suite status:** 73 pass, 0 fail, 0 error (includes 17 minimum-boundary
+**Test suite status:** 71 pass, 0 fail, 0 error (includes 17 minimum-boundary
 briefs under `briefs/test/test_mins/`, see [[squarish-2br-lot-size-sweep]],
-8 1BR test briefs, and — added 2026-07-19/20 — 4 3BR-squarish-fix briefs +
+6 1BR test briefs (down from 8 — `wd_side_split_bath_hall_gr` and
+`nw_side_corridor_bath_hall` both removed 2026-07-20, no-hall-in-1BR rule),
+and — added 2026-07-19/20 — 4 3BR-squarish-fix briefs +
 8 multi-storey briefs).
 
 ## Recently completed
