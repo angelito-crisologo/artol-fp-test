@@ -1,0 +1,264 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_side_split_bath_hall_ld",
+  "label": "Wide-shell 2BR / 1 bath, LD style — side-split with HALL in middle band; public column is a separate living/dining/kitchen stacked front-to-rear (not a combined great room). Bedrooms stack front-to-rear on the LEFT (master front, standard rear); hall sits in the middle band south of common bath; both bedrooms and the common bath door into the hall; hall opens east into DINING (the middle-row public room).",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "standard",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master (front) and standard (rear) stack vertically in the left column — shared horizontal wall only, no door. Unchanged from the gr sibling."
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's east wall has a door opening east into the hall — master's primary public access; the hall buffers master from the public side. Unchanged from the gr sibling."
+    },
+    {
+      "a": "standard",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "standard's south wall opens into the hall — standard's only public access. Unchanged from the gr sibling."
+    },
+    {
+      "a": "standard",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "standard's east wall touches common's west wall at the rear — shared wall only, no door. Unchanged from the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "door_host_group": "common_access",
+      "note": "common bath's south wall opens south into the hall — the single bath's only door; both bedrooms reach it via the hall. DEFAULT host of the 'common_access' group. Unchanged from the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "door_host_group": "common_access",
+      "door_allowed": true,
+      "door_kind": "bath_door",
+      "min_solid_wall_m": 0.5,
+      "note": "common bath shares plumbing wall with kitchen. ALTERNATE host of the 'common_access' group. Unchanged from the gr sibling."
+    },
+    {
+      "a": "hall",
+      "b": "dining",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "hall's east wall is an open mouth into dining, not living — the hall sits in the MIDDLE band, so its wall aligns with whichever public room occupies that same middle row of the living/dining/kitchen stack (dining). Takes over the role hall<->great played in the gr sibling. 0.9 m mouth = PH single-person minimum on the compact envelope."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining stack front-to-rear — open mouth, no wall (ld style)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen stack front-to-rear — open pass-through, matches the solver's default kitchen+dining-must-stack rule directly."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "master",
+      "standard",
+      "common",
+      "hall"
+    ],
+    "public_rooms": [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json",
+  "match_bedroom_widths": false,
+  "claim_dead_strips": true,
+  "left_anchored": [
+    "master",
+    "standard"
+  ],
+  "right_anchored": [
+    "kitchen",
+    "living",
+    "dining"
+  ],
+  "rear_anchored": [
+    "standard",
+    "common",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "standard"
+    ],
+    [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_w_hall_ld_single_bath",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 1.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 10.0
+        }
+      },
+      "rationale": "Unchanged from the gr sibling — the ld conversion solved 0-warning across the whole feasible band with these values, so no retuning was needed. kitchen depth floors at 1.8 m galley clearance; hall depth at 1.0 m PH minimum corridor; common bath 3.0-4.5 m2; standard capped at 10 m2 so it doesn't steal from the LDK stack."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Created 2026-07-21 as an LDK split (living/dining/kitchen stacked",
+    "front-to-rear, the solver's default LDK arrangement) of the combined-",
+    "great-room 1s_2br_wd_side_split_bath_hall_gr. This is a SIBLING, not a",
+    "replacement: the gr version is kept (it is the fallback target for three",
+    "other wide topologies AND it reaches shallower lots this ld version",
+    "can't — see the depth floor below).",
+    "",
+    "Only ONE adjacency changed role: hall's open-mouth connection moves from",
+    "great_room to dining. The hall sits in the middle band, so its wall has",
+    "to align with the middle-row public room (dining, between living-front",
+    "and kitchen-rear). living gets hosts_entry instead of great (front-most",
+    "public room, same role). Everything else (private column, hall structure,",
+    "single common bath, wet-stack, lot_adjustment_profile) is unchanged.",
+    "",
+    "Layout intent (canonical form — brief.carport_side='right' or 'none'):",
+    "  Rear band:    [STANDARD       | COMMON T&B | KITCHEN          ]",
+    "  Middle band:  [(master cont.) | HALL       | DINING           ]",
+    "  Front band:   [MASTER BEDROOM             | LIVING           ]",
+    "",
+    "FEASIBILITY — a broad, well-behaved 0-warning band, notably better than",
+    "the clustered-bath wide ld sibling (1s_2br_wd_side_split_baths_cl_ld,",
+    "which is narrow-band). Reason: single-bath, no ensuite / no clustered",
+    "bath block / no match_bedroom_widths / no match_bath_widths, so the",
+    "private side has far fewer competing width constraints and master's",
+    "full-width front band absorbs slack. Verified feasible (0 warnings)",
+    "across buildable width 7-12 m and buildable depth >= 6 m — lots roughly",
+    "11x10 up through 16x12.",
+    "",
+    "DEPTH FLOOR = buildable depth 6 m (lot depth 10). Below that the",
+    "living/dining/kitchen 3-room stack can't fit (14x9.5 = depth 5.5 and all",
+    "depth-5 lots are infeasible, confirmed by sweep) — the same LDK-stack",
+    "depth constraint documented on cl_ld and the ds_gr LDK investigation.",
+    "Published minimum: 12x10 (buildable 8x6). The gr sibling covers the",
+    "shallower depth-5 lots (11x9 up); a sub-depth-6 brief on this topology",
+    "routes there automatically via fallback_topology (general infeasibility-",
+    "triggered fallback, NOT a fallback_below_buildable_sqm area gate — the",
+    "binding constraint is DEPTH, not area, so a wide-but-shallow lot must",
+    "reach the solve attempt and fail rather than be gated on area).",
+    "",
+    "UPPER-WIDTH LIMIT ~ buildable width 12 (17x12 = buildable 13x8 is",
+    "infeasible). This is SOFT, not structural: it's the public-room aspect",
+    "cap kicking in as the LDK column widens (loosening the aspect override",
+    "makes 17x12 solve). Those sizes are past the 2BR floor-area band anyway,",
+    "so the cap is left in place.",
+    "",
+    "claim_dead_strips: true. At 12x10 the layout tiles clean on its own, but",
+    "at larger sizes (14x10+) master's floating front-band width leaves small",
+    "unclaimed interior pockets (up to ~2.8 m2 at 15x11). The flag runs the",
+    "dead-strip claimer on the single-storey realize so living absorbs those",
+    "pockets as L-alcoves — 0 dead space across the band, still 0 warnings.",
+    "Realized-geometry cleanup only; never affects feasibility.",
+    "",
+    "Carport / wet-stack / mirroring all unchanged from the gr sibling."
+  ]
+}

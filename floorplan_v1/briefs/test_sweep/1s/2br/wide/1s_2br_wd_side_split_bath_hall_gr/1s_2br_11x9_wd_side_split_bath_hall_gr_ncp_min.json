@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MIN) for 1s_2br_wd_side_split_bath_hall_gr -- 11x9 m lot, 35 m2 buildable floor (7x5 envelope, buildable depth 5). Shallow-depth end of the wide single-bath hall program: the ld sibling (1s_2br_wd_side_split_bath_hall_ld) needs buildable depth >= 6 and can't reach this depth, so gr (combined great_room, 2-deep public stack) is the topology to use here. Same lot as its briefs/test/ 11x9 brief.",
+  "lot_width": 11.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json"
+}

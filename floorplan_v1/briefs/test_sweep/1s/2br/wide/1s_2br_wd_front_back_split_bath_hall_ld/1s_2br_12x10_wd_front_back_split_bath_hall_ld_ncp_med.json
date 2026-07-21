@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MED) for 1s_2br_wd_front_back_split_bath_hall_ld -- 12x10 m lot, 48 m2 buildable floor (8x6 envelope). Published minimum / canonical size for this topology (front-back split needs buildable depth ~5-6 m per band). Same lot as its briefs/test/ canonical brief. Full LDK front (living|dining|kitchen), bedrooms + central hall notch across the rear.",
+  "lot_width": 12.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_front_back_split_bath_hall_ld.json"
+}

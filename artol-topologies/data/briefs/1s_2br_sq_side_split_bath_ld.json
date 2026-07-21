@@ -1,0 +1,21 @@
+{
+  "intent": "2BR / 1 bath LDK smoke test, no carport. 10x10 lot gives a 6x6 envelope = 36 m2 floor -- the empirical minimum feasible size for this topology (9.9x9.9 is infeasible). Single common bath sits at the rear next to kitchen (no ensuite, no separate bath band). Public side is a real living/dining/kitchen split (not open-plan great_room) -- living, dining, and kitchen stack front-to-rear in one column, the solver's default LDK arrangement.",
+  "lot_width": 10.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "one common bath",
+    "common bath publicly accessible from dining",
+    "separate living, dining, and kitchen rooms stacked front-to-rear",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_bath_ld.json"
+}

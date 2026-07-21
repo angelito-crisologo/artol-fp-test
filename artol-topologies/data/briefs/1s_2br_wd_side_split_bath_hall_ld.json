@@ -1,0 +1,22 @@
+{
+  "intent": "2BR / 1 bath, mid-band hall, LDK smoke test, no carport. 12x10 lot gives an 8x6 envelope = 48 m2 floor -- the published minimum for this topology (its living/dining/kitchen stack needs buildable depth >= 6 m; shallower lots route to the gr sibling). Single common bath at the rear next to kitchen; a hallway is tucked into the middle band -- both bedrooms and the common bath door onto the hall, never directly onto the public side. Public side is a real living/dining/kitchen split stacked front-to-rear -- the hall's open mouth connects to dining (the middle-row public room), not living.",
+  "lot_width": 12.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "one common bath",
+    "common bath accessible from the hall",
+    "mid-band hallway serving both bedrooms and the common bath",
+    "separate living, dining, and kitchen rooms stacked front-to-rear",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_ld.json"
+}

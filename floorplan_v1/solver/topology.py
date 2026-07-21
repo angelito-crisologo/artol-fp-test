@@ -191,6 +191,24 @@ class Topology:
     # in the private column.
     zone_balance_rooms: Optional[Dict[str, List[str]]] = None
 
+    # Hard floor for the zone-ratio block, as a percent of (private+public)
+    # that the private side must never drop below. Default 50.0 reproduces
+    # the original fixed "private_total >= public_total" floor exactly.
+    # Lower it (e.g. 40.0) on topologies whose soft target below is itself
+    # < 50% (a public-heavy design), otherwise the default floor contradicts
+    # the target and the ratio block becomes infeasible. Ignored when
+    # private_area_floor is False.
+    zone_ratio_private_floor_pct: float = 50.0
+
+    # Soft-bias target for the zone-ratio block, as a percent of
+    # (private+public) the private side should aim for. Default 55.0
+    # reproduces the original fixed 55/45-favoring-private bias exactly.
+    # Set below 50.0 (e.g. 45.0) for a deliberately public-heavy design —
+    # pair with a matching (or lower) zone_ratio_private_floor_pct above so
+    # the hard floor doesn't fight the target. Ignored when
+    # private_area_floor is False.
+    zone_ratio_private_target_pct: float = 55.0
+
     # Number of storeys (1 = single-storey, the catalog default). When > 1,
     # every room carries a `storey` tag, the solver builds one no-overlap
     # group per storey in a single joint model, and kind='stair_vertical'
@@ -233,6 +251,19 @@ class Topology:
     # match_bedroom_widths + match_bath_widths for a fully symmetric private
     # wing.
     bedroom_band_fills_width: bool = False
+
+    # When True, the single-storey realize path runs claim_dead_strips as a
+    # final post-process: any strictly-rectangular unclaimed interior strip
+    # (>= 0.05 m²) is handed to an adjacent room as its rect2 alcove, making
+    # that room L-shaped. Default False keeps the catalog-wide single-storey
+    # baselines frozen (claim_dead_strips was built for the multi-storey
+    # pipeline and is always-on there). Opt in on a topology whose ragged
+    # room widths at tight lot sizes leave dead pockets a normal edge-snap
+    # can't reach — e.g. the wide side-split cl topologies, where the private
+    # sub-columns tile cleanly at generous widths but not at their compact
+    # minimum. Purely a realized-geometry cleanup; never affects solver
+    # feasibility.
+    claim_dead_strips: bool = False
 
     # When True the topology caps the ensuite at preferred-high area
     # (4.5 m²) and lets the strip east of ensuite within the bedroom column
@@ -346,12 +377,15 @@ def load_topology(path: str) -> Topology:
         match_bath_widths=bool(d.get("match_bath_widths", False)),
         match_widths=list(d.get("match_widths", [])),
         private_area_floor=bool(d.get("private_area_floor", True)),
+        zone_ratio_private_floor_pct=float(d.get("zone_ratio_private_floor_pct", 50.0)),
+        zone_ratio_private_target_pct=float(d.get("zone_ratio_private_target_pct", 55.0)),
         zone_balance_rooms=d.get("zone_balance_rooms"),
         storeys=int(d.get("storeys", 1)),
         kitchen_rear_pin=bool(d.get("kitchen_rear_pin", True)),
         kitchen_side_pin=bool(d.get("kitchen_side_pin", True)),
         aspect_overrides=dict(d.get("aspect_overrides", {})),
         bedroom_band_fills_width=bool(d.get("bedroom_band_fills_width", False)),
+        claim_dead_strips=bool(d.get("claim_dead_strips", False)),
         ensuite_alcove_joins_master=bool(d.get("ensuite_alcove_joins_master", False)),
         ldk_horizontal=bool(d.get("ldk_horizontal", False)),
         front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
@@ -507,12 +541,15 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         match_bath_widths=t.match_bath_widths,
         match_widths=t.match_widths,
         private_area_floor=t.private_area_floor,
+        zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
         zone_balance_rooms=t.zone_balance_rooms,
         storeys=t.storeys,
         kitchen_rear_pin=t.kitchen_rear_pin,
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
+        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=new_stacks,
@@ -610,12 +647,15 @@ def apply_no_master_transform(t: Topology) -> Topology:
         match_bath_widths=t.match_bath_widths,
         match_widths=t.match_widths,
         private_area_floor=t.private_area_floor,
+        zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
         zone_balance_rooms=t.zone_balance_rooms,
         storeys=t.storeys,
         kitchen_rear_pin=t.kitchen_rear_pin,
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
+        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=False,  # ensuite is gone
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=new_stacks,
@@ -673,12 +713,15 @@ def mirror_topology_x(t: Topology) -> Topology:
         match_bath_widths=t.match_bath_widths,
         match_widths=t.match_widths,
         private_area_floor=t.private_area_floor,
+        zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
         zone_balance_rooms=t.zone_balance_rooms,
         storeys=t.storeys,
         kitchen_rear_pin=t.kitchen_rear_pin,
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
+        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=list(t.front_to_rear_stacks),
@@ -730,12 +773,15 @@ def storey_view(t: Topology, s: int) -> Topology:
         match_widths=[p for p in t.match_widths
                       if len(p) == 2 and p[0] in keep_ids and p[1] in keep_ids],
         private_area_floor=t.private_area_floor,
+        zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
         zone_balance_rooms=t.zone_balance_rooms,
         storeys=1,
         kitchen_rear_pin=t.kitchen_rear_pin,
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
+        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=[[rid for rid in stack if rid in keep_ids]

@@ -1,7 +1,7 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
   "id": "1s_2br_wd_side_split_baths_cl_gr",
-  "label": "Wide-shell 2BR / 2 baths CLUSTERED REAR with mid-band HALL \u2014 side-split: bedrooms in left column organised as two parallel front-to-rear sub-columns, LDK in right column (great_room front, kitchen rear). Left sub-column: [master, ensuite]. Mid sub-column: [standard, hall, common T&B]. Both baths cluster at the rear sharing a wet-stack plumbing wall with the kitchen.",
+  "label": "Wide-shell 2BR / 2 baths CLUSTERED REAR with mid-band HALL \u2014 side-split: bedrooms in left column organised as two parallel front-to-rear sub-columns, LDK in right column (great_room front, kitchen rear). Left sub-column: [master, ensuite]. Mid sub-column: [standard, hall, common T&B]. Both baths cluster at the rear sharing a wet-stack plumbing wall with the kitchen. Compact-lot sibling of 1s_2br_wd_side_split_baths_cl_ld -- use this gr (combined great_room) form down to ~5 m buildable depth; switch to the ld (living/dining split) form once buildable depth reaches ~10 m lot depth (6 m envelope) or more.",
   "target_shell": "wide",
   "rooms": [
     {
@@ -135,7 +135,7 @@
       "kitchen"
     ]
   },
-  "fallback_topology": "1s/2br/wide/1s_2br_wd_side_split_bath_gr.json",
+  "fallback_topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json",
   "match_bedroom_widths": true,
   "match_bath_widths": true,
   "bedroom_band_fills_width": false,
@@ -174,12 +174,12 @@
       },
       "auto_apply": {
         "kitchen": {
-          "min_least_dim_m": 1.8
+          "min_least_dim_m": 1.6
         },
         "hallway": {
           "min_least_dim_m": 1.2,
           "max_least_dim_m": 1.2,
-          "min_greatest_dim_m": 2.8,
+          "min_greatest_dim_m": 2.2,
           "max_greatest_dim_m": 2.8
         },
         "common_bath": {
@@ -195,7 +195,7 @@
           "max_greatest_dim_m": 2.8
         }
       },
-      "rationale": "On compact wide lots (<75 sqm buildable, e.g. 14x10 m = 60 sqm), kitchen is floored at 1.8 m depth \u2014 the minimum that keeps the 4.4 m-wide LDK column within the 2.5:1 kitchen aspect cap (4.4 / 1.8 = 2.44 \u2264 2.5). Hall is pinned at 2.8 \u00d7 1.2 m exactly \u2014 the 1.2 m depth keeps the hall\u2194great open mouth >= 1.0 m clear, and the 2.8 m length matches the bedroom-wing sub-column width. Both baths are PINNED at 2.8 \u00d7 1.5 m = 4.2 sqm (max_least 1.5, max_greatest 2.8, max_area 4.2). This makes ensuite and common identical in shape, so the wall separating them on the column divider (x = master_east = standard_west) starts cleanly at the bath block's south edge (the T&B/hall corner) and runs straight to the rear envelope. No 0.1 m offset between bath y_start values \u2014 the bath block reads as one clean horizontal stripe."
+      "rationale": "On compact wide lots (<75 sqm buildable, e.g. 14x10 m = 60 sqm), kitchen is floored at 1.6 m depth (down from an original 1.8 m -- see 2026-07-20 update below) and hall's greatest-dimension is now a 2.2-2.8 m RANGE (was pinned exactly at 2.8 m). Both baths are PINNED at 2.8 \u00d7 1.5 m = 4.2 sqm (max_least 1.5, max_greatest 2.8, max_area 4.2). This makes ensuite and common identical in shape, so the wall separating them on the column divider (x = master_east = standard_west) starts cleanly at the bath block's south edge (the T&B/hall corner) and runs straight to the rear envelope. No 0.1 m offset between bath y_start values \u2014 the bath block reads as one clean horizontal stripe. 2026-07-20 update: this topology was restored as the compact-lot sibling of 1s_2br_wd_side_split_baths_cl_ld (which can't reach shallow-depth lots); the published minimum 11x9 needed both the kitchen floor AND the hall's greatest-dim RANGE loosened together -- neither alone was sufficient (confirmed by bisection: kitchen alone at any floor down to 1.5 stayed infeasible; hall's max_least_dim_m loosened alone stayed infeasible; only hall's min_greatest_dim_m specifically, down to <=2.6, combined with kitchen<=1.6, unlocks 11x9). Bath caps were NOT touched -- confirmed unnecessary via the same bisection."
     }
   ],
   "setback_elements": [
@@ -218,9 +218,27 @@
   ],
   "building_voids": [],
   "notes": [
-    "Wide-shell catalog topology \u2014 2BR / 2 baths CLUSTERED at the REAR. First wide-shell with rear-clustered baths AND a hallway-served bedroom wing. Distinct from 1s_2br_wd_side_split_bath_gr (single rear-bath, no ensuite, no hall) and 1s_2br_wd_side_split_bath_gr (removed) (mid-band common bath, no ensuite).",
+    "RESTORED 2026-07-20 as the compact-lot sibling of 1s_2br_wd_side_split_baths_cl_ld",
+    "(deleted the same day, then restored the same day once testing showed the LDK split",
+    "genuinely can't reach shallow-depth lots: its living/dining/kitchen stack needs at",
+    "least ~5.5 m buildable depth, confirmed via isolated-column bisection). This gr",
+    "(combined great_room, 2-deep public stack: great+kitchen) is the one to use down to",
+    "~5 m buildable depth -- verified feasible at 11x9 (buildable 7x5). cl_ld's",
+    "fallback_topology now points here (was dangling at a file deleted 2026-06-25, fixed",
+    "the same day this topology was restored). No fallback_below_buildable_sqm gate set --",
+    "the general infeasibility-triggered fallback (not the skip-straight-to-fallback area",
+    "gate) is deliberately what routes shallow-depth briefs here, since the actual binding",
+    "constraint is DEPTH specifically, not buildable AREA (confirmed: widening a shallow",
+    "lot does NOT unlock cl_ld -- 12x9, 13x9, and 15x9 are all still infeasible on cl_ld",
+    "despite far more area than the 12x10 minimum that does work -- so an area-based skip-",
+    "ahead gate would misroute a wide-but-shallow lot).",
     "",
-    "Floor band: 60-80 sqm buildable. Designed against 14x10 m as the low edge (60 sqm tiles exactly).",
+    "Wide-shell catalog topology \u2014 2BR / 2 baths CLUSTERED at the REAR. First wide-shell with rear-clustered baths AND a hallway-served bedroom wing. Distinct from 1s_2br_wd_side_split_bath_hall_gr (single rear-bath, no ensuite, hall-served) and its own since-restored ds_gr-style siblings (mid-band common bath, no ensuite, no hall).",
+    "",
+    "Floor band: this topology now covers the shallow/compact end (~50-60 sqm buildable,",
+    "11x9 through roughly 14x10) -- cl_ld picks up 12x10 and deeper. Originally designed",
+    "against 14x10 m as its own low edge before cl_ld existed; both topologies solve there,",
+    "so either is a valid choice at that size.",
     "Larger lots (14x12, 15x11, 16x11) let master and bedrooms breathe toward the preferred high.",
     "",
     "Layout intent (CANONICAL form \u2014 kitchen on RIGHT, bedrooms on LEFT, matches squarish catalog convention; brief.carport_side='right' or 'none'):",

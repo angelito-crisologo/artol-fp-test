@@ -1,0 +1,288 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_side_split_baths_cl_hall_ld",
+  "label": "Squarish 2BR / 2 baths CLUSTERED with mid-band HALL, LD style \u2014 bedrooms and the common T&B all open onto a hallway tucked into the middle band between master (front) and standard (rear). Hall has an open mouth east into dining. Public side is a real living/dining/kitchen split stacked front-to-rear, not a combined great room.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "ensuite",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite is master's exclusive \u2014 interior door from master, west side of the bath block. Unchanged from the gr sibling."
+    },
+    {
+      "a": "ensuite",
+      "b": "common",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "note": "shared plumbing wall \u2014 wet stacks in one bay. Unchanged from the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "standard",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "common's north face touches standard \u2014 bath block is the acoustic+privacy buffer between bedrooms. Unchanged from the gr sibling."
+    },
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master door opens north into the hall \u2014 1.0 m floor = 0.8 m clear + 2x 0.10 m frame stops. Unchanged from the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "common bath door opens east into the hall \u2014 0.8 m bath leaf + frame. Unchanged from the gr sibling."
+    },
+    {
+      "a": "standard",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "standard door opens south into the hall \u2014 1.0 m = 0.8 m clear + frame. Unchanged from the gr sibling."
+    },
+    {
+      "a": "hall",
+      "b": "dining",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "hall's east wall is an open mouth into dining (no door \u2014 codebase rule: hallway<->public is always open). dining, not living, because the hall sits in the MIDDLE band between master and standard -- its wall has to align with whichever public room occupies that same middle row. Tested hall->living directly: infeasible even at 11x11 (wrong row). Takes over the role hall<->great played in the gr sibling."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining stack front-to-rear -- open mouth, no wall (ld style)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen stack front-to-rear -- open pass-through, matches the solver's default kitchen+dining-must-stack rule directly."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "master",
+      "b": "common",
+      "weight": 20,
+      "note": "keep the master-adjacent side of the wet core close to master. Unchanged from the gr sibling."
+    }
+  ],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "left",
+    "private_rooms": [
+      "master",
+      "ensuite",
+      "standard",
+      "common"
+    ],
+    "public_rooms": [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json",
+  "match_bedroom_widths": true,
+  "match_bath_widths": true,
+  "bedroom_band_fills_width": true,
+  "left_anchored": [
+    "master",
+    "ensuite",
+    "standard"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "standard"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "master",
+      "ensuite",
+      "standard"
+    ],
+    [
+      "master",
+      "common",
+      "standard"
+    ],
+    [
+      "master",
+      "hall",
+      "standard"
+    ],
+    [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_side_split_baths_cl_hall_ld",
+      "when": {
+        "buildable_area_lt_sqm": 100
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Unchanged from the gr sibling -- tried loosening both auto_apply floors (kitchen 1.8->1.6, hallway 0.95->0.9) on the LDK draft to chase gr's smaller 9.5x9.5 floor; true floor stayed at 9.9x9.9 regardless, confirming the extra ~0.4 m the LDK split costs is a genuine structural cost of the hall->dining connection (dining's width has to satisfy both the hall's mouth AND its own living/kitchen stacking), not a tunable profile threshold. Reverted to the gr sibling's original values."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Created 2026-07-20 as an LDK split (living/dining/kitchen stacked",
+    "front-to-rear, the solver's default LDK arrangement) of",
+    "1s_2br_sq_side_split_baths_cl_hall_gr -- gr sibling deleted the same",
+    "day, this topology replaces it. Private column + hall structure",
+    "entirely unchanged: master front / standard rear, ensuite+common wet",
+    "core and a hallway both tucked into the middle band, bedroom and bath",
+    "doors all open onto the hall (never directly onto the public side).",
+    "",
+    "Layout intent (canonical, brief.carport_side='right'):",
+    "  Front: [master                              | living                   ]",
+    "  Mid:   [ensuite | common  | HALL            | dining                   ]",
+    "  Rear:  [standard                            | kitchen                  ]",
+    "",
+    "Only ONE adjacency changed role: hall's open-mouth connection moves",
+    "from great_room to dining (not living) -- the hall sits in the MIDDLE",
+    "band between master and standard, so its wall has to align with",
+    "whichever public room occupies that same middle row. Verified this",
+    "empirically: hall->living tested directly and is infeasible even at",
+    "11x11 (wrong row), hall->dining solves cleanly. living gets",
+    "hosts_entry instead of great (front-most public room, same role).",
+    "",
+    "Published minimum: 10x10 (true floor ~9.9x9.9, confirmed by",
+    "bisection). This is WORSE than the gr sibling's 9.5x9.5 floor --",
+    "unlike cl_gr->cl_ld (smaller floor) and bath_gr->bath_ld (same floor",
+    "after re-tuning), the LDK split here costs about 0.4 m of minimum lot",
+    "size. Tried loosening the compact-shell profile's auto_apply floors",
+    "(kitchen 1.8->1.6, hallway 0.95->0.9) to chase parity with gr; true",
+    "floor stayed at 9.9x9.9 regardless, so the gap is a genuine structural",
+    "cost of dining's width needing to satisfy both the hall's mouth AND",
+    "its own living/kitchen stacking, not a tunable threshold. Kept the",
+    "profile at its original (gr) values since loosening didn't help.",
+    "",
+    "At 10x10 and 11x11/12x12 (the published sweep sizes), warning counts",
+    "are IDENTICAL to the gr sibling at the same sizes (1 warn",
+    "tiered_preferred_dropped at 10x10, 0 warn at 11x11 and up) --",
+    "suggestion counts run slightly higher (more distinct rooms to flag),",
+    "cosmetic only.",
+    "",
+    "fallback_topology unchanged from the gr sibling -- still points to",
+    "1s_2br_sq_side_split_baths_cl_ld.json (confirmed dormant, never",
+    "triggered by any existing brief, same as before)."
+  ]
+}

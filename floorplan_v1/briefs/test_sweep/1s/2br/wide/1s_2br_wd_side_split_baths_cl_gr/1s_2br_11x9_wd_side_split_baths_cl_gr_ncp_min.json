@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MIN) for 1s_2br_wd_side_split_baths_cl_gr -- 11x9 m lot, 35 m2 buildable floor (5 m buildable depth). This is the shallow-depth end of the wide 2BR clustered-baths program: the ld sibling (1s_2br_wd_side_split_baths_cl_ld) needs >=5.5 m buildable depth for its living/dining/kitchen split and can't reach this size, so gr (combined great_room) is the topology to use here. Same lot as its briefs/test/ canonical brief.",
+  "lot_width": 11.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_baths_cl_gr.json"
+}

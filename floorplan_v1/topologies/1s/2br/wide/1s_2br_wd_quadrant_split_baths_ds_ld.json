@@ -75,7 +75,7 @@
       "b": "great",
       "min_shared_wall_m": 2.0,
       "kind": "bedroom_to_public_wall",
-      "note": "master's front wall = great_room's rear wall — geometry-only, NO door. Master's actual public access is via hall, not directly into great_room. Same idiom as master↔great in 1s_2br_wd_l_wrap_bath_hall_gr."
+      "note": "master's front wall = great_room's rear wall — geometry-only, NO door (a bedroom_to_public_wall adjacency pins the shared edge without granting access). Master's actual public access is via hall, not directly into great_room."
     },
     {
       "a": "common",
@@ -226,7 +226,7 @@
     "",
     "standard's only door is to great_room. standard<->kitchen is geometry-only (wall, no door) — deliberately no direct bedroom-to-kitchen opening.",
     "",
-    "zone_split is null here (unlike the vertical- and horizontal-split topologies) — the private/public boundary isn't a single axis, so per-room 'zone' tags carry the classification instead. Same convention already used by 1s_2br_wd_l_wrap_bath_hall_gr.",
+    "zone_split is null here (unlike the vertical- and horizontal-split topologies) — the private/public boundary isn't a single axis, so per-room 'zone' tags carry the classification instead.",
     "",
     "Confirmed target_shell: wide — the sketch's ~10x7 m footprint (1.43:1) matches the wide-shell catalog's proportions much more closely than squarish.",
     "",

@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MED) for 1s_2br_wd_side_split_baths_cl_ld -- 12x10 m lot, 48 m2 buildable floor (6 m buildable depth). Published minimum for this topology (true floor ~11.9x10) -- deep enough for the living/dining/kitchen 3-room stack, unlike the gr sibling's 11x9 shallow-depth min which this topology can't reach. Same lot as its briefs/test/ canonical brief.",
+  "lot_width": 12.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_baths_cl_ld.json"
+}

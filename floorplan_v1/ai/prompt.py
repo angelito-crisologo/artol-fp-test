@@ -251,12 +251,6 @@ the example briefs and their authored topologies below as guidance.
 # brief is what a user might have written to elicit that topology — when
 # Claude sees a new brief, it picks the closest exemplar feeling.
 EXEMPLARS = [
-    ("Standard mid-market 2-bedroom open-plan home. Comfortable living and "
-     "dining, bathrooms convenient to the bedrooms, nothing exotic. "
-     "Ensuite near master, common bath off the great room — distributed baths "
-     "(no shared plumbing wall between the two bathrooms). Open-plan great "
-     "room combines living, dining, and kitchen.",
-     "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_gr.json"),
     ("2-bedroom where the two bathrooms cluster together between the bedrooms "
      "and share a plumbing wall — the bath block sits BETWEEN the standard "
      "bedroom (front) and master (rear), acting as the acoustic buffer between "

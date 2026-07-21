@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MAX) for 1s_2br_wd_front_back_split_bath_hall_ld -- 13x9 m lot, 45 m2 buildable floor (9x5 envelope). The widest of the sweep trio (13 m), at the topology's shallow depth-5 floor. Solves natively 0-warning. Full LDK front, bedrooms + central hall notch across the rear.",
+  "lot_width": 13.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_front_back_split_bath_hall_ld.json"
+}

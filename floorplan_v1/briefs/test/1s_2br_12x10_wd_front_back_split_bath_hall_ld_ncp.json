@@ -1,0 +1,22 @@
+{
+  "intent": "2BR / 1 bath, FRONT-BACK split with central hall notch, full LDK front, no carport. 12x10 lot gives an 8x6 envelope = 48 m2 floor -- the published minimum (front-back split halves the depth per band, so it needs buildable depth ~5-6 m; sub-minimum lots route to the vertical-split hall sibling). The whole FRONT half is a full LDK: living (left) | dining (middle) | kitchen (right), side by side. The whole REAR half is private: master (left) | hall+T&B middle column | standard (right). Master, standard, and the single T&B all door into the central hall; the hall opens into dining. No ensuite.",
+  "lot_width": 12.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [
+    "one common bath (T&B)",
+    "central hallway serving both bedrooms and the T&B",
+    "front-back split: full LDK across the front, bedrooms across the rear",
+    "separate living, dining, and kitchen side by side",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_front_back_split_bath_hall_ld.json"
+}

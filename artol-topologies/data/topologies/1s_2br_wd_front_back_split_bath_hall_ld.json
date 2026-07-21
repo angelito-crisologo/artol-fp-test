@@ -1,0 +1,270 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_wd_front_back_split_bath_hall_ld",
+  "label": "Wide-shell 2BR / 1 bath, FRONT-BACK split, LD style with mid HALL notch \u2014 the entire front (street) half is a full LDK: living (left) | dining (middle) | kitchen (right), side by side. The entire rear half is private: master (left) | [hall notch in front, T&B behind] (middle) | standard (right). Master, standard, and the T&B all door into the central hall; the hall opens into the dining room. No ensuite.",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's east wall (front portion) has a door into the hall \u2014 master's only public access, via the hall. Master is the full-depth left room of the rear band."
+    },
+    {
+      "a": "standard",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "standard's west wall (front portion) has a door into the hall \u2014 standard's only public access. Standard is the full-depth right room of the rear band."
+    },
+    {
+      "a": "common",
+      "b": "hall",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "T&B's south (front) wall opens into the hall \u2014 the single bath's only door. T&B sits behind (north of) the hall in the middle column, so both bedrooms reach it via the hall."
+    },
+    {
+      "a": "master",
+      "b": "common",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "T&B's west wall touches master's east wall (rear portion) \u2014 shared wall only, no door. Acoustic buffer."
+    },
+    {
+      "a": "standard",
+      "b": "common",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "T&B's east wall touches standard's west wall (rear portion) \u2014 shared wall only, no door."
+    },
+    {
+      "a": "hall",
+      "b": "dining",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "hall's south wall is an open mouth into dining (no door \u2014 codebase rule: hallway<->public is always open-plan). The hall notch pokes down to the front/rear band boundary; dining is the middle public room directly in front of it. This is the sole public connection for the whole private band."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining sit side by side in the front band \u2014 open plan, no wall (requires ldk_horizontal, since they're horizontal not stacked)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen sit side by side \u2014 open pass-through. living | dining | kitchen form one continuous LDK across the front."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "living",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "rear",
+    "private_rooms": [
+      "master",
+      "standard",
+      "common",
+      "hall"
+    ],
+    "public_rooms": [
+      "living",
+      "dining",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json",
+  "match_bedroom_widths": false,
+  "match_widths": [
+    [
+      "hall",
+      "common"
+    ]
+  ],
+  "ldk_horizontal": true,
+  "kitchen_rear_pin": false,
+  "claim_dead_strips": true,
+  "left_anchored": [
+    "master",
+    "living"
+  ],
+  "right_anchored": [
+    "standard",
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master",
+    "standard",
+    "common"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "living",
+      "master"
+    ],
+    [
+      "dining",
+      "hall"
+    ],
+    [
+      "kitchen",
+      "standard"
+    ],
+    [
+      "hall",
+      "common"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_front_back_split_bath_hall_ld",
+      "when": {
+        "buildable_area_lt_sqm": 90
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 1.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "master_bedroom": {
+          "max_area_sqm": 18.0
+        }
+      },
+      "rationale": "Splitting the lot front-back halves the usable depth per band, so compact lots get tight \u2014 the private band has to fit master, the hall+T&B middle column, and standard side by side in one band of depth. auto_apply floors kitchen width and the T&B area, holds the hall at PH minimum corridor depth (1.0 m), and caps master at 18 m2 so its priority weight doesn't crowd the middle column or standard."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "side_setback",
+      "covered": false,
+      "behind": "kitchen",
+      "note": "kitchen sits at the FRONT (street) here, not the rear, so it has no rear wall to extend a service tail from \u2014 the dirty kitchen extends off kitchen's outer (right) side wall instead, same as the other front-back-split topology."
+    },
+    {
+      "type": "service_area",
+      "location": "side_setback",
+      "covered": false,
+      "note": "grouped with dirty_kitchen on the kitchen (right) side."
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false,
+      "note": "on the living (left) side, opposite the kitchen/service side."
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Created 2026-07-21 to spec: wide, 1-storey, single T&B (no ensuite),",
+    "master + standard. Front-back split \u2014 the whole FRONT half is a full LDK",
+    "(living | dining | kitchen, side by side), the whole REAR half is private",
+    "(master | middle column | standard). Distinct from",
+    "1s_2br_wd_front_back_split_baths_ds_gr (that one is 2 baths, gr-style",
+    "combined great room, and its bedrooms door straight across the band",
+    "boundary with no hall). This one is single-bath, full-LDK, and uses a",
+    "central HALL notch for circulation.",
+    "",
+    "Layout intent (canonical form, matches solved geometry):",
+    "  Rear (private):  [ MASTER | (hall / T&B) | STANDARD ]",
+    "  Front (public):  [ LIVING | DINING       | KITCHEN  ]",
+    "  Middle column, front-to-rear: HALL (front, opens to dining) then T&B (rear).",
+    "",
+    "The HALL is a notch in the middle column: it pokes forward to the",
+    "front/rear band boundary and opens (open-plan mouth) into the dining",
+    "room. master (left, full depth) and standard (right, full depth) each",
+    "door into the hall from their side; the T&B sits behind the hall and",
+    "doors into it from the rear. So master, standard, AND the T&B all reach",
+    "the public side through the one hall \u2014 hallway is a valid bedroom-access",
+    "room per the validator, which is why this works where a no-hall version",
+    "failed (a bedroom can't be accessed only through the kitchen, and with",
+    "the LDK split the right-side bedroom would otherwise sit above only the",
+    "kitchen). match_widths pins hall width == T&B width so the middle column",
+    "reads as one clean vertical band.",
+    "",
+    "SOLVER REQUIREMENTS (same family as the other front-back split): (1)",
+    "zone_split axis=horizontal, private_side=rear \u2014 one full-width wall",
+    "divides the two bands; (2) ldk_horizontal=true \u2014 the LDK is side-by-side,",
+    "not the solver's default front-to-rear stack, so its stacking rules must",
+    "be disabled; (3) kitchen_rear_pin=false \u2014 kitchen is at the FRONT here,",
+    "not the rear; (4) master left_anchored but NOT the public rooms crowding",
+    "one edge (living is left_anchored, kitchen right_anchored \u2014 the ends",
+    "only). claim_dead_strips=true because at larger sizes the ragged",
+    "master/standard/middle-column widths leave interior pockets that living",
+    "and the hall absorb as L-alcoves (0 dead space across the band).",
+    "",
+    "FEASIBILITY: broad 0-warning band \u2014 buildable width ~7-13 m, depth >= ~5-6",
+    "m (lots ~11x10 / 12x9 up through ~17x12). Published minimum 12x10",
+    "(buildable 8x6). Upper-width limit ~buildable 13 (18x* infeasible) is the",
+    "usual soft public-room aspect cap, past the 2BR floor-area band anyway.",
+    "Sub-minimum lots route to the vertical-split single-bath hall topology",
+    "(1s_2br_wd_side_split_bath_hall_gr) via fallback_topology.",
+    "",
+    "PLUMBING NOTE: the T&B lands rear-middle, far from the front-right",
+    "kitchen, so there's no shared wet-wall between them (unlike the",
+    "vertical-split topologies where bath and kitchen share a rear wet-stack).",
+    "The T&B runs independent plumbing to the rear wall. Accepted trade-off of",
+    "the front-back split with a full LDK front \u2014 a real-build efficiency",
+    "point, not a functional problem.",
+    "",
+    "IMPORTANT deviation (shared with the other front-back split): because",
+    "kitchen sits at the FRONT, the dirty kitchen + service area relocate to",
+    "the kitchen-side (right) side_setback rather than a rear_setback."
+  ]
+}

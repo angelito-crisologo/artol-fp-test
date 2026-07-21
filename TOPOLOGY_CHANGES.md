@@ -50,9 +50,142 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
-_(empty — a full regen was run 2026-07-20, see Applied history)_
+_(empty — a full regen was run 2026-07-21, see Applied history)_
 
 ## Applied history
+
+**2026-07-21 — Full regen (46 topologies, 33 verified, 13 not yet tested) — new front-back hall_ld + l_wrap deletion**
+Ran `tools/topology_catalog/build_catalog.py` to fold in two changes since
+the previous same-day regen (net topology count unchanged: 46 → 46, −1
+`l_wrap` +1 front-back):
+- **New `1s_2br_wd_front_back_split_bath_hall_ld`** — wide 1-storey, single
+  T&B, full LDK across the front (living|dining|kitchen side by side),
+  bedrooms across the rear, central HALL notch (master/standard/T&B all
+  door into it, hall opens into dining). The hall is what makes a full-LDK
+  front-back split feasible — without it the right bedroom sits above only
+  the kitchen, failing the hard bedroom-access validator rule (kitchen ∉
+  `ACCESS_FROM`). Solver reqs: `zone_split` horizontal, `ldk_horizontal`,
+  `kitchen_rear_pin: false`, end-only anchors, `match_widths` hall=T&B,
+  `claim_dead_strips: true`. 0-warning band ~11×10/12×9 to 17×12; canonical
+  min 12×10, fallback → `hall_gr`. Sweep set min 12×9 / med 12×10 / max
+  13×9. See [[wide-2br-front-back-hall-ld]].
+- **Deleted `1s_2br_wd_l_wrap_bath_hall_gr`** — near-duplicate of
+  `hall_gr` (differed only in a `master↔great` wall + dropped `zone_split`);
+  distinction was patchy (fell back to `hall_gr` byte-identical at many
+  sizes). Nothing fell back TO it. See [[wide-2br-l-wrap-deleted]].
+Verified: HTML well-formed (div balance 1768/1768), the new front-back
+topology renders with card + plan (Verified). Manually pruned 3 orphaned
+`l_wrap` build artifacts the regen left behind (`data/topologies/`,
+`data/briefs/`, `plans/` — 0 index references, source deleted). 49/49
+regression + 49/49 sweep pass.
+
+**2026-07-21 — Full regen (46 topologies, 33 verified, 13 not yet tested) — wide-cl saga + claim_dead_strips flag + new hall_ld**
+Ran `tools/topology_catalog/build_catalog.py` to fold in everything since
+the 2026-07-20 ds_gr regen. Net topology count 44 → 46 (+`cl_gr` restored,
++`hall_ld` new). Changes captured:
+- **New `1s_2br_wd_side_split_bath_hall_ld`** — LDK conversion of the wide
+  single-bath hall topology, built as a depth-gated SIBLING (`hall_gr`
+  kept: fallback target for 3 topologies + reaches shallower depth-5 lots).
+  Broad clean 0-warning band (buildable width 7–12, depth ≥6, ~11×10 to
+  16×12) — much better than narrow-band `cl_ld` (single-bath = fewer
+  private-side width constraints). Published min 12×10; `fallback_topology`
+  → `hall_gr` for sub-depth-6 lots; `claim_dead_strips: true`. New briefs:
+  LD canonical 12×10, plus 11×9 for `hall_gr` (had only 14×10). Sweep set:
+  gr min 11×9, ld med 12×10, ld max 13×11. See [[wide-2br-hall-gr-ld-pair]].
+- **SHARED CODE: new per-topology flag `claim_dead_strips`** (`solver/topology.py`
+  + `run.py`, threaded through all 8 construction sites; default False =
+  zero effect anywhere it isn't set). Wires the multi-storey dead-strip
+  claimer into the single-storey realize path. Enabled on `cl_ld` (claims
+  ~0.86 m² at 12×10 → 0 dead space) and the new `hall_ld`.
+- **Wide `cl_gr`/`cl_ld` pair** — `cl_gr` deleted then restored same-session
+  as `cl_ld`'s depth-gated compact sibling (retuned its profile: kitchen
+  1.8→1.6, hall greatest-dim 2.8→2.2-2.8 range); `cl_ld` narrow-band LDK
+  (12×10–15×11.5), `claim_dead_strips` added. Fixed a month-old dangling
+  `fallback_topology` (both had pointed at the 2026-06-25-deleted
+  `wd_side_split_bath_gr`); `cl_ld` now → `cl_gr`, `cl_gr` → `hall_gr`.
+  See [[wide-2br-cl-gr-to-ld]].
+Verified: HTML well-formed (div balance 1768/1768), all 4 wide-cl/hall
+topologies render with cards + plans, `hall_ld` shows Verified. Also pruned
+2 long-stale orphaned build artifacts left from the 2026-07-20 1BR-hall
+removals (`1s_1br_nw_side_corridor_bath_hall`, `1s_1br_wd_side_split_bath_hall_gr`
+— 0 index references, source long gone). 49/49 regression + 46/46 sweep pass.
+
+**2026-07-20 — Full regen (44 topologies, 31 verified, 13 not yet tested) — ds_gr removed (no replacement)**
+Ran `tools/topology_catalog/build_catalog.py` to pick up the deletion of
+`1s_2br_sq_side_split_baths_ds_gr` — topology count actually DROPPED this
+time (45→44, verified 32→31), unlike the three prior gr→ld conversions
+which were net-zero swaps: `1s_2br_sq_side_split_baths_ds_ld` already
+existed as an independent topology beforehand, so no replacement was
+built. Deleted the topology file + 3 `briefs/test/test_mins/`
+fixtures/baselines. Removed the now-redundant `ds_gr` few-shot entry in
+`ai/prompt.py` and the `ds_gr` line in `lot_size_sweep.py`'s topology
+list. Also fixed 6 stale comparative-prose mentions of "squarish ds_gr"
+inside the unrelated wide topology `1s_2br_wd_side_split_baths_ds_gr`'s
+own label/notes (its id and its own compact-shell profile name are
+unrelated and were left alone) — repointed to "ds_ld", verified the
+"omits fallback_topology" claim still holds for `ds_ld`. Verified: HTML
+well-formed (div tag balance 1669/1669), zero remaining
+`1s_2br_sq_side_split_baths_ds_gr` mentions anywhere in the built site,
+manually deleted 3 leftover `ds_gr` build artifacts (`data/topologies/`,
+`data/briefs/`, `plans/`). 47/47 regression + 40/40 sweep fixtures pass.
+See [[squarish-2br-ds-gr-removed]].
+
+**2026-07-20 — Full regen (45 topologies, 32 verified, 13 not yet tested) — cl_hall_gr → cl_hall_ld swap**
+Ran `tools/topology_catalog/build_catalog.py` to pick up the third gr→ld
+conversion in this family (after `cl_gr`→`cl_ld` and `bath_gr`→`bath_ld`):
+`1s_2br_sq_side_split_baths_cl_hall_gr` deleted, replaced by
+`1s_2br_sq_side_split_baths_cl_hall_ld` (net topology count unchanged: 45
+in, 45 out). Identical private column + mid-band hallway structure;
+public side now living/dining/kitchen stacked front-to-rear, with the
+hall's open-mouth adjacency retargeted from `great` to `dining`
+specifically (tested `hall→living` directly — infeasible even at 11×11,
+since the hall's middle-band position has to align with the middle-row
+public room). Unlike the other two conversions in this family, this one
+is a net **loss**: true floor moved from gr's 9.5×9.5 to ~9.9×9.9, and
+loosening the compact-shell profile did not recover it (confirmed
+structural, not tunable). Published minimum 10×10 anyway. Verified: HTML
+well-formed (div tag balance 1716/1716), `cl_hall_ld`'s gallery card +
+detail page render with "Verified" status and its own SVG plan,
+`cl_hall_gr` no longer appears as a topology entry. Manually deleted 3
+leftover `cl_hall_gr` artifacts the regen script left behind
+(`data/topologies/`, `data/briefs/`, `plans/` — one file each). 50/50
+regression + 32/32 sweep fixtures pass (36/36 by the time near-square
+fixtures were added for both `cl_hall_ld` and `bath_ld` afterward — those
+sweep-only fixtures aren't part of the catalog build). Full narrative
+detail: CLAUDE.md "Recently completed" + memory
+[[squarish-2br-cl-hall-gr-to-ld]].
+
+**2026-07-20 — Full regen (45 topologies, 32 verified, 13 not yet tested) — bath_gr → bath_ld swap + zone-ratio generalization**
+Ran `tools/topology_catalog/build_catalog.py` to pick up three same-day
+changes on the squarish 2BR single-bath topology (net topology count
+unchanged: 45 in, 45 out):
+1. **Deleted `1s_2br_sq_side_split_bath_gr`, replaced by
+   `1s_2br_sq_side_split_bath_ld`** — great-room public side converted to
+   living/dining/kitchen stacked front-to-rear. Published minimum 10×10
+   (down from gr's 10.5×10.5); required re-tuning the kitchen
+   compact-shell profile's `min_least_dim_m` from 2.0 to 1.6. Not a
+   clean-warning win like `cl_gr`→`cl_ld` — `window_area_habitable` and
+   `bath_door_into_kitchen` persist at the same sizes gr had them.
+2. **Repositioned master to the rear** (standard now front, master rear) —
+   mirrors the `cl_gr`→`cl_ld` reposition mechanism. Tightened the true
+   floor to ~9.65×9.65 (10×10 stays published).
+3. **SHARED CODE:** generalized `solver.py`'s hardcoded 55/45-favoring-
+   private zone-ratio block into per-topology `zone_ratio_private_floor_pct`
+   / `zone_ratio_private_target_pct` fields (default 50.0/55.0, verified
+   byte-for-byte unchanged for every other topology). `bath_ld` is the
+   first topology to use non-default values (40.0/45.0, a deliberate 45%
+   private / 55% public split including the bath), paired with a
+   `zone_balance_rooms` override. See [[zone-ratio-configurable]].
+
+Verified: HTML well-formed (div tag balance 1708/1708), `bath_ld`'s
+gallery card + detail page render with "Verified" status and its own SVG
+plan, `bath_gr` no longer appears as a topology entry. Manually deleted 3
+leftover `bath_gr` artifacts the regen script left behind (`data/topologies/`,
+`data/briefs/`, `plans/` — one file each; confirmed they were the 2BR ones,
+not the still-existing unrelated 1BR `1s_1br_sq_side_split_bath_gr`).
+56/56 regression + 29/29 sweep fixtures pass. Full narrative detail for
+all three changes: CLAUDE.md "Recently completed" + memory
+[[squarish-2br-bath-gr-to-ld]] / [[zone-ratio-configurable]].
 
 **2026-07-20 — Full regen (45 topologies, 32 verified, 13 not yet tested) — cl_gr → cl_ld swap**
 Ran `tools/topology_catalog/build_catalog.py` to pick up the deletion of

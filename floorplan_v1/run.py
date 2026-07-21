@@ -294,12 +294,15 @@ def _strip_carport_from_topology(topo):
         match_bath_widths=topo.match_bath_widths,
         match_widths=list(topo.match_widths),
         private_area_floor=topo.private_area_floor,
+        zone_ratio_private_floor_pct=topo.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=topo.zone_ratio_private_target_pct,
         zone_balance_rooms=topo.zone_balance_rooms,
         storeys=topo.storeys,
         kitchen_rear_pin=topo.kitchen_rear_pin,
         kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
+        claim_dead_strips=topo.claim_dead_strips,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         ldk_horizontal=topo.ldk_horizontal,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
@@ -334,12 +337,15 @@ def _strip_carport_void_only(topo):
         match_bath_widths=topo.match_bath_widths,
         match_widths=list(topo.match_widths),
         private_area_floor=topo.private_area_floor,
+        zone_ratio_private_floor_pct=topo.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=topo.zone_ratio_private_target_pct,
         zone_balance_rooms=topo.zone_balance_rooms,
         storeys=topo.storeys,
         kitchen_rear_pin=topo.kitchen_rear_pin,
         kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
+        claim_dead_strips=topo.claim_dead_strips,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         ldk_horizontal=topo.ldk_horizontal,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
@@ -377,12 +383,15 @@ def _strip_setback_element(topo, element_type: str):
         match_bath_widths=topo.match_bath_widths,
         match_widths=list(topo.match_widths),
         private_area_floor=topo.private_area_floor,
+        zone_ratio_private_floor_pct=topo.zone_ratio_private_floor_pct,
+        zone_ratio_private_target_pct=topo.zone_ratio_private_target_pct,
         zone_balance_rooms=topo.zone_balance_rooms,
         storeys=topo.storeys,
         kitchen_rear_pin=topo.kitchen_rear_pin,
         kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
+        claim_dead_strips=topo.claim_dead_strips,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         ldk_horizontal=topo.ldk_horizontal,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
@@ -862,6 +871,15 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # L-shaped. Without this, the wall along the void's north edge doesn't
     # sit flush with the void (a small alcove of unowned interior remains).
     n_alcoves = claim_void_alcoves(layout, void_rects=void_rects, verbose=verbose)
+    # Opt-in dead-strip cleanup (single-storey): topologies that set
+    # claim_dead_strips=true get the same rectangular-interior-strip claimer
+    # the multi-storey path always runs. Off by default so the frozen
+    # single-storey baselines are untouched; enabled on topologies whose
+    # ragged room widths at tight lot sizes leave dead pockets no edge-snap
+    # can reach (e.g. the wide side-split cl topologies at their compact min).
+    if getattr(topo, "claim_dead_strips", False):
+        from snap_gaps import claim_dead_strips as _claim_dead_strips
+        _claim_dead_strips(layout, void_rects=void_rects, verbose=verbose)
     # Build the architectural plan now (post-snap) so the validator's
     # window-area checks (W-H1, W-H2) can see the windows. Attach the plan
     # to the layout — downstream rendering reuses it instead of rebuilding.

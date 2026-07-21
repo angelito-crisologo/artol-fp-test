@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (near-square, med-tier) for 1s_2br_sq_side_split_bath_ld -- 11x10 m lot, 42 m2 buildable floor (envelope 7x6, ratio 1.167, still squarish shell). Hand-picked; mirrors near_med (10x11, same tag, unique by filename dims) on the other side of ratio 1.00. Carries only the bath_door_into_kitchen warning, one fewer than its mirror -- this topology's layout isn't symmetric under a width/depth swap.",
+  "lot_width": 11.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_bath_ld.json"
+}

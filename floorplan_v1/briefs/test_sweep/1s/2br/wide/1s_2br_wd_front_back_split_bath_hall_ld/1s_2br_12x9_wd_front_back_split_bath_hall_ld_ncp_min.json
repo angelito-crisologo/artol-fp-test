@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MIN) for 1s_2br_wd_front_back_split_bath_hall_ld -- 12x9 m lot, 40 m2 buildable floor (8x5 envelope). The shallowest lot that solves on this topology (0 warn), sitting right at its buildable-depth floor of ~5 m; smallest floor area of the feasible sizes. Used instead of 11x9 (requested), which is below the minimum and falls back to the vertical-split hall sibling. Full LDK front, bedrooms + central hall notch across the rear.",
+  "lot_width": 12.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_front_back_split_bath_hall_ld.json"
+}

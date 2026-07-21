@@ -1,0 +1,245 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_2br_sq_side_split_bath_ld",
+  "label": "Squarish 2BR / 1 bath, LD style -- standard front-left, master rear-left, one common bath at the rear next to kitchen, public column splits into living (front) + dining (mid) + kitchen (rear), all stacked front-to-rear -- the solver's default LDK arrangement, no ldk_horizontal needed. Deliberately public-heavy zone ratio: 45% private (bedrooms) / 55% public (LDK + bath).",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "standard",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "living",
+      "type": "living_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "master",
+      "b": "standard",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master and standard stack vertically along the left wall -- standard at the front (street side), master at the rear. Shared wall only, no door between them. Repositioned 2026-07-20 (master moved to the rear)."
+    },
+    {
+      "a": "standard",
+      "b": "living",
+      "min_shared_wall_m": 1.2,
+      "kind": "bedroom_to_public",
+      "note": "standard's door -- opens into living, its front-most public neighbor. Keeps the wider 1.2 m floor for door-swing clearance (same value standard has always used, now paired with living instead of dining after the 2026-07-20 reposition)."
+    },
+    {
+      "a": "master",
+      "b": "dining",
+      "min_shared_wall_m": 0.8,
+      "kind": "bedroom_to_public",
+      "note": "master's door -- opens into dining, its rear-most public neighbor. Keeps master's original 0.8 m floor, now paired with dining instead of living after the 2026-07-20 reposition (master moved to the rear)."
+    },
+    {
+      "a": "common",
+      "b": "dining",
+      "min_shared_wall_m": 0.7,
+      "kind": "bath_door",
+      "door_host_group": "common_access",
+      "note": "common's public door -- opens into dining (its nearest public neighbor at the rear), matching its proximity to master (rear bedroom as of the 2026-07-20 reposition). DEFAULT host of the 'common_access' door-host group; a brief door_host: {\"common\": \"kitchen\"} moves the door to the kitchen wall instead, leaving this wall solid. Takes over the role common<->great played in the gr sibling."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "wet_core",
+      "door_host_group": "common_access",
+      "door_allowed": true,
+      "door_kind": "bath_door",
+      "min_solid_wall_m": 0.5,
+      "note": "shared plumbing wall -- kitchen and common bath stack rear-right; bath west of kitchen. ALTERNATE host of the 'common_access' group: door placed here when shared wall >= 1.40 m (clear 0.70 + frame 0.20 + guard 0.50); otherwise falls back to dining. Unchanged from the gr sibling."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining stack front-to-rear -- open mouth, no wall (ld style)."
+    },
+    {
+      "a": "dining",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "dining and kitchen stack front-to-rear -- open pass-through, matches the solver's default kitchen+dining-must-stack rule directly."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "living",
+  "match_bedroom_widths": false,
+  "zone_balance_rooms": {
+    "private": ["master", "standard"],
+    "public": ["living", "dining", "kitchen", "common"]
+  },
+  "zone_ratio_private_floor_pct": 40.0,
+  "zone_ratio_private_target_pct": 45.0,
+  "left_anchored": [
+    "standard",
+    "master"
+  ],
+  "right_anchored": [
+    "kitchen"
+  ],
+  "rear_anchored": [
+    "master",
+    "common"
+  ],
+  "front_to_rear_stacks": [
+    ["standard", "master"],
+    ["living", "dining", "kitchen"]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_side_split_bath_ld",
+      "when": {
+        "buildable_area_lt_sqm": 75
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.6
+        }
+      },
+      "rationale": "Floor kitchen width at 1.6 m on compact envelopes -- a modest work-triangle guard just above the PD 1096 hard floor (1.5 m). The gr sibling used 2.0 m here, but that pushes the true minimum to 11x11; 1.6 m is the highest floor that still lets 10x10 solve (9.9x9.9 is infeasible, confirmed via bisection), matching the requested minimum exactly."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "Created 2026-07-20 as an LDK split (living/dining/kitchen stacked",
+    "front-to-rear, the solver's default LDK arrangement) of",
+    "1s_2br_sq_side_split_bath_gr -- gr sibling deleted the same day, this",
+    "topology replaces it. Master repositioned to the rear the same day",
+    "(standard now front-left, master rear-left) -- adjacencies keep each",
+    "bedroom's original wall-width value (standard's wider 1.2 m clearance",
+    "floor, master's 0.8 m) but reassigned to whichever public room now",
+    "occupies that geometric role, same mechanism as the cl_gr->cl_ld swap.",
+    "Single common bath stays rear-anchored next to kitchen (no separate",
+    "bath band -- this is the 1-bath program, unlike the 2-bath cl_gr/cl_ld",
+    "pair which has a full-depth ensuite+common middle band); common was",
+    "never wired to a bedroom directly, so its own adjacencies (dining +",
+    "kitchen wet-core) are untouched by the reposition.",
+    "",
+    "Layout intent (canonical form -- brief.carport_side='right'):",
+    "  Front: [standard  | living                        ]",
+    "  Rear:  [master    | common | dining->kitchen       ]",
+    "",
+    "standard's door opens into living (front, mirrors its old ->great",
+    "role). master's door opens into dining (rear, mirrors its old ->great",
+    "role). common's public door goes to dining, matching its proximity to",
+    "master (now the rear bedroom). The kitchen<->common wet-core alternate",
+    "host is unchanged.",
+    "",
+    "Published/canonical minimum: 10x10 (chosen deliberately per an earlier",
+    "session request, kept as-is through the master reposition). The",
+    "reposition actually tightened the solver's true floor further, to",
+    "~9.65x9.65 (9.6x9.6 infeasible, 9.65x9.65 solves -- confirmed by",
+    "bisection); 10x10 is no longer the bare minimum but is kept as the",
+    "published one since nothing asked for it to be re-tuned down again.",
+    "vs the gr sibling's 10.5x10.5. Unlike the cl_gr->cl_ld swap, this is",
+    "NOT a clean 0-warning win -- both window_area_habitable (kitchen, small",
+    "sizes only) and bath_door_into_kitchen (the door-host auto-scorer picks",
+    "kitchen over the group's dining default at every size) persist here",
+    "exactly as they did in the gr sibling at comparable sizes. The win is",
+    "purely the smaller minimum lot, not warning count. Re-verified after",
+    "the master reposition at the canonical sizes -- 10x10 and 10.5x10.5",
+    "unchanged (2 warn), 12x12 unchanged (1 warn); 11x11 briefly picked up a",
+    "second window_area_habitable warning after the reposition alone, but",
+    "the follow-up 45/55 zone-ratio change below pulled it back to 1 warn",
+    "at 11x11 -- see that paragraph.",
+    "",
+    "45/55 zone ratio (same day, second follow-up): user asked for the",
+    "private column (master+standard) at 45% of the private+public total",
+    "and the public side (living+dining+kitchen+common bath) at 55% --",
+    "opposite of the solver's catalog-wide default (55/45 favoring",
+    "private, with a hard floor of private>=public that would have made",
+    "45% private outright infeasible). This needed a real solver.py change,",
+    "not just a topology flag: generalized the previously-hardcoded 50%",
+    "hard-floor / 55% soft-target into two new configurable Topology",
+    "fields, zone_ratio_private_floor_pct and zone_ratio_private_target_pct",
+    "(defaults 50.0/55.0 reproduce every other topology's behavior",
+    "byte-for-byte -- verified via full regression before touching this",
+    "topology's own values). Set here to floor=40.0 / target=45.0. Also",
+    "added a zone_balance_rooms override so common counts toward the",
+    "public side (it's zone:'service', normally neutral/excluded from the",
+    "ratio entirely) -- the user's request explicitly included the bath",
+    "on the 55% side. Verified achieved ratio lands 44-46.5% private /",
+    "53.5-56% public across 9.7x9.7 through 13x13 -- e.g. exactly 45.0%/",
+    "55.0% at 10x10 and 12x12. Side effects: true floor tightened slightly",
+    "further to ~9.6x9.6 (10x10 stays published minimum); 11x11 dropped",
+    "back to 1 warning (window_area_habitable resolved itself under the",
+    "new ratio, see paragraph above); 10x10's baseline SVG refreshed",
+    "(warn/sugg counts unchanged: 2 warn, 6 sugg, but room proportions",
+    "shifted).",
+    "",
+    "Practical ceiling matches the locked 2BR/1bath floor-area knee (~13x13",
+    "/ 81 m2) -- solves through 13x13, goes non-monotonic above that (same",
+    "fixed max_area_sqm room-cap behavior documented for the gr sibling in",
+    "the squarish 2BR lot-size sweep, not a regression introduced here)."
+  ]
+}

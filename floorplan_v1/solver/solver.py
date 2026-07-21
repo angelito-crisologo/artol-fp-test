@@ -916,15 +916,21 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         terms.append(-int(sp.weight) * (adx + ady))
 
     # ---------- zone ratio (private/public) ----------
-    # Tiered enforcement:
-    #   - HARD floor: total private area >= 50% of (private + public). Guarantees
-    #     the private wing never collapses below half the livable footprint.
-    #   - SOFT bias: penalize |100 * private - 55 * (private + public)|.
-    #     Pulls the solver toward a 55/45 split (PH mid-market norm) without
-    #     making boundary briefs infeasible.
+    # Tiered enforcement, both target percentages configurable per topology
+    # (zone_ratio_private_floor_pct / zone_ratio_private_target_pct; default
+    # 50.0 / 55.0 reproduce the original PH mid-market fixed 55/45-favoring-
+    # private behavior exactly, so every topology that doesn't set these is
+    # byte-for-byte unaffected):
+    #   - HARD floor: total private area >= floor_pct% of (private + public).
+    #     Guarantees the private wing never collapses below that share of the
+    #     livable footprint.
+    #   - SOFT bias: penalize |(100-target_pct) * private - target_pct * public|,
+    #     zero when private / (private+public) == target_pct / 100. Pulls the
+    #     solver toward that split without making boundary briefs infeasible.
     # 'service' / 'circulation' rooms are excluded from both sides — they are
     # neutral overhead (baths, dirty kitchen, hallways) that take envelope
-    # space but don't bias the wing-balance ratio.
+    # space but don't bias the wing-balance ratio — unless zone_balance_rooms
+    # below explicitly folds one in.
     #
     # Topology escapes:
     #   - private_area_floor: false  -> skip this whole block (hard floor AND
@@ -934,7 +940,11 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     #   - zone_balance_rooms: {"private": [...], "public": [...]}  -> counts
     #     those exact room ids on each side instead of scanning room.zone,
     #     so e.g. a service-zoned bath that physically sits in the private
-    #     column can be counted toward the private wing.
+    #     (or public) column can be counted toward that wing for area balance.
+    #   - zone_ratio_private_floor_pct / zone_ratio_private_target_pct below
+    #     50 -> a deliberately public-heavy design (e.g. 45/55 favoring
+    #     public). Keep floor_pct <= target_pct on that side of 50 or the
+    #     hard floor contradicts the soft target and the block is infeasible.
     zbr = topology.zone_balance_rooms
     if zbr is not None:
         private_ids = [rid for rid in zbr.get("private", []) if rid in area]
@@ -948,15 +958,22 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         pub_total  = model.NewIntVar(0, max_sum, "pub_total")
         model.Add(priv_total == sum(area[i] for i in private_ids))
         model.Add(pub_total  == sum(area[i] for i in public_ids))
-        # Hard 50% floor: 2 * private >= (private + public)  ⟺  private >= public
-        # (avoids integer rounding issues that come with multiplying by 0.5)
-        model.Add(priv_total >= pub_total)
-        # Soft 55/45 bias: minimize |100 * private - 55 * (private + public)|
-        # which equals |45 * private - 55 * public|. Penalty weight is tuned to
-        # dominate per-room area tradeoffs (~BIG/100) without overpowering the
+        # Hard floor_pct% floor: (100-floor_pct)*private >= floor_pct*public
+        # ⟺ private / (private+public) >= floor_pct/100. Default floor_pct=50
+        # reduces to private >= public, identical to the original fixed floor
+        # (avoids integer rounding issues that come with multiplying by 0.5).
+        floor_pct = int(round(topology.zone_ratio_private_floor_pct))
+        model.Add((100 - floor_pct) * priv_total >= floor_pct * pub_total)
+        # Soft target_pct% bias: minimize |(100-target_pct)*private -
+        # target_pct*public|, zero when private/(private+public)==target_pct/100.
+        # Default target_pct=55 reduces to |45*private - 55*public|, identical
+        # to the original fixed bias. Penalty weight is tuned to dominate
+        # per-room area tradeoffs (~BIG/100) without overpowering the
         # preferred-low BIG bonuses.
+        target_pct = int(round(topology.zone_ratio_private_target_pct))
         ratio_delta_raw = model.NewIntVar(-100 * max_sum, 100 * max_sum, "ratio_delta")
-        model.Add(ratio_delta_raw == 45 * priv_total - 55 * pub_total)
+        model.Add(ratio_delta_raw ==
+                  (100 - target_pct) * priv_total - target_pct * pub_total)
         ratio_delta_abs = model.NewIntVar(0, 100 * max_sum, "ratio_delta_abs")
         model.AddAbsEquality(ratio_delta_abs, ratio_delta_raw)
         # Weight: BIG/50 puts the ratio bias on the same order of magnitude as

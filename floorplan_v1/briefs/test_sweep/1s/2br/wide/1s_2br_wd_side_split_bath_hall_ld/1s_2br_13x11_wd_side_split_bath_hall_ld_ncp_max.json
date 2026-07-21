@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MAX) for 1s_2br_wd_side_split_bath_hall_ld -- 13x11 m lot, 63 m2 buildable floor (9x7 envelope, buildable depth 7). Comfortably inside the topology's broad 0-warning band (buildable width 7-12, depth >= 6, ~11x10 up through 16x12).",
+  "lot_width": 13.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_ld.json"
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
   "id": "1s_2br_wd_side_split_baths_ds_gr",
-  "label": "Wide-shell 2BR / 2 baths DISTRIBUTED, no hall — ensuite sandwiched between master (front) and standard (rear) in the bedroom column, mirroring the squarish distributed-bath pattern (1s_2br_sq_side_split_baths_ds_gr). Both bedrooms door directly into the great room; common bath gets its own direct doors from standard (private route) and from the great room (guest-accessible route) instead of routing through a hall.",
+  "label": "Wide-shell 2BR / 2 baths DISTRIBUTED, no hall — ensuite sandwiched between master (front) and standard (rear) in the bedroom column, mirroring the squarish distributed-bath pattern (1s_2br_sq_side_split_baths_ds_ld). Both bedrooms door directly into the great room; common bath gets its own direct doors from standard (private route) and from the great room (guest-accessible route) instead of routing through a hall.",
   "target_shell": "wide",
   "rooms": [
     {
@@ -76,7 +76,7 @@
       "b": "common",
       "min_shared_wall_m": 0.8,
       "kind": "bath_door",
-      "note": "declared for adjacency/geometry purposes (pulls common next to standard) but architectural_plan.py's generic bedroom<->common-bath rule always suppresses this into a wall, never a door — common baths are never directly bedroom-accessible. Same no-op declaration exists on the squarish ds_gr sibling. Standard's only route to common is via the great room door below."
+      "note": "declared for adjacency/geometry purposes (pulls common next to standard) but architectural_plan.py's generic bedroom<->common-bath rule always suppresses this into a wall, never a door — common baths are never directly bedroom-accessible. Same no-op declaration exists on the squarish ds_ld sibling. Standard's only route to common is via the great room door below."
     },
     {
       "a": "common",
@@ -199,7 +199,7 @@
   ],
   "building_voids": [],
   "notes": [
-    "Wide-shell catalog topology — 2BR / 2 baths DISTRIBUTED, no hall. Sibling of 1s_2br_wd_side_split_baths_ds_hall_gr with the hall removed: both bedrooms door directly into the great room (same direct-access idiom master already used), and common bath picks up a second direct door onto the great room instead of routing through hall. Mirrors the squarish 1s_2br_sq_side_split_baths_ds_gr pattern, brought into the wide shell.",
+    "Wide-shell catalog topology — 2BR / 2 baths DISTRIBUTED, no hall. Sibling of 1s_2br_wd_side_split_baths_ds_hall_gr with the hall removed: both bedrooms door directly into the great room (same direct-access idiom master already used), and common bath picks up a second direct door onto the great room instead of routing through hall. Mirrors the squarish 1s_2br_sq_side_split_baths_ds_ld pattern, brought into the wide shell.",
     "",
     "Floor band: roughly 65-85 sqm buildable — same territory as the hall variant and side_split_baths_cl_ld, sized against 14x11 to 15x12 m lots.",
     "",
@@ -209,17 +209,17 @@
     "  Front band:  [master            |   GREAT ROOM (direct doors from both bedrooms)  ]",
     "",
     "Two sub-columns (no separate mid/hall column, unlike the hall variant):",
-    "  - LEFT  (~3-3.5 m): [master front, ensuite mid, standard rear] — bedroom column, same distributed stack as squarish ds_gr/ds_ld",
+    "  - LEFT  (~3-3.5 m): [master front, ensuite mid, standard rear] — bedroom column, same distributed stack as squarish ds_ld",
     "  - RIGHT (~5.5-6.5 m): [great_room front+mid, kitchen rear] — LDK column, with common bath tucked at the rear boundary next to kitchen",
     "",
     "Master and standard access: both door directly into the great room — no hall buffer for either bedroom.",
     "",
-    "Common bath access: ONE actual door, from the great room — the standard<->common adjacency above is declared (for geometry pull) but always gets suppressed to a wall by architectural_plan.py's generic bedroom<->common-bath rule, same as the squarish ds_gr sibling. So standard's route to the bath is through the great room, same as everyone else's.",
+    "Common bath access: ONE actual door, from the great room — the standard<->common adjacency above is declared (for geometry pull) but always gets suppressed to a wall by architectural_plan.py's generic bedroom<->common-bath rule, same as the squarish ds_ld sibling. So standard's route to the bath is through the great room, same as everyone else's.",
     "",
     "Wet stack: common bath's east wall = kitchen's west wall (wet_core). Combined with the rear-setback dirty kitchen, all wet utilities land in one rear-east bay, same as every other topology in the catalog.",
     "",
     "Carport: not declared in the base topology — NCP form, consistent with the other wide topologies. To add a side carport, add a building_void at front_right. For a front-parallel carport, brief.carport_side='front' bumps the front setback to 3 m. When brief.carport_side='left', the runner mirrors the topology so the LDK ends up on the left and the bedroom column on the right.",
     "",
-    "No fallback_topology declared — matches the squarish ds_gr sibling, which also omits one."
+    "No fallback_topology declared — matches the squarish ds_ld sibling, which also omits one."
   ]
 }
