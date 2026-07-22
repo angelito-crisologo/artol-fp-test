@@ -54,6 +54,83 @@ _(empty — a full regen was run 2026-07-22, see Applied history)_
 
 ## Applied history
 
+**2026-07-22 — SHARED CODE: kitchen exterior door generalized catalog-wide (user request)**
+`brief.kitchen_back_door` (default `true`) is now the single global "does
+the kitchen get an exterior door" option for every topology, working as
+originally documented instead of only working when the kitchen's rear
+wall happens to be exterior. `_dirty_kitchen_door` (`solver/architectural_plan.py`)
+without a declared `dirty_kitchen` setback element now searches REAR (N)
+first, then the two SIDE walls (E, then W) — never the front (S) wall,
+which is the street facade already hosting the main entry. A declared
+`dirty_kitchen` element still pins its own wall exactly as before (rear,
+or side_setback's E/W) and still overrides the option (a requested dirty
+kitchen always forces the door regardless of `kitchen_back_door`) —
+unchanged, already worked this way.
+
+Removed the one-off `kitchen_side_door` Topology flag added earlier this
+session for `1s_1br_nw_front_back_split_bath_ld` — superseded by the
+general default, deleted from `solver/topology.py` (dataclass + loader +
+all 4 in-file copy-constructors) and `run.py` (3 setback-stripping
+copy-constructors); the `_ld` topology's own flag reference removed too
+(same rendered door, now via the general path).
+
+Audited all 46 topologies (33 solvable via a real test brief, 13 with no
+test brief yet — unchanged): 28 already got a kitchen door via the rear
+wall; **5 gained a new door** they were structurally entitled to but never
+got — `1s_1br_nw_front_rear_bath_gr` (also had a now-stale
+`kitchen_back_door: false` in its brief, removed — the reason it was set
+false no longer applies), `1s_2br_nw_side_corridor_baths_ds_hall`,
+`1s_2br_wd_front_back_split_bath_hall_ld`,
+`1s_3br_sq_front_back_split_baths_cl_hall_lk`,
+`1s_3br_sq_hall_core_baths_ds_hall_gr` (last one already declared a
+side-setback `dirty_kitchen` element, but its canonical brief never set
+`brief.dirty_kitchen: true`, so it got stripped before solving and the
+door never rendered — now covered by the generalized default regardless).
+The 13 untested topologies all already declare a `dirty_kitchen` element
+(mostly rear_setback), so they're unaffected either way.
+
+Verified via two identical back-to-back full-suite runs that ~10 OTHER
+baselines drift run-to-run regardless of this change (pre-existing
+solver non-determinism on borderline/complex topologies, not caused by
+this edit) — left those untouched per the baseline-regen convention;
+only refreshed the 6 baselines (5 topologies, one with 2 briefs) that
+genuinely and reproducibly changed. 48/48 regression pass both times.
+
+**2026-07-22 — `1s_1br_nw_front_back_split_bath_ld`: exterior kitchen door, no dirty-kitchen box (user request)**
+Same underlying problem as the gr sibling's same-day fix (kitchen has no
+rear exterior wall — bath stacks behind it — so the door-generator's
+default rear-wall check never fires), but this time the user explicitly
+did NOT want a dirty_kitchen setback element (no visible service-yard
+box). Added a new narrow opt-in Topology flag,
+`kitchen_side_door: bool = False` (`solver/topology.py`, threaded through
+`load_topology` + all 4 in-file copy-constructors + run.py's 3
+setback-stripping copy-constructors — same "thread through every copy
+site" pattern as `ldk_horizontal`/`kitchen_rear_pin`). When True and no
+`dirty_kitchen` setback element is declared, `_dirty_kitchen_door`
+(`solver/architectural_plan.py`) now also tries the kitchen's SIDE (E/W)
+wall instead of only ever the REAR (N) wall — same wall-selection logic a
+side-setback dirty kitchen already uses, just without declaring one.
+Enabled only on this one topology. Verified: door renders on kitchen's
+east wall with no dashed box; the gr sibling and every other topology
+using the shared `_dirty_kitchen_door` default path are unaffected
+(default False). 48/48 regression pass.
+
+**2026-07-22 — `1s_1br_nw_front_back_split_bath_gr`: exterior kitchen service door (user request)**
+Kitchen's rear wall is interior (bath stacks behind it on the plumbing
+line), so the default rear-behind-kitchen dirty-kitchen placement was
+impossible and no exterior door existed off the kitchen. Added
+`setback_elements[dirty_kitchen]` with `location: side_setback, behind:
+kitchen` — same pattern already used by `1s_2br_nw_front_back_split_bath`
+— which puts the service pocket (and the kitchen's exterior service door)
+on kitchen's side wall (right, non-carport side) instead. Opt-in via
+`brief.dirty_kitchen = true`; canonical brief
+`1s_1br_8x10_nw_front_back_split_bath_gr_ncp` updated to request it
+(dropped the now-moot `kitchen_back_door: false`) and its baseline
+refreshed. Verified: door only appears when a brief opts in (the
+`_compact` sweep fixture, which doesn't set `dirty_kitchen`, is
+unaffected). 48/48 regression pass. Catalog regenerated same day (folded
+into the run below).
+
 **2026-07-22 — Full regen (46 topologies, 33 verified, 13 not yet tested) — quadrant gr→ld + door fix + claim_dead_strips thickness guard**
 Ran `tools/topology_catalog/build_catalog.py` to fold in the quadrant
 (`1s_2br_wd_quadrant_split_baths_ds_ld`) changes + the shared-code guard

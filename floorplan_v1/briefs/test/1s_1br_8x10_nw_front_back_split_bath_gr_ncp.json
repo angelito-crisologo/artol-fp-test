@@ -1,5 +1,5 @@
 {
-  "intent": "1BR / 1 bath narrow front-back-split smoke test, no carport. 8x10 lot with standard 2 m setbacks gives exactly the narrow-fp-01 reference plan's 4x6 m envelope (24 m2): bedroom+bath rear band, great room + galley kitchen front band with dining-counter divider and entry into the great room. kitchen_back_door off — the kitchen's rear wall is interior (bath behind it).",
+  "intent": "1BR / 1 bath narrow front-back-split smoke test, no carport. 8x10 lot with standard 2 m setbacks gives exactly the narrow-fp-01 reference plan's 4x6 m envelope (24 m2): bedroom+bath rear band, great room + galley kitchen front band with dining-counter divider and entry into the great room. dirty_kitchen on — kitchen's rear wall is interior (bath behind it), so its exterior service door is on the side wall instead.",
   "lot_width": 8.0,
   "lot_depth": 10.0,
   "bedroom_count": 1,
@@ -10,7 +10,7 @@
   ],
   "avoid": [],
   "occupancy_class": "R-1",
-  "kitchen_back_door": false,
+  "dirty_kitchen": true,
   "setbacks": {
     "front": 2.0,
     "rear": 2.0,

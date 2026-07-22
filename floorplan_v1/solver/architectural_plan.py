@@ -877,11 +877,23 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     """Emit a service door from the kitchen to the exterior, on whichever
     wall actually touches the dirty kitchen's setback.
 
-    When `force` is True (brief.kitchen_back_door = True, the default), the
-    door is generated unconditionally — PH practice always has a kitchen back
-    door, regardless of whether a dirty kitchen is present in the setback.
-    When `force` is False (legacy / explicit opt-out), the door is generated
-    only when the topology declares a dirty_kitchen setback element."""
+    When `force` is True (brief.kitchen_back_door = True, the catalog-wide
+    default), the door is generated unconditionally — PH practice always has
+    a kitchen back door, regardless of whether a dirty kitchen is present in
+    the setback. This is the global "kitchen has an exterior door" option:
+    True renders one, False suppresses it UNLESS a dirty_kitchen setback
+    element is declared/requested, which is treated as an override that
+    still forces the door (a requested dirty kitchen always implies a real
+    door into it, independent of the option).
+
+    Wall selection: a declared dirty_kitchen element pins where to look —
+    the default `rear_setback` tries the ROOM's rear (N) wall; an explicit
+    `side_setback` (e.g. a front-back-split design where kitchen sits at the
+    front and has no rear wall at all) tries the E/W side walls instead.
+    Without a declared element (the common `force=True` case), REAR (N) is
+    tried first, then the two SIDE walls (E, then W) — whichever actually
+    touches the exterior envelope. The front (S) wall is never used — that's
+    the street facade, already hosting the main entry."""
     dk = next((sb for sb in topology.setback_elements
                if sb.type == "dirty_kitchen"), None)
     if dk is None and not force:
@@ -892,24 +904,16 @@ def _dirty_kitchen_door(topology: Topology, layout: Layout,
     room = next((r for r in layout.rooms if r.id == behind_id), None)
     if room is None:
         return None
-    # Default: the dirty kitchen sits at the REAR setback, so the door is on
-    # the room's NORTH wall — the wall that touches the buildable envelope
-    # rear edge. EXCEPTION: a topology can declare
-    # setback_elements[type=dirty_kitchen].location == "side_setback" (e.g.
-    # a front-back-split design where kitchen sits at the FRONT of the house
-    # and has no rear wall at all) — in that case the dirty kitchen sits
-    # beside kitchen instead, so try the E/W walls, whichever actually
-    # touches the envelope boundary.
-    side_placement = dk is not None and (dk.location or "").lower() == "side_setback"
-    if side_placement:
-        wall = next((w for w in ("E", "W")
-                    if _touches_exterior(room.rect, env, w)), None)
-        if wall is None:
-            return None
+    if dk is not None and (dk.location or "").lower() == "side_setback":
+        search_order = ("E", "W")
+    elif dk is not None:
+        search_order = ("N",)
     else:
-        wall = "N"
-        if not _touches_exterior(room.rect, env, wall):
-            return None
+        search_order = ("N", "E", "W")
+    wall = next((w for w in search_order
+                if _touches_exterior(room.rect, env, w)), None)
+    if wall is None:
+        return None
     wall_len = _wall_length(room.rect, wall)
     clear = 0.80   # standard service door clear opening
     if wall_len < clear + 0.20:

@@ -144,6 +144,17 @@
     "sibling for the same structural reasons (bath stacks behind kitchen, not",
     "the rear wall; dining/kitchen are side-by-side, not vertically stacked).",
     "",
+    "Kitchen exterior door (2026-07-22): kitchen's only exterior wall is its",
+    "side wall (right, non-carport side; front is interior against",
+    "dining/living, rear is interior against bath). No dirty_kitchen setback",
+    "element is declared here, so no visible service-yard box is drawn --",
+    "but the door-generator's shared default (brief.kitchen_back_door,",
+    "catalog-wide default true) now searches rear THEN side walls for any",
+    "topology, so the kitchen still gets a plain exterior door on that side",
+    "wall automatically. See the sibling gr topology for the alternative (a",
+    "declared side-setback dirty_kitchen, which also draws the box) if a",
+    "visible service pocket is wanted here too.",
+    "",
     "No lot_adjustment_profiles yet -- untuned, pending real feasibility",
     "testing at its intended med/max sizes (9x11, 10x12)."
   ]

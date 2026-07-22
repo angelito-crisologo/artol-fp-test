@@ -131,6 +131,13 @@
   ],
   "setback_elements": [
     {
+      "type": "dirty_kitchen",
+      "location": "side_setback",
+      "covered": false,
+      "behind": "kitchen",
+      "note": "kitchen's rear wall is interior (bath stacks behind it), so there's no rear wall to put a service door on. Kitchen's only other exterior wall is its side wall (right, non-carport side) \u2014 dirty kitchen moves there instead, same side_setback pattern as 1s_2br_nw_front_back_split_bath. Gives the kitchen an exterior service door (2026-07-22, user request)."
+    },
+    {
       "type": "service_area",
       "location": "rear_setback",
       "covered": false
@@ -180,11 +187,13 @@
     "stepped seam \u2014 bath wider than kitchen \u2014 but the clean grid is within",
     "~15 cm of the reference proportions and far more robust to solve).",
     "",
-    "No dirty kitchen declared \u2014 the kitchen fronts the street side, so there",
-    "is no sensible rear dirty-kitchen placement; briefs should also set",
-    "kitchen_back_door: false (the kitchen's rear wall is interior, shared",
-    "with the bath). service_area stays available in the rear setback behind",
-    "the bath (shares the plumbing line).",
+    "Dirty kitchen (2026-07-22): kitchen's rear wall is interior (shared with",
+    "bath), so the default rear-behind-kitchen service-door placement is",
+    "impossible here. Declared setback_elements[dirty_kitchen].location =",
+    "'side_setback' instead \u2014 puts the service pocket, and the kitchen's",
+    "exterior service door, on kitchen's side wall (right, non-carport side).",
+    "Opt-in via brief.dirty_kitchen = true. service_area stays available in",
+    "the rear setback behind the bath (shares the plumbing line).",
     "",
     "No fallback declared \u2014 the squarish 1BR sibling targets a different",
     "shell category, so a shell-mismatch fallback would be misleading."
