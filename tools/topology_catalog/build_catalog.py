@@ -321,7 +321,7 @@ def code_panel_html(panel_id, filename, obj, download_href):
     n_bytes = len(text.encode("utf-8"))
     size = f"{n_bytes / 1024:.1f} KB" if n_bytes >= 1024 else f"{n_bytes} B"
     return (
-        '<details class="code-panel">\n'
+        '<details class="code-panel" open>\n'
         '  <summary class="code-panel-summary">\n'
         '    <span class="disclosure-tri" aria-hidden="true"></span>\n'
         f'    <span class="code-panel-file"><b>{esc(filename)}</b></span>\n'
