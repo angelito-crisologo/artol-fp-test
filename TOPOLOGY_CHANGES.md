@@ -50,9 +50,28 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
-_(empty — a full regen was run 2026-07-21, see Applied history)_
+_(empty — a full regen was run 2026-07-22, see Applied history)_
 
 ## Applied history
+
+**2026-07-22 — Full regen (46 topologies, 33 verified, 13 not yet tested) — quadrant gr→ld + door fix + claim_dead_strips thickness guard**
+Ran `tools/topology_catalog/build_catalog.py` to fold in the quadrant
+(`1s_2br_wd_quadrant_split_baths_ds_ld`) changes + the shared-code guard
+(net topology count unchanged, in-place modification):
+- **Quadrant great_room split into separate living + dining** (matches its
+  `_ld` name at last); solved via its new 12×10 canonical brief. Verified
+  the plan now labels LIVING + DINING (no GREAT ROOM).
+- **Master door moved hall → living, hinged at the SE corner**
+  (`door_placement: high_corner`) so it corner-swings against the east wall.
+- **SHARED CODE `claim_dead_strips` min-thickness guard** (`MIN_ALCOVE_THICKNESS_M
+  = 0.15`) — rejects degenerate <0.15 m slivers (fixes the quadrant 13×10
+  "missing wall"). Only affects `claim_dead_strips` topologies with such a
+  sliver; among current baselines that's the quadrant only.
+Verified: HTML well-formed (div balance 1770/1770), quadrant card + plan
+render (Verified), no orphans. Careful NOT to fold in ~9 pre-existing
+stale/nondeterministic baselines a blanket `--update-baselines` surfaced —
+see [[claim-dead-strips-thickness-and-baseline-gotcha]]. 48/48 regression +
+52/52 sweep pass.
 
 **2026-07-21 — Full regen (46 topologies, 33 verified, 13 not yet tested) — new front-back hall_ld + l_wrap deletion**
 Ran `tools/topology_catalog/build_catalog.py` to fold in two changes since

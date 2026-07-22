@@ -11,9 +11,14 @@ Thumbs.db
 # Generated layout outputs (regenerated on every run of floorplan_v1/run.py)
 floorplan_v1/output/
 
-# Test regression scratch (re-rendered each --test run; baselines under
-# floorplan_v1/test_baselines/ ARE committed for visual reference)
+# Test regression scratch (re-rendered each --test run; the .svg baselines
+# under floorplan_v1/test_baselines/ ARE committed for visual reference)
 floorplan_v1/test_output/
+
+# Baseline PNG renders are DERIVED from the committed .svg baselines
+# (run.py --update-baselines writes them only when cairosvg is available,
+# so they're inconsistent + regenerable). Track only the SVG source.
+floorplan_v1/test_baselines/**/*.png
 
 # Manual min/med/max lot-size sweep scratch (re-rendered each sweep_test.py
 # run; the briefs/test_sweep/ fixtures themselves ARE committed)

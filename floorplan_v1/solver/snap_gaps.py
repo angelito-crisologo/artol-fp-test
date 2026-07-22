@@ -39,6 +39,17 @@ THRESHOLD_M = 0.05   # ignore sub-5 cm gaps as float / grid noise
 # reliably qualify for snapping.
 _THRESHOLD_EPS = 1e-6
 
+# claim_dead_strips minimum alcove thickness. A dead strip whose SMALLER
+# dimension is below this is a degenerate sliver — e.g. a 0.05 m-wide gap
+# left when two non-adjacent rooms' edges land a grid-step apart. Claiming
+# it as an L-alcove produces a room cell too thin to render a proper wall
+# (shows up as a "missing wall" at the junction), and it's not usable floor
+# anyway. Such strips are left unclaimed (negligible dead space, and the
+# two bounding room walls render normally) instead. The area threshold
+# alone doesn't catch these — a 0.05 x 1.05 m sliver is 0.0525 m², over the
+# 0.05 m² area floor.
+MIN_ALCOVE_THICKNESS_M = 0.15
+
 
 def snap_gaps(layout: Layout, max_iter: int = 50,
               verbose: bool = False,
@@ -567,6 +578,11 @@ def claim_dead_strips(layout, void_rects: Optional[List[Rect]] = None,
                 if strip.area < THRESHOLD_M:
                     continue
                 x0, y0, x1, y1 = strip.x0, strip.y0, strip.x1, strip.y1
+                # Skip degenerate slivers (too thin to be usable floor or to
+                # render a clean wall) — leave them unclaimed as negligible
+                # dead space instead. See MIN_ALCOVE_THICKNESS_M.
+                if min(x1 - x0, y1 - y0) < MIN_ALCOVE_THICKNESS_M:
+                    continue
                 # Candidate claimants: a room cell that abuts one full side
                 # of the strip (edge coincident and spanning the strip's side).
                 best, best_rank = None, None

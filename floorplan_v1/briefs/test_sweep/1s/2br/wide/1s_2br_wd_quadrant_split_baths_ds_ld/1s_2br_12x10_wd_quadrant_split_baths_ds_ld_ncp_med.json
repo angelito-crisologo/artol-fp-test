@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MED) for 1s_2br_wd_quadrant_split_baths_ds_ld -- 12x10 m lot, 48 m2 buildable floor (8x6 envelope). The clean 0-warning minimum / canonical size (buildable depth 6 lets the preferred bath/kitchen sizes fit). Same lot as its briefs/test/ canonical brief.",
+  "lot_width": 12.0,
+  "lot_depth": 10.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_quadrant_split_baths_ds_ld.json"
+}

@@ -198,8 +198,11 @@ Shapes: `sq`, `wd`, `dp`, `swd`, `sdp` | Strategies: `side_split`, `front_rear`,
   note: T&B is rear-middle, far from the front kitchen — independent plumbing,
   no shared wet-wall. See [[wide-2br-front-back-hall-ld]].
 - `1s_2br_wd_quadrant_split_baths_ds_ld` — private/public in diagonal
-  quadrants; great_room+standard up front, master+ensuite | hall/common
-  (stacked) | kitchen at rear. hall is the circulation hinge.
+  quadrants; living+dining+standard up front, master+ensuite | hall/common
+  (stacked) | kitchen at rear. hall is the circulation hinge. Great room
+  split into separate living+dining 2026-07-21 (now actually matches its
+  `_ld` name — see [[quadrant-split-topology]]); uses `ldk_horizontal` +
+  `claim_dead_strips`.
 
 **Square 2BR topologies** (`floorplan_v1/topologies/1s/2br/squarish/`):
 
@@ -353,6 +356,8 @@ earlier the same day, no-hall-in-1BR rule), and — added 2026-07-19/20 — 4
 3BR-squarish-fix briefs + 8 multi-storey briefs).
 
 ## Recently completed
+
+**Quadrant-split topology: great room finally split into living+dining (2026-07-21):** `1s_2br_wd_quadrant_split_baths_ds_ld` was named `_ld` but had shipped a great_room since its 2026-07-14 revision — a name/implementation mismatch. That revision *merged* living+dining into a great_room precisely because the original living+dining version was infeasible even at 34×34. Reversed it in-place now: split the great_room back into separate living (front-left) + dining (front-middle), so the topology matches its own name. Two things made the split feasible where it wasn't before: (1) `ldk_horizontal: true` (added later the same day in 2026-07-14, didn't exist when the original failed) disables the solver's hardcoded LDK stacking rule (living in front of dining+kitchen) that contradicted the side-by-side quadrant arrangement; (2) keeping kitchen NON-adjacent to dining (reached only via hall, as the great_room version already did) avoids the 3-way mutual adjacency (hall/kitchen/dining) the notes cite as the original blocker. Verified 0-warning across ~13×10 to 16×12 (oversized 25×18+ now just the ordinary non-monotonic upper bound, not the old total infeasibility). Added `claim_dead_strips: true` for the larger-size pockets. In-place conversion — same topology id, no fallback/prompt dependencies. Test briefs re-based afterward (user request): the old 14×11/14×10 canonical briefs were replaced by a single 12×10 brief (the clean 0-warning minimum), plus a 3-fixture sweep set — min 12×9 (buildable 8×5, the shallowest native solve; carries a soft `tiered_preferred_dropped` since the preferred bath/kitchen sizes don't fit at depth 5), med 12×10, max 13×10. 48/48 regression + 52/52 sweep pass. See [[quadrant-split-topology]].
 
 **New front-back-split topology `1s_2br_wd_front_back_split_bath_hall_ld` (2026-07-21):** Built to an explicit user spec — wide 1-storey, single T&B (no ensuite), master + standard; whole front half a full LDK (living|dining|kitchen side by side), whole rear half private (master | middle | standard). First draft (each bedroom dooring into the public room in front of it) failed a HARD validator rule: `bedroom_standard has no access from a hallway or public room` — because the LDK split puts the right-side bedroom above only the **kitchen**, and the validator's `ACCESS_FROM` set is {living/dining/great/**hallway**}, NOT kitchen (a bedroom can't be reachable only through a kitchen). Retargeting standard→dining didn't help (over-constrained, infeasible even at 25×18). The fix — per the user's own next instruction — was a central **hall notch** (same width as the T&B via `match_widths`): master, standard, and T&B all door into the hall, which opens into dining; hallway IS valid bedroom access, so it resolves cleanly. Essentially the `hall_gr` circulation idiom rotated into a front-back split. Same solver requirements as the existing `front_back_split_baths_ds_gr` (`zone_split` horizontal / `ldk_horizontal` / `kitchen_rear_pin: false` / don't crowd the anchors — living left-anchored, kitchen right-anchored, ends only), plus `claim_dead_strips: true` (ragged widths leave pockets at larger sizes; living/hall absorb them → 0 dead space across the band). Broad 0-warning band (~11×10/12×9 to 17×12); canonical min 12×10; fallback → `hall_gr` for sub-minimum lots. Diagnostic method throughout: bisected flags/adjacencies at an oversized 25×18 envelope to separate structural conflicts from sizing. 49/49 regression (was 48, +1 new brief) + 46/46 sweep pass. See [[wide-2br-front-back-hall-ld]].
 

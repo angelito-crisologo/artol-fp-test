@@ -1,0 +1,16 @@
+{
+  "intent": "Sweep fixture (MIN) for 1s_2br_wd_quadrant_split_baths_ds_ld -- 12x9 m lot, 40 m2 buildable floor (8x5 envelope). The shallowest lot that solves natively on this topology; at buildable depth 5 the preferred bath/kitchen sizes don't fit, so it drops to the base auto_apply floors (carries a soft tiered_preferred_dropped warning -- still COMPLIANT). 11x9 (7x5) is infeasible.",
+  "lot_width": 12.0,
+  "lot_depth": 9.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "setbacks": {
+    "front": 2.0,
+    "rear": 2.0,
+    "left": 2.0,
+    "right": 2.0
+  },
+  "topology": "1s/2br/wide/1s_2br_wd_quadrant_split_baths_ds_ld.json"
+}

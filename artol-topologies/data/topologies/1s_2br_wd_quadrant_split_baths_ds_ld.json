@@ -1,7 +1,7 @@
 {
   "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
   "id": "1s_2br_wd_quadrant_split_baths_ds_ld",
-  "label": "Wide-shell 2BR / 2 baths DISTRIBUTED, QUADRANT split, GR style \u2014 front band: great_room (left) + standard bedroom (right). Rear band: master + ensuite (left), hall + common T&B stacked (hall in front, T&B behind it) in the middle, kitchen (right). Hall is the circulation hinge: open to kitchen, and to great_room behind it, and hosts master's and common's only doors. Neither a clean vertical split nor a horizontal split \u2014 private and public occupy diagonal corners instead.",
+  "label": "Wide-shell 2BR / 2 baths DISTRIBUTED, QUADRANT split, LD style \u2014 front band: living (left) + dining (middle) + standard bedroom (right). Rear band: master + ensuite (left), hall + common T&B stacked (hall in front, T&B behind it) in the middle, kitchen (right). Hall is the circulation hinge for the T&B and kitchen: open to kitchen and to dining in front of it, and hosts the common T&B's door. Master doors into living (its south wall, a corner swing), not the hall. Neither a clean vertical split nor a horizontal split \u2014 private and public occupy diagonal corners instead.",
   "target_shell": "wide",
   "rooms": [
     {
@@ -35,11 +35,17 @@
       "size_priority": "service_and_baths"
     },
     {
-      "id": "great",
-      "type": "great_room",
+      "id": "living",
+      "type": "living_room",
       "zone": "public",
       "size_priority": "public_LDK",
       "hosts_entry": true
+    },
+    {
+      "id": "dining",
+      "type": "dining_room",
+      "zone": "public",
+      "size_priority": "public_LDK"
     },
     {
       "id": "kitchen",
@@ -67,15 +73,16 @@
       "a": "master",
       "b": "hall",
       "min_shared_wall_m": 1.0,
-      "kind": "bedroom_door",
-      "note": "master's east wall shares a wall with hall \u2014 direct door, master's only route to the rest of the house."
+      "kind": "bedroom_to_public_wall",
+      "note": "master's east wall = hall's west wall \u2014 geometry-only wall now, NO door (was master's door before 2026-07-22). The master<->hall shared segment sits mid-wall on master's much-wider east wall, so a door there can't swing to a corner (no perpendicular wall on master's side); master's door moved to living instead, which always touches master's south-wall corners. Master still reaches the hall visually \u2014 hall is open to dining, which master opens onto."
     },
     {
       "a": "master",
-      "b": "great",
+      "b": "living",
       "min_shared_wall_m": 2.0,
-      "kind": "bedroom_to_public_wall",
-      "note": "master's front wall = great_room's rear wall \u2014 geometry-only, NO door (a bedroom_to_public_wall adjacency pins the shared edge without granting access). Master's actual public access is via hall, not directly into great_room."
+      "kind": "bedroom_door",
+      "note": "master's door \u2014 opens south into living, hinged at master's SE corner (door_placement=high_corner) so the panel swings flat against the EAST wall (solid vs dining below y=5): a corner swing at the SE corner, next to the dining/hall junction. Living is directly in front of master (via the [living,master] stack) and ALWAYS shares master's full south wall with real corners at every lot size, unlike master<->dining/hall on the east wall, which only touch at some sizes and can't give a robust SE-corner swing (at compact lots the hall widens between master and dining). Replaced the old master<->hall door (2026-07-22). Living is public (valid bedroom access per the validator's ACCESS_FROM set), and it's one continuous open LDK with dining/kitchen anyway.",
+      "door_placement": "high_corner"
     },
     {
       "a": "common",
@@ -86,40 +93,50 @@
     },
     {
       "a": "hall",
-      "b": "great",
+      "b": "dining",
       "min_shared_wall_m": 0.9,
       "kind": "open_plan",
-      "note": "hall's front wall is an open mouth into great_room \u2014 codebase rule: hallway\u2194public is always open-plan, no door. This is hall's (and by extension master's and common's) connection to the public wing."
+      "note": "hall's front wall is an open mouth into dining \u2014 codebase rule: hallway\u2194public is always open-plan, no door. Dining is the middle public room, directly in front of the hall (it took over the mouth role the merged great_room used to play). This is hall's (and by extension master's and common's) connection to the public wing."
     },
     {
       "a": "kitchen",
       "b": "hall",
       "min_shared_wall_m": 0.9,
       "kind": "open_plan",
-      "note": "kitchen's west wall opens onto the hall (open-plan, no door) \u2014 hall serves as kitchen's entrance from the private/circulation side, per brief."
+      "note": "kitchen's west wall opens onto the hall (open-plan, no door) \u2014 hall serves as kitchen's entrance from the private/circulation side. Kitchen is NOT adjacent to dining or living: it reaches the public wing only via the hall. Keeping kitchen and dining non-adjacent is deliberate \u2014 it avoids the 3-way mutual adjacency (hall/kitchen/dining) that made the pre-2026-07-14 living+dining version infeasible."
     },
     {
       "a": "standard",
       "b": "kitchen",
       "min_shared_wall_m": 1.0,
       "kind": "bedroom_to_public_wall",
-      "note": "standard's rear wall = kitchen's front wall \u2014 geometry-only, NO door. Keeps the building outline a clean rectangle at this seam, but deliberately does not give a bedroom a direct opening onto the kitchen work area; standard's actual door is to great_room instead."
+      "note": "standard's rear wall = kitchen's front wall \u2014 geometry-only, NO door. Keeps the building outline a clean rectangle at this seam, but deliberately does not give a bedroom a direct opening onto the kitchen work area; standard's actual door is to dining instead."
     },
     {
       "a": "standard",
-      "b": "great",
+      "b": "dining",
       "min_shared_wall_m": 1.1,
       "kind": "bedroom_to_public",
-      "note": "standard's only door \u2014 direct into great_room. 1.1 m floor = 0.8 m clear panel + frame + a little leeway."
+      "note": "standard's only door \u2014 direct into dining (the front-middle public room, immediately west of standard). 1.1 m floor = 0.8 m clear panel + frame + a little leeway. Took over the door role standard<->great_room played before the split."
+    },
+    {
+      "a": "living",
+      "b": "dining",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "living and dining sit side by side across the front (living left, dining middle) \u2014 open plan, no wall. Side-by-side (not stacked front-to-rear) requires ldk_horizontal: true."
     }
   ],
   "soft_proximities": [],
-  "entry_point": "great",
+  "entry_point": "living",
   "zone_split": null,
   "match_bedroom_widths": false,
   "ensuite_alcove_joins_master": true,
+  "ldk_horizontal": true,
+  "claim_dead_strips": true,
   "left_anchored": [
-    "master"
+    "master",
+    "living"
   ],
   "right_anchored": [
     "kitchen"
@@ -131,11 +148,11 @@
   ],
   "front_to_rear_stacks": [
     [
-      "great",
+      "living",
       "master"
     ],
     [
-      "great",
+      "dining",
       "hall",
       "common"
     ],
@@ -214,24 +231,55 @@
     }
   ],
   "notes": [
-    "Wide-shell catalog topology \u2014 2BR / 2 baths DISTRIBUTED, QUADRANT split, GR style. Revised 2026-07-14: living + dining merged into a single great_room (was two separate rooms), which eliminates a 3-way mutual adjacency (hall/kitchen/dining all touching each other) that made the original living+dining version unsolvable even on a 34x34 m lot with every room's size caps relaxed. Also fixes an authoring bug in the original: hall was declared both rear_anchored AND had common stacked behind it via front_to_rear_stacks \u2014 the same 'forced to touch the rear wall while another room sits behind it' contradiction diagnosed (and fixed) twice already this project on other topologies. hall is no longer rear_anchored here; common (T&B) is, correctly, since it's the one that actually touches the rear wall.",
+    "Wide-shell catalog topology \u2014 2BR / 2 baths DISTRIBUTED, QUADRANT split, LD style.",
+    "",
+    "2026-07-21: great_room split back into separate LIVING + DINING rooms \u2014",
+    "finally matching this topology's '_ld' name (it had shipped a great_room",
+    "since the 2026-07-14 revision, a name/implementation mismatch). The",
+    "original living+dining version (pre-2026-07-14) was infeasible even at",
+    "34x34 m; two things unlock the split now: (1) ldk_horizontal: true",
+    "disables the solver's hardcoded LDK vertical-stacking rules (living must",
+    "sit in front of dining+kitchen), which contradicted the side-by-side",
+    "living/dining across the front; (2) kitchen is kept NON-adjacent to",
+    "dining (reached only via the hall, as the great_room version already",
+    "did), avoiding the 3-way mutual adjacency (hall/kitchen/dining) that was",
+    "the original blocker. Verified 0-warning across ~13x10 to 16x12; the",
+    "oversized-envelope failure (25x18+) is now just the ordinary",
+    "non-monotonic upper bound, not the total infeasibility the original hit.",
+    "claim_dead_strips: true absorbs the interior pockets that ragged widths",
+    "leave at the larger end of the band into L-alcoves.",
     "",
     "Layout intent (canonical form, street/front at the bottom):",
-    "  Front band (bottom): [great_room (hosts entry)         | standard  ]",
+    "  Front band (bottom): [living (hosts entry) | dining | standard ]",
     "  Rear band  (top):    [master + ensuite | hall / common T&B (stacked) | kitchen ]",
     "",
-    "great_room spans the full left+middle width (stacked in front of both master and the hall/common column); standard spans just the right width, stacked in front of kitchen only.",
+    "living spans the front-left (in front of master); dining spans the",
+    "front-middle (in front of the hall/common column); standard spans the",
+    "front-right (in front of kitchen only). living + dining are open-plan",
+    "to each other across the front.",
     "",
-    "Circulation: hall is the hinge between public and private. great_room -> hall (open mouth, no door) -> master (door) and common T&B (door). hall also opens directly onto kitchen (open-plan) \u2014 kitchen's only route to/from the rest of the house besides being visually open to it. kitchen has no direct adjacency to great_room; you reach it via hall.",
+    "Circulation: hall is the hinge between the T&B, the kitchen, and the",
+    "public wing. dining -> hall (open mouth, no door) -> common T&B (door).",
+    "hall also opens directly onto kitchen (open-plan) \u2014 kitchen's only route",
+    "to/from the rest of the house besides being visually open to it. kitchen",
+    "has no direct adjacency to living or dining; you reach it via hall. Master",
+    "does NOT door into the hall (2026-07-22 change) \u2014 its door is on its south",
+    "wall into living instead (a corner swing; see below).",
     "",
-    "standard's only door is to great_room. standard<->kitchen is geometry-only (wall, no door) \u2014 deliberately no direct bedroom-to-kitchen opening.",
+    "standard's only door is to dining. standard<->kitchen is geometry-only",
+    "(wall, no door) \u2014 deliberately no direct bedroom-to-kitchen opening.",
     "",
-    "zone_split is null here (unlike the vertical- and horizontal-split topologies) \u2014 the private/public boundary isn't a single axis, so per-room 'zone' tags carry the classification instead.",
+    "zone_split is null here (unlike the vertical- and horizontal-split",
+    "topologies) \u2014 the private/public boundary isn't a single axis, so",
+    "per-room 'zone' tags carry the classification instead.",
     "",
-    "Confirmed target_shell: wide \u2014 the sketch's ~10x7 m footprint (1.43:1) matches the wide-shell catalog's proportions much more closely than squarish.",
+    "Confirmed target_shell: wide \u2014 the sketch's ~10x7 m footprint (1.43:1)",
+    "matches the wide-shell catalog's proportions much more closely than",
+    "squarish.",
     "",
-    "Floor band: roughly 65-85 sqm buildable, sized against the sketch's ~70 sqm footprint (10 x 7 m building on a 14x11 buildable envelope).",
+    "Floor band: roughly 65-85 sqm buildable, sized against the sketch's ~70",
+    "sqm footprint (10 x 7 m building on a 14x11 buildable envelope).",
     "",
-    "No fallback declared yet \u2014 this is a first-draft concept, not validated against a compact-lot fallback the way the rest of the catalog is."
+    "No fallback declared."
   ]
 }
