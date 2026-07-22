@@ -109,8 +109,9 @@ REQUIREMENTS_SCHEMA = {
             "kitchen_back_door": {
                 "type": "boolean",
                 "description": "Default true; false only if the buyer "
-                               "explicitly wants the kitchen's rear wall "
-                               "sealed (no back door).",
+                               "explicitly wants the kitchen to have no "
+                               "exterior service door at all (rear or "
+                               "side wall).",
             },
         },
         "required": ["lot_width", "lot_depth", "bedroom_count"],
