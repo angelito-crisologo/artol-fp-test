@@ -97,9 +97,9 @@ pair) → `docs/archive/`. Reference material (NBC full text,
 `common-configs/`, the 3 unconverted 2s specs) → `docs/reference/`.
 Deleted: regenerable caches/output, 14 orphaned test baselines from a
 retired naming scheme, `debug_brief.py`, `LANAI_REQUIREMENTS.md` (shipped
-feature, findings absorbed elsewhere). **Not yet deleted** (user doing it
-manually): `floorplan_v1/ai-output.png`, a stray untracked debug PNG with
-no code references.
+feature, findings absorbed elsewhere), and `floorplan_v1/ai-output.png` (the
+stray debug PNG this note used to flag as outstanding — gone as of
+2026-08-06, along with `_to_delete/` and two stray source-bundle zips).
 
 ---
 
