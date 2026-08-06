@@ -60,7 +60,7 @@ def _api_key():
         return None
 
 
-def _render_png(layout, topo, brief_name):
+def _render_png(layout, topo, brief_name, plain=False):
     """Rasterise the plan to PNG bytes — the composite for a 2-storey house
     (design decision #2), which is exactly what core/render.py already emits.
 
@@ -69,6 +69,10 @@ def _render_png(layout, topo, brief_name):
     kitchens, and the prompt asks the model to reproduce them rather than
     invent its own. That narrows the model's job from designing to styling —
     the whole point of design §7 option C.
+
+    `plain=True` sends the solver's drawing exactly as run.py writes it — no
+    Phase E.2 furniture, no door marking — for testing a prompt against the
+    unmodified output.
 
     Returns (png_bytes, svg_text, fixtures).
     """
@@ -80,6 +84,8 @@ def _render_png(layout, topo, brief_name):
     fixtures = []
 
     def _one(plan, sub_layout):
+        if plain:
+            return archplan_to_svg(plan)
         rep = place_fixtures(sub_layout, plan)
         fixtures.extend(rep.fixtures)
         return inject_overlay(archplan_to_svg(plan, door_emphasis=True),
@@ -157,6 +163,16 @@ def main(argv=None):
                     help="Write the manifest and prompt, make NO API call.")
     ap.add_argument("--self-check", action="store_true",
                     help="Verify nothing in the generation path imports this tool.")
+    ap.add_argument("--prompt-file", metavar="PATH",
+                    help="Send this file's text VERBATIM instead of the built "
+                         "prompt. The manifest is still written for audit, but "
+                         "nothing from it is appended.")
+    ap.add_argument("--plain", action="store_true",
+                    help="Send the solver's drawing unmodified — no Phase E.2 "
+                         "furniture, no door marking.")
+    ap.add_argument("--raw-output", action="store_true",
+                    help="Write the model's image as-is; skip the crop/mask/"
+                         "label composite.")
     args = ap.parse_args(argv)
 
     if args.self_check:
@@ -170,9 +186,16 @@ def main(argv=None):
     layout, topo, brief, out_dir = _solve(args.brief)
     # The raster is built FIRST: it is what places the furniture, and the
     # manifest must describe the image we actually send, not a different one.
-    png, svg, fixtures = _render_png(layout, topo, args.brief)
+    png, svg, fixtures = _render_png(layout, topo, args.brief, plain=args.plain)
     manifest = build_manifest_for_layout(layout, brief, fixtures)
-    prompt = build_prompt(manifest)
+    if args.prompt_file:
+        # Verbatim. A hand-written prompt is a controlled experiment; silently
+        # appending our manifest JSON or fidelity clauses would change what is
+        # being tested and make the result unattributable.
+        with open(args.prompt_file, encoding="utf-8") as f:
+            prompt = f.read()
+    else:
+        prompt = build_prompt(manifest)
 
     os.makedirs(out_dir, exist_ok=True)
     base = os.path.join(out_dir, args.brief)
@@ -254,9 +277,20 @@ def main(argv=None):
     # and then lifts our own labels back on top of it — our coordinates, our
     # numbers — while the metre ruler survives because it sits outside the lot
     # rectangle the image covers.
+    if args.raw_output:
+        with open(out_png, "wb") as f:
+            f.write(data)
+        open(stamp, "w").write(sig)
+        print(f"  wrote {out_png}  (raw, no composite)")
+        print("  NOTE: illustrative only — the dimensioned SVG remains the "
+              "plan of record.")
+        return 0
+
     import cairosvg
-    from render import polished_image_overlay, inject_overlay
-    composed = inject_overlay(svg, polished_image_overlay(layout, data))
+    from render import (polished_image_overlay, inject_overlay,
+                        room_label_masks)
+    composed = inject_overlay(
+        svg, polished_image_overlay(layout, data) + room_label_masks(layout))
     with open(base + "_render.svg", "w", encoding="utf-8") as f:
         f.write(composed)
     cairosvg.svg2png(bytestring=composed.encode("utf-8"), write_to=out_png,

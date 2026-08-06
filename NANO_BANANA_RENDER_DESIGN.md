@@ -191,3 +191,89 @@ in rather than propagating a fourth.
   first-pass output quality.
 - Where the output lands: alongside the SVG in `output/`, or a sibling
   `render/` tree. Leaning alongside, so a brief's artifacts stay together.
+
+---
+
+# 9. Evaluation, 2026-08-06 — ten billed calls
+
+Ten images, ~$0.40, model `gemini-2.5-flash-image`. Written up because the
+findings are counter-intuitive and expensive to re-derive.
+
+## 9.1 The headline
+
+**Prompt FRAMING dominated every other variable.** Six versions written here
+(`ai/render_prompt.py`, v1-v6) all said "redraw" or "restyle" and all invented
+dimension figures — `LIVING 3.7x2.6 m . 14.8 sqm` where the plan says 33.1.
+A user-written prompt opening with *"**Convert** the provided floor plan image
+into a 2D architectural render"* got **every figure on the page correct on its
+first attempt**, having been told nothing about numbers at all.
+
+"Redraw"/"restyle" licenses regeneration. "Convert" reads as image-to-image
+translation. That one word was worth more than ~400 lines of fidelity clauses.
+It is kept verbatim at **`floorplan_v1/ai/prompts/convert_render.txt`**.
+
+## 9.2 What works, in order of reliability
+
+1. **Counted checklists.** "This plan has EXACTLY 5 doors" / "7 labels:
+   BEDROOM, LIVING, ..." Every time a count was given, the model matched it —
+   it produced the long-missing kitchen service door, and restored a dropped
+   DINING label. Giving it something to check itself against beats any
+   prohibition. Counts are derivable from the manifest, so this generalises.
+2. **Marking the target IN THE IMAGE.** Four prose attempts failed to make the
+   model draw the kitchen's exterior service door; overdrawing every door in
+   magenta (`archplan_to_svg(door_emphasis=True)`) produced all five first
+   try. **This model follows the picture far more than the paragraph** — the
+   single most consistent finding across all ten runs.
+3. **Naming a specific misplacement.** "The dining table must be inside
+   DINING, not in LIVING" moved it. Worked once, did not work for the kitchen
+   counter (see 9.3).
+
+## 9.3 What does not work
+
+- **Prohibitions without a count.** "Do not add..." was violated repeatedly.
+- **Instructions it simply overrides.** "YOUR IMAGE MUST CONTAIN NO TEXT
+  WHATSOEVER", stated as instruction #1 in capitals, was ignored in full.
+- **Repeating a failed instruction more forcefully.** The kitchen counter and
+  fridge sat in the dining room through three differently-worded bans.
+- **Our measured furniture.** Phase E.2 rectangles were sent in the image AND
+  listed in the manifest as ground truth; the model still moved the master bed
+  to a different wall in every render. Furniture is illustrative; labels no
+  longer have to be.
+
+## 9.4 Whack-a-mole is the steady state
+
+Across ten runs each round fixed the named defect and introduced a different
+one. Room count, labels, dimensions, doors, furniture ownership, a `DIING`
+typo, an invented roof plane — each has been correct in some render and wrong
+in another, **never all at once**. Treat that as a property of a generative
+model, not as a prompt that is not yet good enough. Do not expect a version
+that nails everything simultaneously, and budget accordingly.
+
+## 9.5 The durable answer: composite, do not negotiate
+
+Built and working (`core/render.py`):
+
+- `polished_image_overlay(layout, png)` — the returned image over the LOT rect.
+- `room_label_masks(layout)` — opaque chips over each room's label zone, sized
+  to the **room**, so whatever the model wrote is covered whatever its length.
+- `inject_overlay(..., mask_behind_labels=)` — re-emits OUR label text on top.
+
+Alignment comes from cropping the model's output to its lawn bounding box,
+which also discards the ruler and caption it draws despite being told not to.
+Result: the picture is the model's, **every number is ours**, and `DIING`
+becomes structurally impossible. Deterministic, free, and independent of the
+model obeying anything.
+
+Caveat: the crop currently keys on GREEN pixels. Once the setback rule was
+changed to force grass that is safe, but a paved-setback render would need a
+different anchor.
+
+## 9.6 Verdict
+
+The model reliably delivers **styling** and reliably fails at **facts**. Use it
+for styling only, supply every fact by composite, and keep §1's rule: the
+dimensioned SVG is the plan of record.
+
+Tooling: `polish.py --plain` (send the solver drawing unmodified),
+`--prompt-file` (verbatim, nothing appended — a hand-written prompt is a
+controlled experiment), `--raw-output` (skip the composite).

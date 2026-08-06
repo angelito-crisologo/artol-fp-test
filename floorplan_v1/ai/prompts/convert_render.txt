@@ -1,0 +1,27 @@
+Task: Convert the provided floor plan image into a 2D architectural render.
+Strict Constraints:
+    * Maintain zero structural deviation from the provided image.
+    * Do not add or remove any walls, rooms, doors, windows, or bathrooms.
+    * Preserve the exact placement of all original doors and windows.
+    * Keep the floor plan dimensions exactly as they are without expanding or shortening walls.
+    * Do not add any room, alcove, closet, or fixture nook that is not in the provided image. This plan has exactly 1 toilet/bath — do not add a powder room or a second bathroom anywhere.
+Multi-Story & Setback Rules:
+    * Render the outdoor setbacks for the ground floor only; upper floors have no setback area to draw.
+    * A plain setback — open ground with no setback element specified on it — must be rendered as GRASS / lawn, green and planted. Do not render it as neutral grey, paving, concrete or bare ground.
+    * If setback elements are specified, render ground appropriate for that element (e.g. lanai can have greens, dirty kitchen should have tile floorings, etc)
+    * Only render outdoor areas explicitly specified in the plan (e.g., if only a porch is specified, do not add a carport or lanai).
+    * If a carport is specified, it must be rendered with a car. If carport is double, then 2 cars must also be rendered.
+    * Ensure the stair openings are not blocked (partially or fully) by any walls, fixtures or furniture.
+Furniture & Visual Aids:
+    * Every fixture and piece of furniture must sit ENTIRELY INSIDE the room it belongs to. Nothing may cross a wall or a room boundary into a neighbouring room, and no room may borrow floor area from another to fit its furniture. Specifically for this plan:
+        - KITCHEN holds the counter, sink, range and refrigerator. The counter run must stop at the kitchen's own walls — do not extend it into DINING.
+        - DINING holds the dining table and its chairs. The dining table must be inside DINING, not in LIVING.
+        - LIVING holds the sofa, armchairs, coffee table and TV — no dining table.
+        - MASTER BR and BEDROOM each hold their own bed, bedside tables and wardrobe.
+        - T&B holds the toilet, lavatory and shower.
+    * Scale all fixtures and furniture accurately to the room size. If a fixture does not fit inside its own room, draw a smaller one — never spill it into the next room.
+    * Ensure no furniture fully or partially blocks any doors or stair openings.
+    * Ensure no fixtures (e.g. kitchen block/counters, dining counter/divider) fully or partially blocks any doors or stair openings. 
+    * If an L-shaped kitchen fixture does not work, then just render a small plan straight one.    
+    * Make sure all room names and dimension text remain clearly readable.
+    * Every room label in the provided image must appear in your output with the same text. This plan has 7 labels: BEDROOM, LIVING, DINING, MASTER BR, T&B, KITCHEN, PORCH. Do not drop or merge a label — DINING and LIVING are separate rooms.
