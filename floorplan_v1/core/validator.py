@@ -118,9 +118,12 @@ def validate(layout: Layout, rules: Rules) -> Tuple[List[Issue], float]:
     # ---------- HARD: no overlap among footprint rooms ----------
     for i in range(len(layout.rooms)):
         for j in range(i + 1, len(layout.rooms)):
-            if layout.rooms[i].overlaps_room(layout.rooms[j]):
+            ri, rj = layout.rooms[i], layout.rooms[j]
+            if ri.notch_pin_of == rj.id or rj.notch_pin_of == ri.id:
+                continue
+            if ri.overlaps_room(rj):
                 issues.append(Issue("error", "overlap",
-                    f"{layout.rooms[i].type} overlaps {layout.rooms[j].type}"))
+                    f"{ri.type} overlaps {rj.type}"))
 
     # ---------- HARD: footprint stays within buildable envelope ----------
     for r in layout.rooms:
@@ -157,10 +160,17 @@ def validate(layout: Layout, rules: Rules) -> Tuple[List[Issue], float]:
                     f"but {occ} doesn't permit firewalls on that side "
                     f"(PD 1096 §704; IRR Rule VII)"))
     # W-H11: flag setbacks below the IRR Rule VIII Table VIII.2 baseline.
-    # This is a WARNING (not hard error) because LGU zoning frequently
-    # overrides — almost all PH mid-market subdivisions use a 2.0 m front
-    # setback regardless of strict R-1 baseline (4.5 m). The validator
-    # surfaces the IRR baseline so a designer can confirm with their LGU.
+    # Kept a SUGGESTION (not a hard error) because LGU zoning can override
+    # upward, and a designer should confirm the baseline locally.
+    #
+    # As of 2026-08-05 this rarely fires: ai/pipeline.py::_make_default_lot
+    # now derives its setbacks from the SAME table above, so a plan is built
+    # to its class's minimum rather than measured against a rule the solver
+    # ignored. Before that, lot construction hardcoded 2.0 m on every side
+    # while every brief declared R-1, so this fired on the front yard of
+    # literally every run — 2.0 m is the Sec. 708(a) minimum for SIDE/REAR
+    # yards (or BP 220 economic housing), never a legal front yard.
+    # The project now defaults to R-2 (3.0 m front); R-1 keeps its 4.5 m.
     mins = SETBACK_MIN_BY_OCCUPANCY.get(occ)
     if mins:
         for side_name, m_key in (("front", "front"), ("rear", "rear"),

@@ -8,9 +8,10 @@ Two top-level entry points:
   - archplan_to_svg(plan)         — adds doors + windows from an ArchPlan
 """
 import html
+import bisect
 import math
 from typing import List, Optional
-from model import Layout, Rect
+from model import Layout, Rect, make_outside_probe
 
 SCALE = 42          # px per metre
 MARGIN = 46         # px
@@ -172,8 +173,16 @@ def _emit_centered_text_block(cx, cy, label_lines, label_font,
     return "".join(parts)
 
 
+# Bath-type rooms that can be a solver-pinned notch room (see
+# Room.notch_pin_of) — these get FULL partition walls against the stair's
+# legs (Pass D in _compute_walls), unlike a non-bath room absorbing the
+# same notch as an open alcove via claim_stair_notch (thin rail instead —
+# see _notch_alcove_rail_svg).
+_NOTCH_BATH_TYPES = ("common_bath", "ensuite_bath", "bath_toilet", "powder_room")
+
+
 def _fill(room) -> str:
-    if room.type in ("common_bath", "ensuite_bath", "bath_toilet", "powder_room"):
+    if room.type in _NOTCH_BATH_TYPES:
         return "#ead1dc"
     if room.zone == "circulation":
         return ZONE_FILL["circulation"]
@@ -313,8 +322,15 @@ def layout_to_svg(layout: Layout) -> str:
                            label=LABELS.get(e.type, e.type),
                            sub=f"{e.rect.w:.1f}×{e.rect.h:.1f} m"))
 
-    # footprint rooms (may be composite / L-shaped -> draw each cell, label once)
-    for r in layout.rooms:
+    # footprint rooms (may be composite / L-shaped -> draw each cell, label once).
+    # A notch-pinned room's rect deliberately overlaps its stair's own rect
+    # (see Room.notch_pin_of / Topology.notch_powder_room_id and
+    # solver/snap_gaps.py::claim_stair_notch) — draw it LAST (stable sort)
+    # so its fill/label/stroke sit on top of the stair's, instead of the
+    # stair's own fill silently painting over it.
+    rooms_ordered = sorted(
+        layout.rooms, key=lambda r: 1 if getattr(r, "notch_pin_of", None) else 0)
+    for r in rooms_ordered:
         fill = _fill(r)
         cells = r.cells
         composite = len(cells) > 1
@@ -327,7 +343,12 @@ def layout_to_svg(layout: Layout) -> str:
             s.append(_rect_svg(lot, c, fill, no_stroke=composite))
         # Stairs: draw the tread lines + UP/DN travel arrow instead of the
         # generic centered label (the arrow direction comes from the solver's
-        # ascent decision, stored on room.stair_up).
+        # ascent decision, stored on room.stair_up). Non-straight stair
+        # types (l_landing, etc.) get their own turn glyph instead, keyed
+        # off room.stair_type — see solver/topology.py RoomSpec.stair_type.
+        if r.type == "stairs" and getattr(r, "stair_type", "straight") == "l_landing":
+            s.append(_l_landing_glyph(lot, r))
+            continue
         if r.type == "stairs" and getattr(r, "stair_up", None):
             s.append(_stair_glyph(lot, r))
             continue
@@ -433,6 +454,100 @@ def _stair_glyph(lot, room) -> str:
                f'dominant-baseline="middle" font-family="Arial" font-size="9" '
                f'font-weight="bold" fill="#333" stroke="white" '
                f'stroke-width="2.5" paint-order="stroke">{("DN" if descend else "UP")}</text>')
+    return "".join(out)
+
+
+def _tread_lines_svg(lot, x0, y0, x1, y1, vertical) -> str:
+    """Light tread lines across a rectangular stair leg, perpendicular to
+    the direction of travel (vertical=True means treads stack top-to-bottom
+    i.e. travel is along y; False means travel is along x). Shared helper
+    for both the straight-stair glyph and the turning-stair leg strips."""
+    out = []
+    TREAD_M = 0.28
+    n = max(2, int(round((y1 - y0 if vertical else x1 - x0) / TREAD_M)))
+    for i in range(1, n):
+        if vertical:
+            yy = y0 + i * (y1 - y0) / n
+            xa, ya = _to_svg_xy(lot, x0, yy)
+            xb, _ = _to_svg_xy(lot, x1, yy)
+            out.append(f'<line x1="{xa:.1f}" y1="{ya:.1f}" x2="{xb:.1f}" '
+                       f'y2="{ya:.1f}" stroke="#9a9a9a" stroke-width="0.6"/>')
+        else:
+            xx = x0 + i * (x1 - x0) / n
+            xa, ya = _to_svg_xy(lot, xx, y0)
+            _, yb = _to_svg_xy(lot, xx, y1)
+            out.append(f'<line x1="{xa:.1f}" y1="{ya:.1f}" x2="{xa:.1f}" '
+                       f'y2="{yb:.1f}" stroke="#9a9a9a" stroke-width="0.6"/>')
+    return "".join(out)
+
+
+def _l_landing_glyph(lot, room) -> str:
+    """L-shaped stair with a quarter landing: leg 1 runs from the boarding
+    wall to a square landing in the corner, leg 2 continues perpendicular
+    from the landing to the arrival wall. Unlike the straight stair's
+    solver-chosen stair_up, a turning stair's entry/exit walls are author-
+    declared (room.stair_board_wall / stair_arrive_wall — see
+    Adjacency.stair_wall) since they aren't a single solver-chosen ascent
+    axis. Falls back to the plain straight glyph if either wall is unset
+    (shouldn't happen for a properly-authored l_landing stair). Geometry
+    (leg1/leg2/landing/notch) comes from the shared core.model.l_landing_cells
+    helper — also used by the solver's notch-derivation/claim logic, so the
+    render always matches what was actually reserved or reclaimed."""
+    from model import l_landing_cells
+    board = getattr(room, "stair_board_wall", None)
+    arrive = getattr(room, "stair_arrive_wall", None)
+    cells = l_landing_cells(room.rect, board, arrive)
+    if cells is None:
+        return _stair_glyph(lot, room)
+    leg1, leg2, landing = cells["leg1"], cells["leg2"], cells["landing"]
+    board_travels_y = board in ("N", "S")
+    out = [
+        _tread_lines_svg(lot, leg1.x0, leg1.y0, leg1.x1, leg1.y1, board_travels_y),
+        _tread_lines_svg(lot, leg2.x0, leg2.y0, leg2.x1, leg2.y1, not board_travels_y),
+    ]
+    arrow_from = ((leg1.x0 + leg1.x1) / 2, (leg1.y0 + leg1.y1) / 2)
+    arrow_bend = ((landing.x0 + landing.x1) / 2, (landing.y0 + landing.y1) / 2)
+    arrow_to = ((leg2.x0 + leg2.x1) / 2, (leg2.y0 + leg2.y1) / 2)
+    # Landing outline — a plain square, no tread lines (it's a flat platform).
+    p0 = _to_svg_xy(lot, landing.x0, landing.y0)
+    p1 = _to_svg_xy(lot, landing.x1, landing.y1)
+    lxs0, lxs1 = sorted((p0[0], p1[0]))
+    lys0, lys1 = sorted((p0[1], p1[1]))
+    out.append(f'<rect x="{lxs0:.1f}" y="{lys0:.1f}" width="{lxs1-lxs0:.1f}" '
+               f'height="{lys1-lys0:.1f}" fill="none" stroke="#9a9a9a" '
+               f'stroke-width="0.8"/>')
+    # Travel arrow: leg1 midpoint -> landing -> leg2 midpoint, bent through
+    # the landing (an L-shaped path following the actual walking line)
+    # instead of a single diagonal cutting across the turn. Reversed on
+    # upper floors (descending) same as the straight glyph.
+    descend = room.storey > 1
+    pts = [arrow_from, arrow_bend, arrow_to]
+    if descend:
+        pts = list(reversed(pts))
+    svg_pts = [_to_svg_xy(lot, *p) for p in pts]
+    path_d = " ".join(
+        f'{"M" if i == 0 else "L"} {x:.1f} {y:.1f}'
+        for i, (x, y) in enumerate(svg_pts))
+    out.append(f'<path d="{path_d}" fill="none" stroke="#333" '
+               f'stroke-width="2" stroke-linecap="round" '
+               f'stroke-linejoin="round"/>')
+    (ax, ay), (bx, by) = svg_pts[-2], svg_pts[-1]
+    ang = math.atan2(by - ay, bx - ax)
+    for da in (math.radians(148), math.radians(-148)):
+        hx, hy = bx + 7.0 * math.cos(ang + da), by + 7.0 * math.sin(ang + da)
+        out.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{hx:.1f}" '
+                   f'y2="{hy:.1f}" stroke="#333" stroke-width="2" '
+                   f'stroke-linecap="round"/>')
+    label = "DN" if descend else "UP"
+    (tx, ty) = svg_pts[0]
+    (nx, ny) = svg_pts[1]
+    seg = math.hypot(nx - tx, ny - ty) or 1.0
+    ux, uy = (nx - tx) / seg, (ny - ty) / seg
+    lx_, ly_ = tx - ux * 9.0, ty - uy * 9.0
+    out.append(f'<text x="{lx_:.1f}" y="{ly_:.1f}" text-anchor="middle" '
+               f'dominant-baseline="middle" font-family="Arial" font-size="9" '
+               f'font-weight="bold" fill="#333" stroke="white" '
+               f'stroke-width="2.5" paint-order="stroke">{label}</text>')
     return "".join(out)
 
 
@@ -622,7 +737,11 @@ def _window_svg(window, layout) -> str:
     room = next((r for r in layout.rooms if r.id == window.room), None)
     if room is None:
         return ""
-    rect, wall, pos, w = room.rect, window.wall, window.position_m, window.width_m
+    # An L-shaped room's window may sit on its alcove cell, not its main
+    # rect — position_m is measured along THAT cell's wall.
+    cells = room.cells
+    idx = min(getattr(window, "cell_index", 0), len(cells) - 1)
+    rect, wall, pos, w = cells[idx], window.wall, window.position_m, window.width_m
 
     if wall == "N":
         a = (rect.x0 + pos, rect.y1)
@@ -683,6 +802,13 @@ def _window_svg(window, layout) -> str:
 WALL_THICKNESS_INTERIOR = 0.10   # m — interior partition (drywall or thin CHB)
 WALL_THICKNESS_EXTERIOR = 0.20   # m — exterior CHB + finish
 WALL_FILL = "#555"               # gray fill for walls
+
+# Stair rail: the boarding/arrival open-plan edge (stairs <-> its GF/2F
+# circulation neighbor) is otherwise fully invisible like an LDK seam. A
+# thin rail line marks the run's flanking side, with a gap this wide left
+# at the correct end so the actual entrance (where you step on/off the
+# flight) reads clearly. See _stair_rail_svg.
+STAIR_OPENING_M = 0.9
 
 # Setback elements (carport, dirty kitchen, etc.) are drawn with a dashed
 # 1.5 px stroke; the stroke is centred on the rect perimeter and overhangs
@@ -789,18 +915,43 @@ def _compute_walls(plan):
     # coverage. This way the boundary between great's rect and great's
     # rect2 isn't drawn as an exterior wall.
     #
-    # An uncovered side is EXTERIOR ONLY when it sits ON the envelope
-    # boundary (the cell wall is part of the building outline meeting the
-    # lot setback). When the uncovered side is INSIDE the envelope — i.e.,
-    # an interior gap between rooms that no room happens to cover — it
-    # should be drawn at INTERIOR thickness, because visually it's still
-    # an interior partition between two parts of the building interior,
-    # not a wall facing the lot exterior. Without this distinction, walls
-    # bounding a small gap between rooms render at exterior thickness and
-    # look inconsistent with the surrounding interior walls (e.g., T&B
-    # south wall east of hall when the rear band rooms have slightly
-    # different depths).
+    # An uncovered side is EXTERIOR when the empty space it faces REACHES
+    # THE OUTSIDE — either because the wall sits on the envelope boundary,
+    # or because the unowned region beyond it connects to that boundary.
+    #
+    # The second case matters because the building footprint is the union of
+    # room cells, NOT the envelope rectangle (Layout.footprint_area already
+    # sums room areas, so occupancy math has always agreed). A perimeter
+    # strip that no room claims is therefore OUTSIDE the building, and the
+    # wall facing it is a real exterior wall — the footprint is simply not
+    # rectangular there. Before 2026-08-05 this was tested as "does the wall
+    # coordinate lie on the envelope edge", which drew such walls at
+    # interior thickness and made the outline read as a missing wall (seen
+    # on a 20x20 solve of 1s_2br_sq_side_split_bath_ld, where the bedroom's
+    # south face sat 0.52 m inside the envelope behind an unclaimed strip).
+    #
+    # A gap fully ENCLOSED by rooms is a different thing — a courtyard or
+    # light well — and keeps INTERIOR thickness, so walls bounding a small
+    # inter-room gap still look consistent with their neighbours (e.g. T&B
+    # south wall east of hall when rear-band rooms differ slightly in depth).
     void_rects_only = [vr for _vid, vr, _c in voids]
+
+    # Same probe the architectural plan uses, so wall weight, windows and
+    # exterior doors cannot disagree about which walls face the lot.
+    _occ = [oc for (_or, oc) in all_cells] + void_rects_only
+    _probe = make_outside_probe(env, _occ)
+
+    def _faces_outside(side, coord, s_, e_):
+        """True when the empty space just beyond this wall segment reaches
+        the lot exterior (so the segment is part of the building outline)."""
+        mid = (s_ + e_) / 2.0
+        step = env_eps * 10
+        if side == "N":   px, py = mid, coord + step
+        elif side == "S": px, py = mid, coord - step
+        elif side == "E": px, py = coord + step, mid
+        else:             px, py = coord - step, mid
+        return _probe(px, py)
+
     for r in rooms:
         for c in r.cells:
             other_cells = [oc for (_or, oc) in all_cells if oc is not c]
@@ -811,19 +962,39 @@ def _compute_walls(plan):
                 elif side == "S": coord = c.y0
                 elif side == "E": coord = c.x1
                 else:             coord = c.x0
-                # Determine whether this wall edge sits on the envelope
-                # boundary (true exterior) or is inside (interior gap).
-                if side == "N":
-                    on_env = abs(coord - env.y1) <= env_eps
-                elif side == "S":
-                    on_env = abs(coord - env.y0) <= env_eps
-                elif side == "E":
-                    on_env = abs(coord - env.x1) <= env_eps
-                else:   # "W"
-                    on_env = abs(coord - env.x0) <= env_eps
-                thickness = WALL_THICKNESS_EXTERIOR if on_env else WALL_THICKNESS_INTERIOR
                 for s_, e_ in uncovered:
+                    thickness = (WALL_THICKNESS_EXTERIOR
+                                 if _faces_outside(side, coord, s_, e_)
+                                 else WALL_THICKNESS_INTERIOR)
                     walls.append(_wall_rect(side, coord, s_, e_, thickness))
+
+    # Pass D — notch-pinned BATH rooms: partition walls against the stair's
+    # own leg1/leg2 (see core.model.l_landing_cells). The room and its stair
+    # are exempted from Passes A/B's shared-edge detection since their rects
+    # deliberately overlap (Room.notch_pin_of), so no wall is ever
+    # synthesized between them there. A bath needs real privacy walls here
+    # (unlike a non-bath room absorbing the same notch as an open alcove via
+    # claim_stair_notch, which gets a thin balustrade rail instead — see
+    # _notch_alcove_rail_svg).
+    from model import l_landing_cells
+    rooms_by_id = {r.id: r for r in rooms}
+    for r in rooms:
+        if r.type not in _NOTCH_BATH_TYPES:
+            continue
+        stair = rooms_by_id.get(getattr(r, "notch_pin_of", None))
+        if stair is None:
+            continue
+        cells_ll = l_landing_cells(stair.rect, stair.stair_board_wall,
+                                   stair.stair_arrive_wall)
+        if cells_ll is None:
+            continue
+        for leg in (cells_ll["leg1"], cells_ll["leg2"]):
+            edge = _wall_shared_edge(r.rect, leg)
+            if edge is None:
+                continue
+            side, coord, start, end = edge
+            walls.append(_wall_rect(side, coord, start, end,
+                                    WALL_THICKNESS_INTERIOR))
 
     return walls
 
@@ -1357,6 +1528,136 @@ def _open_plan_svg(edge, layout, other_endpoints=None) -> str:
         p1s[0], p1s[1], p2s[0], p2s[1], edge.wall, _fill(a), _fill(b))
 
 
+_BALUSTRADE_STYLE = 'stroke="#666" stroke-width="1.2"'
+
+
+def _notch_alcove_rail_svg(room, layout) -> str:
+    """Balustrade for a non-bath room that absorbed an L-landing stair's
+    notch as an open alcove (claim_stair_notch, solver/snap_gaps.py) —
+    marks the two edges where the new alcove floor meets the stair's
+    remaining void (leg1 and leg2) with a thin rail, same as a real
+    stairwell guard-rail. The alcove's other two sides need nothing: one is
+    internal to the claiming room (rect + rect2, no seam drawn at all) and
+    the other already gets a normal wall from Pass A against whatever room
+    is on its far side."""
+    from model import l_landing_cells
+    stair = next((r for r in layout.rooms if r.id == room.notch_pin_of), None)
+    if stair is None or room.rect2 is None:
+        return ""
+    cells = l_landing_cells(stair.rect, stair.stair_board_wall,
+                            stair.stair_arrive_wall)
+    if cells is None:
+        return ""
+    out = []
+    for leg in (cells["leg1"], cells["leg2"]):
+        edge = _wall_shared_edge(room.rect2, leg)
+        if edge is None:
+            continue
+        side, coord, start, end = edge
+        if side in ("N", "S"):
+            p1, p2 = (start, coord), (end, coord)
+        else:
+            p1, p2 = (coord, start), (coord, end)
+        p1s = _to_svg_xy(layout.lot, *p1)
+        p2s = _to_svg_xy(layout.lot, *p2)
+        out.append(f'<line x1="{p1s[0]:.1f}" y1="{p1s[1]:.1f}" x2="{p2s[0]:.1f}" '
+                   f'y2="{p2s[1]:.1f}" {_BALUSTRADE_STYLE} stroke-linecap="butt"/>')
+    return "".join(out)
+
+
+def _stair_rail_svg(edge, layout) -> str:
+    """For a stair boarding/arrival open-plan edge, draw a thin rail line
+    along the shared boundary instead of leaving it fully invisible, with
+    a gap at the correct end of the run marking the actual entrance —
+    where a person steps on/off the flight.
+
+    Ground floor (the stairs room's storey == 1, boarding): the gap sits
+    at the LOW end of the run (opposite room.stair_up) — you step onto the
+    first tread there and ascend away from it. Upper floor (storey > 1,
+    arrival): the gap sits at the HIGH end (in the stair_up direction) —
+    ascent finishes there and you step off onto the upper circulation.
+
+    No-ops (returns "") when neither room is a stairs room, or when this
+    particular edge runs PERPENDICULAR to the flight (an end-cap boundary
+    at the run's short end) — that edge already IS the entrance in full,
+    same as today's fully-open rendering."""
+    rooms_by_id = {r.id: r for r in layout.rooms}
+    a = rooms_by_id.get(edge.room_a)
+    b = rooms_by_id.get(edge.room_b)
+    if a is None or b is None:
+        return ""
+    stair_room = a if a.type == "stairs" else (b if b.type == "stairs" else None)
+    if stair_room is None:
+        return ""
+    if getattr(stair_room, "stair_type", "straight") != "straight":
+        # Turning stairs (l_landing, etc.) have no single "run axis" this
+        # straight-only heuristic applies to, and their board/arrival walls
+        # ARE the true walk-through entrance in full (unlike a straight run,
+        # where only PART of the shared wall is the entrance) — leave fully
+        # open, same as any other open-plan edge. The notch portion of this
+        # same wall (if any) gets its own treatment separately: a solver-
+        # pinned bath gets a real wall (Pass D, _compute_walls), and a
+        # claimed alcove gets its own balustrade (_notch_alcove_rail_svg).
+        return ""
+    up = getattr(stair_room, "stair_up", None)
+    if not up:
+        return ""
+    dx, dy = up
+    vertical_run = abs(dy) > abs(dx)
+    ra = getattr(edge, "cell_a", None) or a.rect
+    rb = getattr(edge, "cell_b", None) or b.rect
+    eps = 1e-3
+
+    if abs(ra.x1 - rb.x0) <= eps or abs(ra.x0 - rb.x1) <= eps:
+        edge_vertical = True
+        x = ra.x1 if abs(ra.x1 - rb.x0) <= eps else ra.x0
+        lo, hi = max(ra.y0, rb.y0), min(ra.y1, rb.y1)
+    elif abs(ra.y1 - rb.y0) <= eps or abs(ra.y0 - rb.y1) <= eps:
+        edge_vertical = False
+        y = ra.y1 if abs(ra.y1 - rb.y0) <= eps else ra.y0
+        lo, hi = max(ra.x0, rb.x0), min(ra.x1, rb.x1)
+    else:
+        return ""
+    if hi - lo <= eps or edge_vertical != vertical_run:
+        return ""   # degenerate, or a perpendicular end-cap — leave fully open
+
+    boarding = stair_room.storey == 1
+    rect = stair_room.rect
+    if vertical_run:
+        entrance = rect.y0 if (dy > 0) == boarding else rect.y1
+    else:
+        entrance = rect.x0 if (dx > 0) == boarding else rect.x1
+    # Anchor the gap at whichever end of the ACTUAL overlap [lo, hi] is
+    # nearer the true entrance coordinate (the flanking neighbor may not
+    # reach all the way to the stair room's own end — the solver only
+    # requires it come within STAIR_END_ZONE_U of it).
+    near_lo = abs(entrance - lo) <= abs(entrance - hi)
+    if near_lo:
+        rail_lo, rail_hi = min(hi, lo + STAIR_OPENING_M), hi
+    else:
+        rail_lo, rail_hi = lo, max(lo, hi - STAIR_OPENING_M)
+    if rail_hi - rail_lo <= eps:
+        return ""   # the gap covers the whole overlap — nothing to rail
+    # Inset the far end (a true perpendicular-wall corner) by the same
+    # amount _open_plan_svg uses, so the rail doesn't poke into that wall.
+    inset = WALL_THICKNESS_INTERIOR / 2.0
+    if near_lo:
+        rail_hi -= inset
+    else:
+        rail_lo += inset
+    if rail_hi - rail_lo <= eps:
+        return ""
+    if edge_vertical:
+        p1, p2 = (x, rail_lo), (x, rail_hi)
+    else:
+        p1, p2 = (rail_lo, y), (rail_hi, y)
+    p1s = _to_svg_xy(layout.lot, *p1)
+    p2s = _to_svg_xy(layout.lot, *p2)
+    return (f'<line x1="{p1s[0]:.1f}" y1="{p1s[1]:.1f}" x2="{p2s[0]:.1f}" '
+            f'y2="{p2s[1]:.1f}" stroke="{WALL_FILL}" stroke-width="2" '
+            f'stroke-linecap="butt"/>')
+
+
 def _counter_svg(ctr, layout) -> str:
     """Dining counter (breakfast bar) on an open-plan kitchen edge: a 0.6 m
     millwork band inside the kitchen along the shared boundary, plus stool
@@ -1461,6 +1762,13 @@ def archplan_to_svg(plan) -> str:
         # un-shared. Passing the pre-computed shared_endpoints set fixes that.
         overlays.append(_open_plan_svg(ope, plan.layout,
                                        other_endpoints=shared_endpoints))
+        overlays.append(_stair_rail_svg(ope, plan.layout))
+    # Balustrade for a non-bath room that absorbed an L-landing stair's
+    # notch as an open alcove (claim_stair_notch) — the bath case gets real
+    # walls instead, from Pass D in _compute_walls.
+    for r in plan.layout.rooms:
+        if getattr(r, "notch_pin_of", None) and r.type not in _NOTCH_BATH_TYPES:
+            overlays.append(_notch_alcove_rail_svg(r, plan.layout))
     # Doors and windows punch openings through walls.
     for d in plan.doors:
         overlays.append(_door_svg(d, plan.layout))

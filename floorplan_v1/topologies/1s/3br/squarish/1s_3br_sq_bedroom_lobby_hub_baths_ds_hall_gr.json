@@ -1,0 +1,378 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_bedroom_lobby_hub_baths_ds_hall_gr",
+  "label": "Squarish 3BR / baths DISTRIBUTED with central BEDROOM-LOBBY HUB — a small square lobby at the geometric centre of the plan takes all three bedroom doors (br2+br3 paired on one wall, master alone on another) and the common bath's door on a third wall, with its fourth side open to the great_room; zero corridor run. Open-plan great_room + kitchen (gr style).",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hub",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "br2",
+      "b": "hub",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 door opens onto the hub; shares its wall (and typically a single jamb post) with the br3 door — two bedroom doors on one wall is the signature move of this parti, confirmed independently in pep_SHD-2015013, pep_DESIGN2 and pep_SHD-2017032."
+    },
+    {
+      "a": "br3",
+      "b": "hub",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 door pairs with br2's on the same hub wall."
+    },
+    {
+      "a": "master",
+      "b": "hub",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master's only access — a single door on a second hub wall, opposite or adjacent to the br2/br3 pair depending on which corner the master occupies."
+    },
+    {
+      "a": "ensuite",
+      "b": "master",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "ensuite opens directly off master, not off the hub — sanctioned rule-1 arrangement, matching pep_DESIGN2's cleaner version rather than introducing a W.I.C. pass-through."
+    },
+    {
+      "a": "common",
+      "b": "hub",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "DELIBERATE DEVIATION FROM 2 OF 3 PRECEDENTS: pep_DESIGN2 and pep_SHD-2015013 both swing the common bath's only door off the kitchen floor, breaking TOPOLOGY_GUIDE rule 1's [HARD] no-toilet-into-kitchen-prep-zone sub-rule (PD 856). pep_SHD-2017032 proves the fix costs nothing: the bath keeps the identical kitchen-adjacent plumbing wall (see the wet_core edge below) but the door leaf swings from the hub side instead. This catalog entry adopts the compliant version as the canonical form."
+    },
+    {
+      "a": "common",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "common bath backs onto the kitchen wall, sharing one plumbing stack — the physical adjacency the flawed precedents got right; only the door side changes."
+    },
+    {
+      "a": "hub",
+      "b": "great",
+      "min_shared_wall_m": 1.2,
+      "kind": "open_plan",
+      "note": "the hub's fourth side is fully open to the great_room — no wall, no door. This open mouth is what makes it a hub rather than a corridor, and it satisfies the [PREFER] hallway-to-public open_plan rule. Confirmed in all three precedents."
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen read as one open LDK (gr style). Field note: pep_SHD-2017032's kitchen is only semi-open (one wide cased opening) rather than fully open — a legitimate compact variant if the shell is tight, but the canonical entry keeps it fully open plan for consistency with the family's other three gr-style siblings."
+    },
+    {
+      "a": "br2",
+      "b": "br3",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "full party wall between the paired standards, no opening. Confirmed in all three precedents."
+    },
+    {
+      "a": "common",
+      "b": "br3",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "acoustic buffer between the bath and the nearer standard bedroom; no opening."
+    },
+    {
+      "a": "ensuite",
+      "b": "br2",
+      "min_shared_wall_m": 0.8,
+      "kind": "bath_to_bedroom_wall",
+      "note": "ensuite's far wall buffers the standard-bedroom band; no opening."
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "common",
+      "b": "kitchen",
+      "weight": 20,
+      "note": "keep the single wet stack tight — common bath and kitchen should land on the same short plumbing run"
+    },
+    {
+      "a": "master",
+      "b": "great",
+      "weight": 10,
+      "note": "let the master corner sit toward the entry side so its blind wall doubles as an acoustic buffer for the public room, not an awkward rear pocket"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": true,
+  "left_anchored": null,
+  "right_anchored": null,
+  "rear_anchored": [
+    "br2",
+    "br3",
+    "kitchen"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "hub",
+      "br2"
+    ],
+    [
+      "great",
+      "hub",
+      "br3"
+    ],
+    [
+      "great",
+      "kitchen"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_bedroom_lobby_hub_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 95
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 15.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "ESTIMATED, not solver-derived (see notes). The hub spends less floor area on circulation than any hallway sibling in the family — pep_SHD-2017032's own note calls it 'zero corridor length spent' — so this may be the family's true compact champion once verified; the 95 sqm trigger is set slightly below front_back_split's 100 sqm as a conservative estimate of that advantage, not a measured threshold."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "carport",
+      "location": "side_setback",
+      "covered": false,
+      "width_m": 3.0,
+      "depth_m": 6.0
+    },
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [
+    {
+      "id": "carport_cut",
+      "location": "front_right",
+      "width_m": 1.0,
+      "depth_m": 4.0,
+      "consumed_by": "carport"
+    }
+  ],
+  "notes": [
+    "*** SOLVER-VERIFIED 2026-08-05 (COMPLIANT), WITH ONE AUTHORING BUG FOUND + FIXED ***",
+    "Verified by running this file through the actual pipeline code (ai/pipeline.py",
+    "_run_hand_authored -> solver/solver.py CP-SAT solve -> core/validator.py) in",
+    "floorplan_v1, the same functions the app.py tool calls — not a separate re-",
+    "implementation. Confirmed COMPLIANT (0 errors) at: 13.5x13.5 lot / ncp",
+    "(score 30.77), 13.5x13.5 / ccp-right (30.37), 13.5x13.5 / ccp-left (30.37),",
+    "and 11x12 / ncp (15.79, buildable envelope only 7.0x8.0 m = 56 sqm). A 10x10",
+    "lot (6.0x6.0 m = 36 sqm buildable) came back INFEASIBLE — expected: every",
+    "sibling in this branch has a stated minimum feasible shell well above that,",
+    "so this is a real floor-space floor, not a bug.",
+    "",
+    "THE BUG (now fixed): the file as first drafted declared BOTH a hard adjacency",
+    "(master <-> great, kind bedroom_to_public_wall) AND a front_to_rear_stack",
+    "[\"great\",\"hub\",\"master\"] that forces hub to sit physically between them.",
+    "Those two constraints are mutually exclusive by construction — a room",
+    "(hub) with positive depth sitting between great and master makes it",
+    "geometrically impossible for great and master to ever touch, so the model",
+    "was infeasible at every lot size, including generous ones, not just tight",
+    "ones. Confirmed by isolating it: removing that one stack alone (independent",
+    "of every other adjacency and of the br2/br3/kitchen stacks, all of which",
+    "were individually innocent) flipped the model from infeasible to solvable.",
+    "Fix applied: removed the master--great hard adjacency and the",
+    "[\"great\",\"hub\",\"master\"] stack entry. The original design intent (master",
+    "corner leaning toward the entry side) is kept as the soft_proximity",
+    "master<->great below, which the solver honors when it can without it being",
+    "a hard requirement.",
+    "",
+    "HUB GEOMETRY vs LOT SIZE — measured 2026-08-05 (supersedes the caveat",
+    "this replaces, which had the relationship BACKWARDS). The hub reads as a",
+    "true square lobby at the TIGHT end and degrades into a corridor as the",
+    "lot GROWS. Measured hub aspect ratio (ncp, all-2.0 m setbacks):",
+    "  11x11.25  2.20 x 2.15  aspect 1.02   <- true square lobby",
+    "  11.5x11.5 2.25 x 2.15  aspect 1.05",
+    "  12x12     3.00 x 2.00  aspect 1.50",
+    "  12.5x12.5 2.25 x 1.50  aspect 1.50",
+    "  13x13     2.80 x 1.50  aspect 1.87",
+    "  13.5x13.5 3.00 x 2.00  aspect 1.50",
+    "  14x14     3.45 x 1.65  aspect 2.09",
+    "  15x15     4.80 x 1.20  aspect 4.00   <- pure corridor, parti defeated",
+    "The earlier note's '~3.0x2.0, hallway-shaped' reading came from",
+    "13.5x13.5 runs only and generalized the wrong way. Treat ~14x14 as the",
+    "practical UPPER bound for this parti: above it the solver has enough",
+    "slack to stretch the hub into the corridor the design exists to avoid.",
+    "The adjacency graph is intact at every size tested (hub keeps all 3",
+    "bedroom doors + common bath door + open mouth to great) — it is the",
+    "hub's SHAPE that degrades, not its connectivity.",
+    "",
+    "CARPORT (ccp) SIZING — the raw ccp feasibility floor is 12x12",
+    "(11.75x11.75 and 11.75x12 both INFEASIBLE; the front-right L-notch costs",
+    "roughly 0.75-1 m over the ncp minimum in both dimensions), but 12x12",
+    "solves DEGENERATE: hub 4.25 x 1.00 m (aspect 4.25, a 1 m corridor with",
+    "five doors opening into it) and ensuite 1.25 x 5.00 m (aspect 4.00),",
+    "at 0 hard errors and 0 warnings — the compact profile's hallway",
+    "min_least_dim_m of 0.95 is what lets a corridor pass as the lobby.",
+    "The published ccp minimum is therefore 12.5x12.5, one notch up, where",
+    "the parti reads correctly: hub 2.50 x 1.95 m (aspect 1.28), ensuite a",
+    "square 1.95 x 1.95 m, master 13.0 sqm, great_room 17.0 sqm, and every",
+    "hub adjacency met with margin. The ccp test brief was re-based",
+    "12x12 -> 12.5x12.5 on 2026-08-05 for exactly this reason. If a future",
+    "change needs 12x12 ccp to be usable, raise the hallway floor to ~1.5 m",
+    "so no size can pass a corridor off as the lobby.",
+    "",
+    "If a guaranteed square lobby at all sizes matters more than the current",
+    "solvability band, this needs a hard constraint linking master to the",
+    "hub/great cluster (an anchor, or a stack that does NOT sandwich hub",
+    "between master and great) — flagged for a follow-up pass, not guessed",
+    "at here.",
+    "",
+    "left_anchored/right_anchored remain deliberately null (as originally",
+    "authored) — not needed for a feasible solve in any verified run, so no",
+    "reason to add them.",
+    "",
+    "lot_adjustment_profile's buildable_area_lt_sqm: 95 threshold is still an",
+    "ESTIMATE (see rationale field) — not re-derived from the verification runs",
+    "above, which only bracket the real floor somewhere between 36 sqm (fails)",
+    "and 56 sqm (solves compliant).",
+    "",
+    "--- original authoring notes below (provenance, unchanged) ---",
+    "",
+    "3BR squarish catalog topology #5 — BEDROOM-LOBBY HUB.",
+    "",
+    "Provenance: 'bedroom_lobby_hub' was coined as a one-off token for a single",
+    "plan (pep_SHD-2015013) in the July 2026 precedent-extraction pilot. The",
+    "August 2026 full run (53 houses) found it again independently in",
+    "pep_DESIGN2 and pep_SHD-2017032 (plus its near-duplicate sibling sheet",
+    "pep_SHD-2017032-DESIGN2, and pep_SHD-2015022) — 5 of 53 houses, second only",
+    "to side_split in frequency across the whole corpus, and specifically 5 of",
+    "the 15 real 1s/3br/squarish leads found in that run. It is a genuine",
+    "recurring PH pattern, not a one-off drafting quirk, and this is its first",
+    "catalog authoring.",
+    "",
+    "Layout intent as originally drawn (illustrative only — the solver is free to",
+    "arrange rooms differently now that master--great is a soft, not hard, link;",
+    "see the verified-geometry caveat above for what it actually produced):",
+    "  +------------------------------------------+",
+    "  | br2   | br3        | common | kitchen    |  rear",
+    "  +-------+------------+--------+            |",
+    "  | ensuite       |            |              |",
+    "  +---------------+   HUB      +--------------+",
+    "  | master         |          |                |",
+    "  +----------------+----------+                |",
+    "  |         great_room (entry)                 |  front / street",
+    "  +----------------------------------------------+",
+    "",
+    "Program: the hub takes bedroom doors on two of its four sides (br2+br3",
+    "paired on one, master alone on another), the common bath's door on a",
+    "third, and is fully open to the great_room on the fourth. This is why",
+    "zone_split is null: the private rooms wrap the hub on multiple sides",
+    "rather than forming a single column, so this parti does not fit the",
+    "family's usual two-column vertical/horizontal split model — confirmed",
+    "independently in all three source precedents' own parti_notes, which each",
+    "separately ruled out side_split, center_spine and half_spine as poor fits",
+    "for the same structural reason.",
+    "",
+    "The corrected sanitation issue: 2 of the 3 precedents (pep_DESIGN2,",
+    "pep_SHD-2015013) swing the common bath's only door off the kitchen floor,",
+    "which breaks TOPOLOGY_GUIDE rule 1's [HARD] PD-856 sub-rule — both rear",
+    "bedrooms' occupants would have to cross the open kitchen/food-prep zone to",
+    "reach the bath. pep_SHD-2017032 shows this costs nothing to fix: same",
+    "shared plumbing wall to the kitchen (kept here as the wet_core edge), door",
+    "leaf simply swung from the hub side instead. This catalog entry builds the",
+    "compliant version as the default, per TOPOLOGY_GUIDE's own instruction that",
+    "the catalog should hold to its stated standard even where market practice",
+    "does not.",
+    "",
+    "Fallback: none declared. No sibling in this branch declares fallback_topology",
+    "yet either (checked directly against the other four files on 2026-08-05) —",
+    "that convention has not been applied to this branch at all so far, not just",
+    "to this new entry.",
+    "",
+    "When brief.carport_side='left', mirror the topology (consistent with all",
+    "four siblings' convention, not independently verified here)."
+  ]
+}

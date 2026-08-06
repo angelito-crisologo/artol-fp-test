@@ -58,6 +58,63 @@ class Rect:
         return False
 
 
+_L_LANDING_WALL_OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
+
+
+def l_landing_cells(rect: "Rect", board_wall: Optional[str],
+                    arrive_wall: Optional[str]) -> Optional[Dict[str, "Rect"]]:
+    """Decompose an L-landing stair's bounding rect into its four
+    sub-rectangles: leg1 (from the boarding wall), leg2 (to the arrival
+    wall), landing (their corner overlap), and notch (the unused corner
+    diagonally opposite the landing — currently reserved for the stair but
+    not actually part of any tread/landing, reclaimable by whichever room
+    borders it). leg_w = min(rect.w, rect.h) / 3.0. Shared by the render
+    glyph (core/render.py) and the solver's notch-derivation / claim logic
+    (solver/solver.py, solver/snap_gaps.py) so both agree on the exact
+    same geometry. Returns None if board_wall/arrive_wall aren't set or
+    aren't a valid perpendicular pair (the only configuration an L-landing
+    turn can have)."""
+    if not board_wall or not arrive_wall or board_wall == arrive_wall \
+            or _L_LANDING_WALL_OPPOSITE.get(board_wall) == arrive_wall:
+        return None
+    leg_w = min(rect.w, rect.h) / 3.0
+    board_travels_y = board_wall in ("N", "S")
+    leg1_wall = _L_LANDING_WALL_OPPOSITE[arrive_wall]
+    if board_travels_y:
+        if leg1_wall == "W":
+            lx0, lx1 = rect.x0, rect.x0 + leg_w
+        else:
+            lx0, lx1 = rect.x1 - leg_w, rect.x1
+        if board_wall == "S":
+            ly0, ly1 = rect.y0, rect.y1 - leg_w
+            l2y0, l2y1 = rect.y1 - leg_w, rect.y1
+        else:
+            ly0, ly1 = rect.y0 + leg_w, rect.y1
+            l2y0, l2y1 = rect.y0, rect.y0 + leg_w
+        leg1 = Rect(lx0, ly0, lx1, ly1)
+        l2x0, l2x1 = (lx1, rect.x1) if leg1_wall == "W" else (rect.x0, lx0)
+        leg2 = Rect(l2x0, l2y0, l2x1, l2y1)
+        landing = Rect(lx0, l2y0, lx1, l2y1)
+        notch = Rect(l2x0, ly0, l2x1, ly1)
+    else:
+        if leg1_wall == "S":
+            ly0, ly1 = rect.y0, rect.y0 + leg_w
+        else:
+            ly0, ly1 = rect.y1 - leg_w, rect.y1
+        if board_wall == "W":
+            lx0, lx1 = rect.x0, rect.x1 - leg_w
+            l2x0, l2x1 = rect.x1 - leg_w, rect.x1
+        else:
+            lx0, lx1 = rect.x0 + leg_w, rect.x1
+            l2x0, l2x1 = rect.x0, rect.x0 + leg_w
+        leg1 = Rect(lx0, ly0, lx1, ly1)
+        l2y0, l2y1 = (ly1, rect.y1) if leg1_wall == "S" else (rect.y0, ly0)
+        leg2 = Rect(l2x0, l2y0, l2x1, l2y1)
+        landing = Rect(l2x0, ly0, l2x1, ly1)
+        notch = Rect(lx0, l2y0, lx1, l2y1)
+    return {"leg1": leg1, "leg2": leg2, "landing": landing, "notch": notch}
+
+
 @dataclass
 class Room:
     id: str            # unique instance id, e.g. "bedroom_standard"
@@ -77,6 +134,21 @@ class Room:
                                       # Set by the solver from its ascent
                                       # decision; the renderer draws the UP/DN
                                       # travel arrow from it.
+    stair_type: str = "straight"     # for type=="stairs": which of the 6
+                                      # catalog stair plan-types (copied
+                                      # straight through from RoomSpec).
+    stair_board_wall: Optional[str] = None  # for type=="stairs" with
+                                      # stair_type != "straight": which wall
+                                      # (N/S/E/W) the boarding neighbor
+                                      # reaches, resolved from the topology's
+                                      # stair_boarding adjacency stair_wall.
+    stair_arrive_wall: Optional[str] = None  # same, for stair_arrival.
+    notch_pin_of: Optional[str] = None  # room id of the L-landing stair whose
+                                      # leftover notch this room is pinned
+                                      # into (Topology.notch_powder_room_id) —
+                                      # a DELIBERATE overlap with that one
+                                      # room only; the validator's overlap
+                                      # check exempts this specific pair.
 
     @property
     def cells(self) -> List[Rect]:
@@ -183,3 +255,67 @@ class Layout:
     @property
     def occupancy_pct(self) -> float:
         return round(100.0 * self.footprint_area / self.lot.area, 2)
+
+
+def make_outside_probe(env: "Rect", obstacles, eps: float = 1e-6):
+    """Build `faces_outside(x, y) -> bool` for one floor's geometry.
+
+    THE single definition of "outside the building", shared by the renderer
+    (which wall weights to draw) and the architectural plan (where windows
+    and exterior doors may go). Before 2026-08-06 those two had separate
+    answers: render used this connectivity rule while architectural_plan
+    used strict envelope-edge equality, so a wall that was exterior only
+    because it faced an unclaimed perimeter strip got drawn heavy but was
+    given no window and could host no door.
+
+    The building footprint is the union of ROOM CELLS, not the envelope
+    rectangle — `Layout.footprint_area` has always summed room areas. A
+    point is OUTSIDE when it lies beyond the envelope, or in unowned space
+    that reaches the envelope boundary. Unowned space fully ENCLOSED by
+    rooms is a courtyard / light well, and is deliberately NOT outside.
+
+    `obstacles` are the occupied rects (room cells + building voids).
+    """
+    import bisect as _bisect
+    xs = sorted({env.x0, env.x1} | {v for c in obstacles for v in (c.x0, c.x1)
+                                    if env.x0 - eps < v < env.x1 + eps})
+    ys = sorted({env.y0, env.y1} | {v for c in obstacles for v in (c.y0, c.y1)
+                                    if env.y0 - eps < v < env.y1 + eps})
+    nx, ny = len(xs) - 1, len(ys) - 1
+
+    def _free(i, j):
+        cx, cy = (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+        return not any(c.x0 - eps < cx < c.x1 + eps and
+                       c.y0 - eps < cy < c.y1 + eps for c in obstacles)
+
+    out = [[False] * ny for _ in range(nx)]
+    stack = [(i, j) for i in range(nx) for j in range(ny)
+             if _free(i, j) and (i in (0, nx - 1) or j in (0, ny - 1))]
+    for i, j in stack:
+        out[i][j] = True
+    while stack:
+        i, j = stack.pop()
+        for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            a, b = i + di, j + dj
+            if 0 <= a < nx and 0 <= b < ny and not out[a][b] and _free(a, b):
+                out[a][b] = True
+                stack.append((a, b))
+
+    def faces_outside(px: float, py: float) -> bool:
+        if not (env.x0 <= px <= env.x1 and env.y0 <= py <= env.y1):
+            return True
+        i = max(0, min(nx - 1, _bisect.bisect_right(xs, px) - 1))
+        j = max(0, min(ny - 1, _bisect.bisect_right(ys, py) - 1))
+        return out[i][j]
+
+    return faces_outside
+
+
+def probe_point(rect: "Rect", side: str, step: float = 1e-5):
+    """A point just OUTSIDE `rect` on the given side — what to hand to
+    `faces_outside` to ask whether that wall is an exterior wall."""
+    mx, my = (rect.x0 + rect.x1) / 2.0, (rect.y0 + rect.y1) / 2.0
+    if side == "N": return (mx, rect.y1 + step)
+    if side == "S": return (mx, rect.y0 - step)
+    if side == "E": return (rect.x1 + step, my)
+    return (rect.x0 - step, my)                      # "W"

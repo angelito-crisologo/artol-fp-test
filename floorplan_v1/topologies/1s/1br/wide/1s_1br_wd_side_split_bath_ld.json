@@ -100,12 +100,24 @@
     "kitchen"
   ],
   "front_to_rear_stacks": [
-    ["living", "bath"],
-    ["dining", "kitchen"]
+    [
+      "living",
+      "bath"
+    ],
+    [
+      "dining",
+      "kitchen"
+    ]
   ],
   "match_widths": [
-    ["living", "bath"],
-    ["dining", "kitchen"]
+    [
+      "living",
+      "bath"
+    ],
+    [
+      "dining",
+      "kitchen"
+    ]
   ],
   "lot_adjustment_profiles": [],
   "setback_elements": [
@@ -158,5 +170,7 @@
     "",
     "No lot_adjustment_profiles yet -- untuned, pending real feasibility",
     "testing."
-  ]
+  ],
+  "fallback_topology": "1s/1br/wide/1s_1br_wd_side_split_bath_gr.json",
+  "fallback_below_buildable_sqm": 27.9
 }

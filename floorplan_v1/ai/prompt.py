@@ -9,11 +9,14 @@ The prompt teaches Claude:
   - few-shot exemplars: brief -> topology pairs derived from our hand-authored files
 
 The exemplars are the single most important part of the prompt — they're how
-Claude learns what a good topology looks like in our system's vocabulary.
+Claude learns what a good topology looks like in our system's vocabulary. They
+are picked PER BRIEF from the catalog (see `select_exemplars`) rather than
+being a fixed pair, so a 3BR narrow ask is shown 3BR narrow work.
 """
 import json
 import os
-from typing import Dict, List
+import re
+from typing import Dict, List, Optional, Sequence, Tuple
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _TOPOLOGIES_DIR = os.path.join(os.path.dirname(_HERE), "topologies")
@@ -247,26 +250,54 @@ the example briefs and their authored topologies below as guidance.
 
 # ---------- few-shot exemplars ----------
 
-# Each tuple is (reverse-engineered example brief, exemplar filename). The
-# brief is what a user might have written to elicit that topology — when
-# Claude sees a new brief, it picks the closest exemplar feeling.
-EXEMPLARS = [
-    ("2-bedroom where the two bathrooms cluster together between the bedrooms "
-     "and share a plumbing wall — the bath block sits BETWEEN the standard "
-     "bedroom (front) and master (rear), acting as the acoustic buffer between "
-     "sleeping spaces. Ensuite is on the master side, common on the "
-     "standard-bedroom side. Public zone is a separate living, dining, and "
-     "kitchen stacked front-to-rear rather than a combined great room — a "
-     "public door off the living room, and the master opens onto the dining "
-     "room.",
-     "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"),
-    ("2-bedroom with strict separation between the public side and the private "
-     "side (bedrooms+baths). Traditional sala-comedor-kusina: separate living, "
-     "dining, and kitchen rooms rather than a combined great room. Distributed "
-     "baths — ensuite off master, common bath accessible from the living/dining "
-     "area. Use when the brief calls for a formal or traditional layout.",
-     "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json"),
-]
+# Hand-written reverse-engineered briefs for the two topologies that used to be
+# the ONLY exemplars. Each reads the way a user would actually have asked for
+# that topology — something a topology's own `label` (which describes the
+# finished design, not the ask) can't quite do. Kept for two reasons: when the
+# catalog picker happens to land on one of these files we use the better text,
+# and the pair is the last-resort fallback so the prompt never ships with zero
+# examples.
+_HAND_WRITTEN_BRIEFS = {
+    "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json":
+        "2-bedroom where the two bathrooms cluster together between the bedrooms "
+        "and share a plumbing wall — the bath block sits BETWEEN the standard "
+        "bedroom (front) and master (rear), acting as the acoustic buffer between "
+        "sleeping spaces. Ensuite is on the master side, common on the "
+        "standard-bedroom side. Public zone is a separate living, dining, and "
+        "kitchen stacked front-to-rear rather than a combined great room — a "
+        "public door off the living room, and the master opens onto the dining "
+        "room.",
+    "1s/2br/squarish/1s_2br_sq_side_split_baths_ds_ld.json":
+        "2-bedroom with strict separation between the public side and the private "
+        "side (bedrooms+baths). Traditional sala-comedor-kusina: separate living, "
+        "dining, and kitchen rooms rather than a combined great room. Distributed "
+        "baths — ensuite off master, common bath accessible from the living/dining "
+        "area. Use when the brief calls for a formal or traditional layout.",
+}
+
+# (brief_text, filename) pairs — the shape select_exemplars() returns. Used
+# verbatim when the catalog yields nothing at all.
+FALLBACK_EXEMPLARS = [(text, fname) for fname, text in _HAND_WRITTEN_BRIEFS.items()]
+
+# A representative lot for each shell, so the exemplar's "Lot:" line agrees
+# with the topology it is paired with. (A narrow topology presented under a
+# squarish lot teaches Claude the wrong thing.)
+_SHELL_EXAMPLE_LOT = {
+    "narrow":     (8.0, 14.0),
+    "squarish":   (13.0, 12.0),
+    "wide":       (14.0, 10.0),
+    "extra_wide": (16.0, 10.0),
+}
+_DEFAULT_EXAMPLE_LOT = (13.0, 12.0)
+
+# Filename tokens per the naming convention in CLAUDE.md:
+#   {storey}_{nbr}_{shape}_{strategy}_{bath_token}[_hall][_gr|_ld]_{carport}
+_SHAPE_TOKENS = {"sq", "wd", "nw", "dp", "swd", "sdp"}
+_BATH_TOKENS = {"bath", "baths"}
+
+# Below this many characters a `label` is too thin to stand alone as an
+# exemplar brief, so we top it up from `notes`.
+_THIN_LABEL_CHARS = 120
 
 
 def _load(fname: str) -> Dict:
@@ -274,12 +305,139 @@ def _load(fname: str) -> Dict:
         return json.load(f)
 
 
-_LAST_EXAMPLE_TOOL_USE_ID = None   # tracked across builds so llm.py can pair it
+def _rel(fname: str) -> str:
+    """Catalog-relative path with forward slashes, whatever the platform."""
+    return fname.replace(os.sep, "/")
 
 
-def build_few_shot_messages() -> List[Dict]:
+def _parti_key(fname: str) -> str:
+    """The parti / circulation token out of a topology filename — the bit
+    between the shape token and the bath token. Used only to spread the
+    exemplars across distinct layout ideas:
+
+      1s_2br_sq_side_split_baths_cl_ld  -> side_split
+      1s_2br_wd_quadrant_split_baths_ds -> quadrant_split
+      1s_3br_sq_hall_core_baths_ds_hall -> hall_core
+    """
+    stem = os.path.splitext(os.path.basename(fname))[0]
+    parts = stem.split("_")
+    i = 0
+    while i < len(parts) and re.fullmatch(r"\d+(s|br)", parts[i]):
+        i += 1
+    if i < len(parts) and parts[i] in _SHAPE_TOKENS:
+        i += 1
+    parti = []
+    while i < len(parts) and parts[i] not in _BATH_TOKENS:
+        parti.append(parts[i])
+        i += 1
+    return "_".join(parti) or stem
+
+
+def _prefer_single_storey(cands: Sequence) -> List:
+    """The system prompt (and Brief, which has no storey field) is
+    single-storey; 2s exemplars would teach stairs nobody asked for. Drop them
+    — unless that would leave nothing, in which case a 2s example still beats
+    an off-program one."""
+    single = [c for c in cands if _rel(c.filename).startswith("1s/")]
+    return single if single else list(cands)
+
+
+def _pick_varied(cands: Sequence, max_n: int) -> List:
+    """Up to max_n candidates, preferring distinct partis so the two exemplars
+    don't show Claude the same idea twice. Tops up with repeats-of-parti only
+    if the filtered catalog is too homogeneous to do better."""
+    picked, seen_parti, seen_file = [], set(), set()
+    for pass_distinct in (True, False):
+        for c in cands:
+            if len(picked) >= max_n:
+                return picked
+            if c.filename in seen_file:
+                continue
+            parti = _parti_key(c.filename)
+            if pass_distinct and parti in seen_parti:
+                continue
+            picked.append(c)
+            seen_parti.add(parti)
+            seen_file.add(c.filename)
+    return picked
+
+
+def _exemplar_brief_text(cand) -> str:
+    """A one-paragraph description to present as the exemplar's brief. Uses the
+    hand-written text where we have one, else the topology's own `label`
+    (topped up from `notes` when the label is thin)."""
+    hand = _HAND_WRITTEN_BRIEFS.get(_rel(cand.filename))
+    if hand:
+        return hand
+    text = (cand.label or "").strip()
+    if len(text) < _THIN_LABEL_CHARS:
+        extra = " ".join(str(n).strip() for n in (cand.notes or [])[:2] if str(n).strip())
+        text = f"{text} {extra}".strip()
+    if not text:
+        text = (f"{cand.bedroom_count}-bedroom / {cand.bath_count} bath on a "
+                f"{cand.target_shell} lot.")
+    return " ".join(text.split())      # collapse any newlines to one paragraph
+
+
+def _catalog_candidates(brief) -> List:
+    """Catalog entries worth showing Claude for this brief, best first.
+
+    match.py itself imports pipeline lazily to dodge a circular import; we do
+    the same here, since pipeline.py imports llm.py which reaches this module.
+    """
+    from match import match_topologies, all_topologies    # noqa: E402 (ai sibling)
+
+    matched, shell = match_topologies(brief)
+    matched = _prefer_single_storey(matched)
+    if matched:
+        return matched
+
+    # Nothing matches this bedroom-count + shell combination — the catalog
+    # doesn't cover every combo yet. Widen to the nearest bedroom count,
+    # irrespective of shell (distance 0 wins, so "right program, wrong shell"
+    # beats "wrong program"). Shell is no longer a filter here, but still
+    # breaks ties — a squarish ask sees squarish work where the catalog has it.
+    every = _prefer_single_storey(all_topologies())
+    if not every:
+        return []
+    target = getattr(brief, "bedroom_count", 2) or 2
+    nearest = min(abs(c.bedroom_count - target) for c in every)
+    return sorted((c for c in every if abs(c.bedroom_count - target) == nearest),
+                  key=lambda c: (c.target_shell != shell, c.id))
+
+
+def select_exemplars(brief, max_n: int = 2) -> List[Tuple[str, str]]:
+    """Pick up to `max_n` few-shot exemplars from the catalog for this brief.
+
+    Returns (brief_text, filename) tuples — the shape the old static EXEMPLARS
+    list had. Filenames are relative to floorplan_v1/topologies/.
+
+    Order of preference:
+      1. Catalog entries matching the brief's bedroom_count + lot shell
+         (match.py's hard filter), spread across distinct partis.
+      2. Nearest bedroom count irrespective of shell, when (1) is empty.
+      3. The two hand-written squarish 2BR exemplars, so we never send a
+         prompt with zero examples.
+    """
+    try:
+        cands = _catalog_candidates(brief)
+    except Exception:
+        # A prompt with the old fixed exemplars is far better than no prompt
+        # at all, so never let catalog trouble break generation.
+        cands = []
+    picked = _pick_varied(cands, max_n)
+    if not picked:
+        return list(FALLBACK_EXEMPLARS[:max_n])
+    return [(_exemplar_brief_text(c), c.filename) for c in picked]
+
+
+_LAST_EXAMPLE_TOOL_USE_ID = None   # set by each build; read via last_example_tool_use_id()
+
+
+def build_few_shot_messages(brief, max_n: int = 2) -> List[Dict]:
     """Return a list of (user, assistant) message pairs for few-shot in-context
     learning. Each pair shows: example brief -> example topology submission.
+    The exemplars are chosen for THIS brief by select_exemplars().
 
     The API requires every assistant tool_use to be paired with a user
     tool_result on the next turn. We weave a synthetic 'Accepted.' tool_result
@@ -288,15 +446,19 @@ def build_few_shot_messages() -> List[Dict]:
     global _LAST_EXAMPLE_TOOL_USE_ID
     msgs = []
     prev_id = None
-    for brief_text, fname in EXEMPLARS:
+    for brief_text, fname in select_exemplars(brief, max_n=max_n):
         topo = _load(fname)
         # tool_use.id must match ^[a-zA-Z0-9_-]+$ — strip the .json extension
         # and replace any other punctuation to keep the regex happy.
-        slug = os.path.splitext(os.path.basename(fname))[0]
+        slug = re.sub(r"[^a-zA-Z0-9_-]", "_",
+                      os.path.splitext(os.path.basename(fname))[0])
         tool_use_id = f"toolu_example_{slug}"
+        shell = topo.get("target_shell", "squarish")
+        w, d = _SHELL_EXAMPLE_LOT.get(shell, _DEFAULT_EXAMPLE_LOT)
         brief_block = {"type": "text",
                        "text": f"Brief: {brief_text}\n"
-                               f"Lot: 13.0 x 12.0 m (squarish shell, 156 sqm)"}
+                               f"Lot: {w:.1f} x {d:.1f} m "
+                               f"({shell} shell, {w * d:.0f} sqm)"}
         if prev_id is None:
             msgs.append({"role": "user", "content": [brief_block]})
         else:
@@ -313,12 +475,23 @@ def build_few_shot_messages() -> List[Dict]:
     return msgs
 
 
-def last_example_tool_use_id() -> str:
+def last_example_tool_use_id(messages: Optional[List[Dict]] = None) -> Optional[str]:
     """The tool_use id of the final exemplar — llm.py wraps the live brief in
-    a tool_result for this id so the conversation is structurally valid."""
-    if _LAST_EXAMPLE_TOOL_USE_ID is None:
-        # ensure the build has run at least once
-        build_few_shot_messages()
+    a tool_result for this id so the conversation is structurally valid.
+
+    Pass the messages you got back from build_few_shot_messages() and the id is
+    read straight off them. That's the safe call now that exemplars vary per
+    brief: the module-level fallback below reflects whichever build ran LAST,
+    which is the wrong brief's id under any concurrency (e.g. two Streamlit
+    sessions) and stale after a repair round rebuilds the prompt."""
+    if messages is not None:
+        for m in reversed(messages):
+            if m.get("role") != "assistant":
+                continue
+            for block in m.get("content", []):
+                if block.get("type") == "tool_use":
+                    return block.get("id")
+        return None
     return _LAST_EXAMPLE_TOOL_USE_ID
 
 

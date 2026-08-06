@@ -1,0 +1,290 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "2s_2br_sq_l_landing_stair_bath_gr",
+  "label": "Squarish-shell 2-STOREY 2BR / 2 baths, L-SHAPED LANDING STAIR, hall-less ground floor \u2014 same hall-less parti as the rear-corner straight-stair sibling, but the stair turns 90 degrees at a quarter landing instead of running straight: boards off the great room's south wall, turns, and arrives into the landing hall's east wall. Open great room across the full front, kitchen + T&B in a rear wet bay. Upstairs, the squarish signature: BOTH bedrooms side-by-side at the front with street-facing windows, landing hall behind them, second T&B at the rear near the wet stack. Canonical 9.5x9.5 lot (true floor ~9.2x9.2), 0-warning band through ~14x14.",
+  "target_shell": "squarish",
+  "storeys": 2,
+  "rooms": [
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true,
+      "storey": 1
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "storey": 1,
+      "mechanical_vent": true
+    },
+    {
+      "id": "bath1",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 1
+    },
+    {
+      "id": "stair",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 1,
+      "stair_type": "l_landing"
+    },
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom",
+      "storey": 2
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms",
+      "storey": 2
+    },
+    {
+      "id": "bath2",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "hall2",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2
+    },
+    {
+      "id": "stairwell",
+      "type": "stairs",
+      "zone": "circulation",
+      "size_priority": "service_and_baths",
+      "storey": 2,
+      "stair_type": "l_landing"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 2.1,
+      "kind": "open_plan",
+      "note": "GF: kitchen opens directly off the great room \u2014 dining counter on the shared edge (2 x 0.6 m seats + 0.9 m pass = 2.1 m min); band + stools live on the great-room side to keep the galley aisle clear. Render-only (counter_divider) \u2014 briefs may set dining_counter: false to suppress it without touching this topology.",
+      "counter_divider": true,
+      "counter_side": "great"
+    },
+    {
+      "a": "great",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "GF: T&B doors into the great room \u2014 hall-less GF, the great room IS the circulation; door-placement scoring keeps it off the entry sightline"
+    },
+    {
+      "a": "great",
+      "b": "stair",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_boarding",
+      "stair_wall": "S",
+      "note": "GF: L-landing stair boards off the great room on its SOUTH wall (author-fixed \u2014 a turning stair's boarding/arrival walls aren't a solver-chosen ascent axis, see Adjacency.stair_wall)"
+    },
+    {
+      "a": "kitchen",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "GF: T&B shares a plumbing wall with the kitchen \u2014 single GF wet bay at the rear; kitchen keeps its rear service door"
+    },
+    {
+      "a": "stair",
+      "b": "stairwell",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_vertical",
+      "note": "VERTICAL circulation edge: flight and stairwell opening occupy the identical rectangle on their floors (rect-equality in the solver, graph connectivity for validation)"
+    },
+    {
+      "a": "stairwell",
+      "b": "hall2",
+      "min_shared_wall_m": 0.9,
+      "kind": "stair_arrival",
+      "stair_wall": "E",
+      "note": "2F: the landing hall meets the stairwell on its EAST wall \u2014 a 90-degree turn from the south-boarding wall, via the quarter landing"
+    },
+    {
+      "a": "hall2",
+      "b": "master",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: master door off the landing hall"
+    },
+    {
+      "a": "hall2",
+      "b": "br2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "2F: second bedroom door off the landing hall"
+    },
+    {
+      "a": "hall2",
+      "b": "bath2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "2F: second T&B doors off the landing hall"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "bath2",
+      "b": "stairwell",
+      "weight": 15,
+      "note": "2F: pull the upper T&B toward the rear stair corner \u2014 lands it near the GF wet bay (kitchen + bath1 share the rear band), shortening the vertical plumbing run. Soft only: cross-floor wet-stack alignment isn't a hard v2 constraint yet."
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "horizontal",
+    "private_side": "front",
+    "private_rooms": [
+      "master",
+      "br2"
+    ],
+    "public_rooms": [
+      "bath2"
+    ],
+    "note": "2F-only geometric partition (all listed rooms are storey 2, per the multi-storey zone_split rule): both bedrooms hold the FRONT band \u2014 the squarish signature, side-by-side street-facing windows \u2014 with the T&B strictly behind the split line. 'public_rooms' here is the mechanical 'other side of the split' list, not a zoning claim; hall2 and stairwell float."
+  },
+  "zone_balance_rooms": {
+    "private": [
+      "master",
+      "br2",
+      "bath2",
+      "hall2"
+    ],
+    "public": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "aspect_overrides": {},
+  "left_anchored": [
+    "stair"
+  ],
+  "notch_powder_room_id": "bath1",
+  "notch_powder_room_below_buildable_sqm": 49,
+  "lot_adjustment_profiles": [
+    {
+      "name": "stair_l_landing_geometry",
+      "when": {
+        "buildable_area_lt_sqm": 99999
+      },
+      "auto_apply": {
+        "stairs": {
+          "min_least_dim_m": 2.1,
+          "max_greatest_dim_m": 3.6,
+          "min_area_sqm": 4.5,
+          "set_max_area_sqm": 10.5
+        },
+        "common_bath": {
+          "max_greatest_dim_m": 2.6,
+          "max_area_sqm": 3.9
+        }
+      },
+      "rationale": "ALWAYS-ON (the 99999 trigger). L-landing bounding-box sizing per the stair-types research: hard tier ~2.15x2.15 m (two ~1.4 m legs + a 0.75 m landing), preferred tier ~3.2x3.2 m. min_least_dim_m floors BOTH sides (near-square, unlike a straight stair's thin-rectangle profile); max_greatest_dim_m keeps it from stretching into an elongated rectangle that would defeat the point of the turn. set_max_area_sqm=10.5 is required, not optional \u2014 the 'stairs' room-catalog's own preferred_area_sqm ceiling (4.5, tuned for a straight stair) collides with min_area_sqm=4.5 into an exact-equality area target with no valid grid-integer solution once both dims also floor at 2.1 m (confirmed via factor-pair arithmetic: 1800 grid-unit\u00b2 has no factor pair both >=42) \u2014 genuinely infeasible at every lot size, not a sizing-tightness issue. The common_bath caps are unchanged from the straight-stair sibling."
+    }
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "great",
+      "bath1"
+    ],
+    [
+      "great",
+      "stair"
+    ]
+  ],
+  "setback_elements": [
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "notes": [
+    "2-STOREY squarish catalog topology \u2014 L-SHAPED LANDING STAIR, hall-less GF",
+    "(authored 2026-07-23, the catalog's first non-straight stair type; sibling",
+    "of 2s_2br_sq_rear_stair_bath_gr, same room program and hall-less parti,",
+    "differing ONLY in the stair's own shape).",
+    "",
+    "Why an L-landing stair, and why squarish: the straight-stair sibling",
+    "needs a >= 3.5 m run in ONE direction (15 risers x 250 mm treads).",
+    "L-landing folds that same run into a near-square ~2.1-3.6 m bounding box",
+    "by turning 90 degrees at a quarter landing partway up \u2014 trading a little",
+    "floor area (the landing) for NOT needing 3.5 m of spare depth or width in",
+    "a single axis. Squarish is the shell this actually helps: a narrow shell",
+    "already has depth to spare for a straight run (folding it buys nothing);",
+    "a squarish shell's balanced width/depth is exactly where a near-square",
+    "stair footprint fits naturally instead of eating into whichever axis is",
+    "scarcer.",
+    "",
+    "Layout intent (front/street at the bottom):",
+    "  GF:  Front: [great room (entry, full width, counter at rear edge)]",
+    "       Rear:  [stair(L) | T&B | kitchen           ]  kitchen rear-pinned",
+    "  2F:  Front: [br2        | master               ]  side-by-side",
+    "       Mid:   [stairwell(L) | hall2 landing      ]",
+    "       Rear:  [stairwell(L) | T&B | master closet ]",
+    "Stair: L-landing, near-square ~2.1-3.6 m bounding box, left-anchored",
+    "into the rear corner (same anchor as the straight sibling); boards off",
+    "the great room's SOUTH wall, turns at a quarter landing, arrives into",
+    "hall2's EAST wall (stair_wall on the stair_boarding/stair_arrival",
+    "adjacencies fixes both walls \u2014 a turning stair's entry/exit aren't a",
+    "single solver-chosen ascent axis the way a straight stair's are; see",
+    "",
+    "FEASIBILITY (verified 2026-07-23, bisection + oversized-envelope checks):",
+    "true floor 9.2x9.2 (buildable 5.2x5.2), clean 0-warning solves from",
+    "9.2x9.2 through at least 14x14; published canonical minimum 9.5x9.5 \u2014",
+    "SMALLER than the straight-stair sibling's own 10x10 canonical (though",
+    "that sibling's true floor wasn't independently re-bisected here, so this",
+    "isn't a like-for-like claim, just the L-landing's own verified number).",
+    "Kitchen needed mechanical_vent: true \u2014 the wider ~2.1-3.6 m stair",
+    "footprint (vs the straight stair's 0.9-1.2 m) compresses kitchen's own",
+    "width in the rear band enough that its exterior window area falls",
+    "short of the PD 1096 \u00a7808 10% floor at the compact end; every other",
+    "aspect of the program is unchanged from the straight-stair sibling.",
+    "Adjacency.stair_wall in solver/topology.py).",
+    "",
+    "Structure/override choices (each per an established convention):",
+    "  - zone_split is a 2F-ONLY horizontal partition pinning both bedrooms",
+    "    to the front band with bath2 behind \u2014 the side-by-side-bedrooms",
+    "    signature, stated as one split line instead of anchor lists (the",
+    "    3BR catalog's over-constrained-anchors trap; only the stair is",
+    "    anchored, single-member list, the proven-safe pattern).",
+    "  - zone_balance_rooms counts the whole upper floor minus stairwell as",
+    "    the private wing \u2014 same reasoning as the narrow hall-less sibling:",
+    "    bedrooms-alone can't outweigh a full-width GF great room + kitchen.",
+    "  - Hall-less GF: at 36 m\u00b2/floor the great room is the circulation",
+    "    (stair boards off it, bath1 doors into it) per the compact",
+    "    convention; a _hall sibling for larger squarish lots (with",
+    "    fallback_below_buildable_sqm routing back here) is future work.",
+    "  - soft proximity bath2->stairwell pulls the upper bath toward the",
+    "    rear corner, near the GF wet bay, to shorten the vertical plumbing",
+    "    run (cross-floor wet-stack alignment is still soft-only in v2).",
+    "",
+    "Naming note: the `bath` token undercounts the program (two common",
+    "baths, one per floor) \u2014 kept consistent with the 2s narrow siblings",
+    "pending the 2s naming-convention pass."
+  ]
+}

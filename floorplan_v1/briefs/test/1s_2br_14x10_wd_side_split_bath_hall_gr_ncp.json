@@ -11,12 +11,6 @@
     "no carport"
   ],
   "avoid": [],
-  "occupancy_class": "R-1",
-  "setbacks": {
-    "front": 2.0,
-    "rear": 2.0,
-    "left": 2.0,
-    "right": 2.0
-  },
+  "occupancy_class": "R-2",
   "topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json"
 }

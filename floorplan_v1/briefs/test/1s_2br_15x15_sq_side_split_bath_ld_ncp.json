@@ -1,0 +1,15 @@
+{
+  "intent": "2BR / 1 bath, LD style — OVERSIZED-LOT fixture, no carport. A 15x15 lot is far larger than a 2BR program needs: the raw buildable shell is 11 x 10 = 110 m2 against a summed preferred-high target of ~98 m2, so this brief exists specifically to exercise BUILDABLE-SHELL CAPPING (SHELL_CAPPING_DESIGN.md §2) — expect the setbacks to inflate (front toward its 4.5 m cap, sides growing equally) rather than the rooms sprawling to fill the envelope. Note the 2-bath squarish 2BR topologies are all INFEASIBLE at 15x15 (above their feasible band, capped or not), which is why this uses the single-bath ld topology. Added 2026-08-05; the suite previously had only one brief above the capping threshold.",
+  "lot_width": 15.0,
+  "lot_depth": 15.0,
+  "bedroom_count": 2,
+  "num_baths": 1,
+  "must_haves": [
+    "single common bath",
+    "separate living + dining + kitchen (ld style)",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_bath_ld.json"
+}

@@ -260,5 +260,6 @@
     "Realized-geometry cleanup only; never affects feasibility.",
     "",
     "Carport / wet-stack / mirroring all unchanged from the gr sibling."
-  ]
+  ],
+  "fallback_below_buildable_sqm": 40.0
 }

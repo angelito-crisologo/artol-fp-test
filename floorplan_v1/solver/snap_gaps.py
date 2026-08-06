@@ -48,13 +48,38 @@ _THRESHOLD_EPS = 1e-6
 # two bounding room walls render normally) instead. The area threshold
 # alone doesn't catch these — a 0.05 x 1.05 m sliver is 0.0525 m², over the
 # 0.05 m² area floor.
-MIN_ALCOVE_THICKNESS_M = 0.15
+MIN_ALCOVE_THICKNESS_M = 0.25
+# 0.15 -> 0.55 -> 0.25 over 2026-08-05/06. History matters here:
+#   0.15  claimed anything, including a 3.80 x 0.52 m strip handed to a room
+#         touching 0.52 m of it (20x20 solve of 1s_2br_sq_side_split_bath_ld).
+#   0.90  first attempt at "must be usable floor" — rejected the
+#         1s_2br_wd_side_split_baths_cl_ld pockets too, defeating the flag.
+#   0.55  calibrated between the catalog's real clusters (0.25/0.30/0.50 =
+#         wall thickening; 0.60 = the cl_ld pockets). NB never set this
+#         EQUAL to an observed value: coordinates carry float noise (the
+#         cl_ld strip measures 0.5999999999999996), so equality is decided
+#         by rounding, not intent.
+#   0.25  current. These plans are CUSTOMER-DISCUSSION documents handed to an
+#         architect for the real drawing, not construction sets. An
+#         unexplained void reads as a mistake; a slightly irregular room
+#         reads as "this space belongs to the living room". So absorb almost
+#         anything wider than a wall and let the architect rationalise it.
+# The claim_stair_notch pass shares this constant and relaxes with it.
+
+# A claimant must abut a meaningful share of the strip, not just graze it.
+# Expressed as a fraction of the strip's LONGEST side. Relaxed 0.5 -> 0.2 on
+# 2026-08-06 alongside the other claim rules: kept non-zero purely so nothing
+# claims a strip it barely touches (which produces finger-shaped rooms that
+# look like a bug), but permissive enough that leftover space nearly always
+# finds an owner rather than rendering as a void.
+CLAIM_MIN_CONTACT_FRAC = 0.2
 
 
 def snap_gaps(layout: Layout, max_iter: int = 50,
               verbose: bool = False,
               void_rects: Optional[List[Rect]] = None,
               matched_x_pairs: Optional[List[Tuple[str, str]]] = None,
+              matched_y_pairs: Optional[List[Tuple[str, str]]] = None,
               max_area_caps: Optional[dict] = None,
               frozen_ids: Optional[set] = None
               ) -> Tuple[Layout, int]:
@@ -66,11 +91,23 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
     computation purposes.
 
     `matched_x_pairs` is a list of (room_id_a, room_id_b) tuples whose widths
-    must stay equal. When extending one of the matched rooms east or west,
-    the snap distance is capped at min(self_gap, twin_gap) and the snap is
-    applied to BOTH rooms together — so the post-snap layout preserves the
-    solver's match_bedroom_widths / match_bath_widths invariants. Match is
-    enforced ONLY on the x-axis (width); depth (y-axis) is unconstrained.
+    must stay equal. Pairs chain transitively (e.g. [a,b] + [b,c] links all
+    three into one group) so a topology's generic `match_widths` — which can
+    list more than one pair per room, e.g. living/dining/kitchen tiled via
+    [living,dining] + [dining,kitchen] — stays a single invariant instead of
+    only the last-declared pair winning. When extending any matched room
+    east or west, the snap distance is capped at the MINIMUM gap available
+    to every room in its group, and the snap is applied to the whole group
+    together — so the post-snap layout preserves the solver's
+    match_bedroom_widths / match_bath_widths / match_widths invariants
+    (without this, an asymmetric gap on just one member silently re-widens
+    it past its matched partners). Match is enforced ONLY on the x-axis
+    (width).
+
+    `matched_y_pairs` is the depth (y-axis) mirror of `matched_x_pairs` —
+    preserves a topology's `match_depths` invariant the same way, capping
+    and lockstepping north/south extension across each group instead of
+    east/west.
 
     `max_area_caps` is a dict {room_id: max_area_sqm} for rooms that should
     not grow past a target area post-snap. The solver enforces these at
@@ -89,11 +126,39 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
     env = layout.lot.envelope()
     voids = void_rects or []
     frozen = frozen_ids or set()
-    # Build a twin lookup: room_id -> twin_room_id (x-axis only).
-    twin_of: dict = {}
-    for a, b in (matched_x_pairs or []):
-        twin_of[a] = b
-        twin_of[b] = a
+    # Match groups via union-find over the declared pairs, so chained pairs
+    # — [a,b] + [b,c] — link into one {a,b,c} group instead of a plain dict
+    # silently dropping b's link to a when c overwrites it. Built separately
+    # for x (width) and y (depth): a room can be in both, independently.
+    def _build_groups(pairs):
+        parent: dict = {}
+
+        def _find(x):
+            parent.setdefault(x, x)
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def _union(a, b):
+            ra, rb = _find(a), _find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        for a, b in (pairs or []):
+            _union(a, b)
+        groups: dict = {}   # root -> set of member ids
+        for rid in list(parent):
+            groups.setdefault(_find(rid), set()).add(rid)
+        # Sorted tuples, not frozenset: string-hash randomization makes
+        # frozenset iteration order vary run-to-run, which propagated into
+        # non-deterministic SVG element ORDER (geometry identical, but
+        # deterministic=True is supposed to give byte-identical baselines).
+        return {rid: tuple(sorted(members - {rid}))
+                for members in groups.values() for rid in members}
+
+    group_of = _build_groups(matched_x_pairs)
+    group_of_y = _build_groups(matched_y_pairs)
     room_by_id = {r.id: r for r in layout.rooms}
     caps = max_area_caps or {}
     snap_count = 0
@@ -132,18 +197,29 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
                         if m is not None:
                             d = _shrink_for_area_cap(d, room, cell, side,
                                                      m.area - 0.5)
-                    # If this room has a matched twin and the snap is on the
-                    # x-axis (east/west), cap d to what the twin can also do.
-                    if side in ("east", "west") and room.id in twin_of:
-                        twin = room_by_id.get(twin_of[room.id])
-                        if twin is not None:
-                            twin_obs = ([c for o in layout.rooms for c in o.cells
-                                         if c is not twin.rect] + voids)
-                            td = _gap_distance(twin.rect, side, env, twin_obs)
-                            # Twin also subject to its own area cap.
-                            if twin.id in caps:
-                                td = _shrink_for_area_cap(td, twin, twin.rect, side, caps[twin.id])
-                            d = min(d, td)
+                    # If this room has matched group-mates on the axis this
+                    # side extends along, cap d to what EVERY mate can also
+                    # do — not just one, so a 3+-room chain (e.g. living/
+                    # dining/kitchen tiled via two match_widths pairs) stays
+                    # a single invariant instead of only the nearest
+                    # neighbour holding. x-axis (east/west) uses group_of
+                    # (match_widths); y-axis (north/south) uses group_of_y
+                    # (match_depths).
+                    active_group = (group_of if side in ("east", "west")
+                                    else group_of_y if side in ("north", "south")
+                                    else None)
+                    if active_group is not None and room.id in active_group:
+                        for mate_id in active_group[room.id]:
+                            mate = room_by_id.get(mate_id)
+                            if mate is None:
+                                continue
+                            mate_obs = ([c for o in layout.rooms for c in o.cells
+                                        if c is not mate.rect] + voids)
+                            md = _gap_distance(mate.rect, side, env, mate_obs)
+                            # Mate also subject to its own area cap.
+                            if mate.id in caps:
+                                md = _shrink_for_area_cap(md, mate, mate.rect, side, caps[mate.id])
+                            d = min(d, md)
                     if d > best_dist:
                         best_dist = d
                         best_target = (room, cell_idx, side)
@@ -154,15 +230,19 @@ def snap_gaps(layout: Layout, max_iter: int = 50,
         snap_count += 1
         if verbose:
             print(f'  snap: {room.id} +{best_dist*100:.0f} cm {side}')
-        # If matched, snap the twin by the same amount in lockstep.
-        if side in ("east", "west") and room.id in twin_of:
-            twin = room_by_id.get(twin_of[room.id])
-            if twin is not None:
-                _extend_cell(twin, 0, side, best_dist)
-                snap_count += 1
-                if verbose:
-                    print(f'  snap: {twin.id} +{best_dist*100:.0f} cm {side} '
-                          f'(matched-twin lockstep)')
+        # If matched, snap every group-mate by the same amount in lockstep.
+        active_group = (group_of if side in ("east", "west")
+                        else group_of_y if side in ("north", "south")
+                        else None)
+        if active_group is not None and room.id in active_group:
+            for mate_id in active_group[room.id]:
+                mate = room_by_id.get(mate_id)
+                if mate is not None:
+                    _extend_cell(mate, 0, side, best_dist)
+                    snap_count += 1
+                    if verbose:
+                        print(f'  snap: {mate.id} +{best_dist*100:.0f} cm {side} '
+                              f'(matched-group lockstep)')
     return layout, snap_count
 
 
@@ -498,6 +578,64 @@ _STRIP_CLAIM_PRIORITY = {
 }
 
 
+# Room types that legally REQUIRE daylight/ventilation from an exterior wall
+# (PD 1096 Sec. 808 / IRR Rule VIII §10). A dead-strip claim must never seal
+# one of these off — that turns a cosmetic cleanup into a hard validator
+# error, which even a discussion drawing must not contain.
+_NEEDS_DAYLIGHT = {"master_bedroom", "bedroom_standard", "living_room",
+                   "great_room", "dining_room", "kitchen", "common_bath",
+                   "ensuite_bath", "bath_toilet", "powder_room", "maids_room"}
+
+
+def _daylight_reachable(layout, obstacles, env, eps=1e-6):
+    """Set of room ids that still reach the exterior given `obstacles`.
+
+    A room qualifies when any of its cells touches the envelope boundary, or
+    abuts free space that connects to the boundary. Mirrors the rule
+    core/render.py uses to decide which walls are exterior, so the drawing
+    and this guard agree on what "outside" means."""
+    xs = sorted({env.x0, env.x1} | {v for c in obstacles for v in (c.x0, c.x1)
+                                    if env.x0 - eps < v < env.x1 + eps})
+    ys = sorted({env.y0, env.y1} | {v for c in obstacles for v in (c.y0, c.y1)
+                                    if env.y0 - eps < v < env.y1 + eps})
+    nx, ny = len(xs) - 1, len(ys) - 1
+
+    def free(i, j):
+        cx, cy = (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+        return not any(c.x0 - eps < cx < c.x1 + eps and
+                       c.y0 - eps < cy < c.y1 + eps for c in obstacles)
+
+    out = [[False] * ny for _ in range(nx)]
+    stack = [(i, j) for i in range(nx) for j in range(ny)
+             if free(i, j) and (i in (0, nx - 1) or j in (0, ny - 1))]
+    for i, j in stack:
+        out[i][j] = True
+    while stack:
+        i, j = stack.pop()
+        for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            a, b = i + di, j + dj
+            if 0 <= a < nx and 0 <= b < ny and not out[a][b] and free(a, b):
+                out[a][b] = True
+                stack.append((a, b))
+
+    ok = set()
+    for room in layout.rooms:
+        for c in room.cells:
+            if (abs(c.x0 - env.x0) <= 1e-3 or abs(c.x1 - env.x1) <= 1e-3 or
+                    abs(c.y0 - env.y0) <= 1e-3 or abs(c.y1 - env.y1) <= 1e-3):
+                ok.add(room.id); break
+            for i in range(nx):
+                for j in range(ny):
+                    if not out[i][j]:
+                        continue
+                    if (xs[i] < c.x1 + eps and xs[i + 1] > c.x0 - eps and
+                            ys[j] < c.y1 + eps and ys[j + 1] > c.y0 - eps):
+                        ok.add(room.id); break
+                if room.id in ok: break
+            if room.id in ok: break
+    return ok
+
+
 def claim_dead_strips(layout, void_rects: Optional[List[Rect]] = None,
                       verbose: bool = False) -> int:
     """Post-snap pass that finds UNOWNED rectangular interior strips and
@@ -589,32 +727,68 @@ def claim_dead_strips(layout, void_rects: Optional[List[Rect]] = None,
                 for room in layout.rooms:
                     if room.type == "stairs" or room.rect2 is not None:
                         continue
-                    rank = _STRIP_CLAIM_PRIORITY.get(room.type)
-                    if rank is None:
-                        continue
-                    # Master-supremacy guard: the solver enforces the PH hard
-                    # rule master > standard at solve time; a post-solve claim
-                    # must not silently break it. A standard bedroom may only
-                    # take a strip if its resulting total stays below its
-                    # storey's master (observed live: an 11x11 squarish 3BR
-                    # solve handed br3 a 5.2 m2 alcove, outgrowing master).
-                    if room.type == "bedroom_standard":
-                        m = next((r for r in layout.rooms
-                                  if r.type == "master_bedroom"
-                                  and r.storey == room.storey), None)
-                        if m is not None and room.area + strip.area >= m.area:
-                            continue
+                    # Type priority is a TIE-BREAK ONLY, never a gate: any
+                    # adjacent room may own a leftover strip. Gating on type
+                    # is what let a strip skip the room it actually adjoined.
+                    # Unlisted types sort last rather than being excluded.
+                    rank = _STRIP_CLAIM_PRIORITY.get(room.type, 99)
+                    # NOTE: no master-supremacy guard here, deliberately.
+                    # That rule is enforced where it belongs — as a hard
+                    # CP-SAT constraint at solve time (solver.py, 1 m2 margin
+                    # against EVERY standard) and again during snap growth
+                    # (snap_gaps.py, standards capped at master - margin/2).
+                    # Both run on real room allocation. This pass only decides
+                    # who mops up a scrap the solver already declined to
+                    # allocate, so letting a standard bedroom take an adjacent
+                    # strip it obviously owns beats leaving a void in a
+                    # customer-facing discussion drawing. Removed 2026-08-06;
+                    # a standard may therefore end up marginally larger than
+                    # the master in the LABELS. If that ever reads wrong, fix
+                    # it here — not in the two layers above.
                     c = room.rect
-                    abuts = (
-                        (abs(c.x1 - x0) < eps or abs(c.x0 - x1) < eps)
-                        and c.y0 < y0 + eps and c.y1 > y1 - eps
-                    ) or (
-                        (abs(c.y1 - y0) < eps or abs(c.y0 - y1) < eps)
-                        and c.x0 < x0 + eps and c.x1 > x1 - eps
-                    )
-                    if abuts and (best_rank is None or rank < best_rank):
-                        best, best_rank = room, rank
+                    # Contact length = the strip side this room spans. A cell
+                    # meeting a vertical side contributes the strip's height;
+                    # a horizontal side, its width.
+                    contact = 0.0
+                    if ((abs(c.x1 - x0) < eps or abs(c.x0 - x1) < eps)
+                            and c.y0 < y0 + eps and c.y1 > y1 - eps):
+                        contact = y1 - y0
+                    elif ((abs(c.y1 - y0) < eps or abs(c.y0 - y1) < eps)
+                            and c.x0 < x0 + eps and c.x1 > x1 - eps):
+                        contact = x1 - x0
+                    if contact <= eps:
+                        continue
+                    # Reject a room that merely grazes the strip.
+                    if contact < CLAIM_MIN_CONTACT_FRAC * max(x1 - x0, y1 - y0) - eps:
+                        continue
+                    # GEOMETRY FIRST, type only as a tie-break. Ranking by
+                    # type alone handed a 3.80 m-wide strip to a room sharing
+                    # 0.52 m of it, over the room sharing all 3.80 m, purely
+                    # because living_room outranks bedroom_standard.
+                    key = (-contact, rank)
+                    if best_rank is None or key < best_rank:
+                        best, best_rank = room, key
                 if best is None:
+                    continue
+                # Daylight guard — the ONE check that survives the 2026-08-06
+                # relaxation. Claiming may make rooms irregular, may let a
+                # standard bedroom outgrow the master, may absorb slivers a
+                # builder would never frame; none of that breaks a discussion
+                # drawing. Sealing a bath or bedroom away from every exterior
+                # wall DOES: it is a hard PD 1096 Sec. 808 violation and the
+                # plan stops being a usable brief for the architect. Observed
+                # live on 2s_2br_sq_rear_stair_bath_gr and
+                # 2s_3br_nw_side_spine_stair_baths_ds_gr, where a newly-
+                # permitted strip walled the GF bath off from its window.
+                before = _daylight_reachable(layout, obstacles, env)
+                after = _daylight_reachable(layout, obstacles + [strip], env)
+                lost = {r.id for r in layout.rooms
+                        if r.type in _NEEDS_DAYLIGHT
+                        and r.id in before and r.id not in after}
+                if lost:
+                    if verbose:
+                        print(f"  alcove SKIPPED ({best.id} +{strip.area:.2f} sqm): "
+                              f"would cut {sorted(lost)} off from daylight")
                     continue
                 best.rect2 = strip
                 obstacles.append(strip)
@@ -622,4 +796,64 @@ def claim_dead_strips(layout, void_rects: Optional[List[Rect]] = None,
                 if verbose:
                     print(f"  alcove: {best.id} +{strip.area:.2f} sqm "
                           f"(dead strip x={x0:.2f}-{x1:.2f} y={y0:.2f}-{y1:.2f})")
+    return claimed
+
+
+def claim_stair_notch(layout, verbose: bool = False) -> int:
+    """Post-solve pass: an L-landing stair's notch (the unused quadrant
+    diagonally opposite the landing — see core.model.l_landing_cells) is
+    handed to whichever adjacent room best fits it as a rect2 alcove, UNLESS
+    the notch is already claimed by a solver-pinned room (the GF
+    notch_powder_room path — Topology.notch_powder_room_id — pins a bath
+    directly into the notch at solve time; this pass must not double-claim
+    it). Reuses _STRIP_CLAIM_PRIORITY so a hallway wins over a bedroom,
+    same ranking claim_dead_strips uses.
+
+    Sets notch_pin_of on the winning room, same field the solver-pinned
+    powder room uses — this is what makes the validator's overlap check
+    (already exempting that pair) exempt this claim too, and what makes the
+    renderer draw the winner's fill/label on top of the stair's."""
+    from model import l_landing_cells
+    eps = 1e-6
+    claimed = 0
+    for stair in layout.rooms:
+        if stair.type != "stairs" or stair.stair_type != "l_landing":
+            continue
+        if any(getattr(r, "notch_pin_of", None) == stair.id for r in layout.rooms):
+            continue   # already claimed (e.g. GF notch powder room)
+        cells = l_landing_cells(stair.rect, stair.stair_board_wall,
+                                stair.stair_arrive_wall)
+        if cells is None:
+            continue
+        notch = cells["notch"]
+        if notch.area < THRESHOLD_M or min(notch.w, notch.h) < MIN_ALCOVE_THICKNESS_M:
+            continue
+        x0, y0, x1, y1 = notch.x0, notch.y0, notch.x1, notch.y1
+        best, best_rank = None, None
+        for room in layout.rooms:
+            if room.id == stair.id or room.storey != stair.storey:
+                continue
+            if room.rect2 is not None:
+                continue
+            rank = _STRIP_CLAIM_PRIORITY.get(room.type)
+            if rank is None:
+                continue
+            c = room.rect
+            abuts = (
+                (abs(c.x1 - x0) < eps or abs(c.x0 - x1) < eps)
+                and c.y0 < y0 + eps and c.y1 > y1 - eps
+            ) or (
+                (abs(c.y1 - y0) < eps or abs(c.y0 - y1) < eps)
+                and c.x0 < x0 + eps and c.x1 > x1 - eps
+            )
+            if abuts and (best_rank is None or rank < best_rank):
+                best, best_rank = room, rank
+        if best is None:
+            continue
+        best.rect2 = notch
+        best.notch_pin_of = stair.id
+        claimed += 1
+        if verbose:
+            print(f"  stair notch: {best.id} +{notch.area:.2f} sqm "
+                  f"(claimed from {stair.id})")
     return claimed

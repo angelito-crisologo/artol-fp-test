@@ -58,6 +58,7 @@ from brief import Brief                                          # noqa: E402  (
 from llm import ClaudeLLM, StubLLM                               # noqa: E402  (ai)
 from pipeline import (                                           # noqa: E402  (ai)
     _topology_from_dict, _make_default_lot, MAX_REPAIR,
+    make_capped_lot, topology_target_area,
 )
 
 
@@ -105,7 +106,9 @@ _BRIEF_FIELDS = ("intent", "lot_width", "lot_depth", "bedroom_count",
                  # Tier 2 additions (2026-06-25)
                  "kitchen_back_door",
                  # Tier 3 additions (2026-07-20)
-                 "dining_counter")
+                 "dining_counter",
+                 # Tier 4 additions (2026-07-23)
+                 "gf_powder_room")
 
 _VALID_ADJUSTMENT_KEYS = {"min_area_sqm", "max_area_sqm", "set_max_area_sqm",
                           "min_least_dim_m", "max_least_dim_m",
@@ -293,6 +296,7 @@ def _strip_carport_from_topology(topo):
         match_bedroom_widths=topo.match_bedroom_widths,
         match_bath_widths=topo.match_bath_widths,
         match_widths=list(topo.match_widths),
+        match_depths=list(topo.match_depths),
         private_area_floor=topo.private_area_floor,
         zone_ratio_private_floor_pct=topo.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=topo.zone_ratio_private_target_pct,
@@ -302,7 +306,6 @@ def _strip_carport_from_topology(topo):
         kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
-        claim_dead_strips=topo.claim_dead_strips,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         ldk_horizontal=topo.ldk_horizontal,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
@@ -313,6 +316,8 @@ def _strip_carport_from_topology(topo):
         building_voids=new_voids,
         fallback_topology=topo.fallback_topology,
         fallback_below_buildable_sqm=topo.fallback_below_buildable_sqm,
+        notch_powder_room_id=topo.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=topo.notch_powder_room_below_buildable_sqm,
     )
 
 
@@ -336,6 +341,7 @@ def _strip_carport_void_only(topo):
         match_bedroom_widths=topo.match_bedroom_widths,
         match_bath_widths=topo.match_bath_widths,
         match_widths=list(topo.match_widths),
+        match_depths=list(topo.match_depths),
         private_area_floor=topo.private_area_floor,
         zone_ratio_private_floor_pct=topo.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=topo.zone_ratio_private_target_pct,
@@ -345,7 +351,6 @@ def _strip_carport_void_only(topo):
         kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
-        claim_dead_strips=topo.claim_dead_strips,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         ldk_horizontal=topo.ldk_horizontal,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
@@ -356,6 +361,8 @@ def _strip_carport_void_only(topo):
         building_voids=new_voids,
         fallback_topology=topo.fallback_topology,
         fallback_below_buildable_sqm=topo.fallback_below_buildable_sqm,
+        notch_powder_room_id=topo.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=topo.notch_powder_room_below_buildable_sqm,
     )
 
 
@@ -382,6 +389,7 @@ def _strip_setback_element(topo, element_type: str):
         match_bedroom_widths=topo.match_bedroom_widths,
         match_bath_widths=topo.match_bath_widths,
         match_widths=list(topo.match_widths),
+        match_depths=list(topo.match_depths),
         private_area_floor=topo.private_area_floor,
         zone_ratio_private_floor_pct=topo.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=topo.zone_ratio_private_target_pct,
@@ -391,7 +399,6 @@ def _strip_setback_element(topo, element_type: str):
         kitchen_side_pin=topo.kitchen_side_pin,
         aspect_overrides=dict(topo.aspect_overrides),
         bedroom_band_fills_width=topo.bedroom_band_fills_width,
-        claim_dead_strips=topo.claim_dead_strips,
         ensuite_alcove_joins_master=topo.ensuite_alcove_joins_master,
         ldk_horizontal=topo.ldk_horizontal,
         front_to_rear_stacks=list(topo.front_to_rear_stacks),
@@ -402,6 +409,8 @@ def _strip_setback_element(topo, element_type: str):
         building_voids=list(topo.building_voids or []),
         fallback_topology=topo.fallback_topology,
         fallback_below_buildable_sqm=topo.fallback_below_buildable_sqm,
+        notch_powder_room_id=topo.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=topo.notch_powder_room_below_buildable_sqm,
     )
 
 
@@ -506,7 +515,8 @@ def _effective_dining_counter(brief, topology_filename):
 
 
 def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
-                        area_caps, topology_filename, verbose):
+                        area_caps, topology_filename, verbose,
+                        gf_powder_room=False):
     """Post-solve pipeline for storeys > 1 (MULTISTOREY_V2_DESIGN.md, D3).
 
     The joint solve placed all floors' rooms in one Layout sharing the x/y
@@ -522,10 +532,16 @@ def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
     from model import Layout as _Layout
     from validator import Issue as _Issue
     from topology import storey_view
-    from snap_gaps import claim_ensuite_alcove, claim_dead_strips
+    from snap_gaps import claim_ensuite_alcove, claim_dead_strips, claim_stair_notch
 
     merged_issues, total_score, n_snaps_total, archplans = [], 0.0, 0, []
     stair_ids = {r.id for r in topo.rooms if r.type == "stairs"}
+    # A notch-pinned powder room is algebraically tied to its stair's own
+    # rect by the solver — freeze it here too so snap_gaps (a generic
+    # post-solve pass that stretches rooms into leftover envelope space)
+    # doesn't undo that pinning.
+    if gf_powder_room and topo.notch_powder_room_id:
+        stair_ids = stair_ids | {topo.notch_powder_room_id}
     for s in range(1, topo.storeys + 1):
         title = _STOREY_TITLES.get(s, f"FLOOR {s}")
         sub_topo = storey_view(topo, s)
@@ -544,6 +560,19 @@ def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
                 f"validation on {title}: " + "; ".join(str(e) for e in errs[:3]))
         claim_ensuite_alcove(sub, sub_topo, verbose=verbose,
                              max_area_caps=area_caps)
+        # An L-landing stair's leftover notch — reclaimed as an alcove of
+        # whichever adjacent room ranks best (a hallway over a bedroom, same
+        # priority claim_dead_strips uses), unless the GF notch_powder_room
+        # path already pinned a bath into it at solve time.
+        claim_stair_notch(sub, verbose=verbose)
+        # A claimed notch alcove (rect2) deliberately overlaps its stair's
+        # own rect — same as the solver-pinned powder room — so it must be
+        # frozen too, or snap_gaps' gap-distance calc (which assumes a
+        # cell starts OUTSIDE its obstacles, not already overlapping one by
+        # design) computes a bogus distance and stretches it across the
+        # stair's whole footprint.
+        floor_frozen_ids = stair_ids | {
+            r.id for r in sub.rooms if getattr(r, "notch_pin_of", None)}
         matched_x_pairs = []
         if sub_topo.match_bedroom_widths:
             m_id = next((r.id for r in sub_topo.rooms
@@ -559,10 +588,14 @@ def _finish_multistorey(layout, topo, brief, rules, lot, void_rects,
                          if r.type == "common_bath"), None)
             if e_id and c_id:
                 matched_x_pairs.append((e_id, c_id))
+        for a_id, b_id in (sub_topo.match_widths or []):
+            matched_x_pairs.append((a_id, b_id))
+        matched_y_pairs = [(a_id, b_id) for a_id, b_id in (sub_topo.match_depths or [])]
         sub, n_snaps = snap_gaps(sub, verbose=verbose, void_rects=void_rects,
                                  matched_x_pairs=matched_x_pairs,
+                                 matched_y_pairs=matched_y_pairs,
                                  max_area_caps=area_caps,
-                                 frozen_ids=stair_ids)
+                                 frozen_ids=floor_frozen_ids)
         n_snaps_total += n_snaps
         claim_void_alcoves(sub, void_rects=void_rects, verbose=verbose)
         # Dead strips beside the stair column (partial-height slivers no
@@ -621,6 +654,19 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         if adjustments:
             print(f"  adjustments (brief): {adjustments}")
     topo = load_topology(os.path.join(_TOPOLOGIES_DIR, topology_filename))
+
+    # Buildable-shell capping: when the lot is bigger than this topology's
+    # program needs, absorb the surplus into the setbacks rather than letting
+    # the post-passes inflate rooms to fill it. `shell_category` above stays
+    # on the RAW lot — it is what selected this topology, so capping must not
+    # feed back into matching. See SHELL_CAPPING_DESIGN.md §2.
+    _uncapped_lot = lot
+    _capped_lot, _cap_info = make_capped_lot(brief, topo, rules)
+    if _cap_info:
+        lot = _capped_lot
+        env = lot.envelope()
+        if verbose:
+            print(f"  {_cap_info}")
     # Master/standard swap: when the brief asks for master-at-rear, flip the
     # placements of master_bedroom and bedroom_standard before any other
     # transform. This is a position-only swap (the rooms keep their types,
@@ -682,12 +728,17 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # not failure, so it lands as a suggestion (unlike the infeasibility
     # fallback's warning). Checked after the carport transforms so `env` is
     # final (a front carport bumps the front setback).
+    # Evaluated on the RAW (uncapped) envelope, deliberately: shell capping
+    # SHRINKS an oversized shell, so measuring the gate after capping could
+    # route a generous lot down to the compact sibling — the opposite of
+    # intent. Same reason shell_category runs on the raw lot.
+    _gate_env = _uncapped_lot.envelope()
     if (topo.fallback_topology
             and topo.fallback_below_buildable_sqm
-            and env.w * env.h < topo.fallback_below_buildable_sqm - 1e-9
+            and _gate_env.w * _gate_env.h < topo.fallback_below_buildable_sqm - 1e-9
             and _fallback_warning is None and _fallback_note is None):
-        note = (f"compact shell {env.w:.1f}x{env.h:.1f} m "
-                f"({env.w * env.h:.1f} m² < "
+        note = (f"compact shell {_gate_env.w:.1f}x{_gate_env.h:.1f} m "
+                f"({_gate_env.w * _gate_env.h:.1f} m² < "
                 f"{topo.fallback_below_buildable_sqm:.0f} m² threshold) — "
                 f"using compact sibling '{topo.fallback_topology}' instead "
                 f"of '{topology_filename}'")
@@ -728,6 +779,17 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
               f"{_topo_bath_count} — topology mismatch")
     base_adj, preferred_adj = _merge_lot_profile(
         topo, env.w, env.h, adjustments, verbose)
+    # Notch powder room: resolve brief.gf_powder_room (tri-state) against
+    # the topology's own compactness threshold when not explicitly set.
+    # None (unset) => auto: True only when the topology actually offers the
+    # option (notch_powder_room_id) AND this floor's buildable area is
+    # under its declared threshold. See Topology.notch_powder_room_id.
+    _gf_pwd = getattr(brief, "gf_powder_room", None)
+    if _gf_pwd is None:
+        _gf_pwd = bool(
+            topo.notch_powder_room_id
+            and topo.notch_powder_room_below_buildable_sqm is not None
+            and env.w * env.h < topo.notch_powder_room_below_buildable_sqm)
     # Tiered solve attempt: try with preferred_apply layered on top first
     # (e.g., baths floored at 3.0 m² preferred-low). On infeasibility,
     # quietly drop preferred and retry with just base_adj — emit a warning
@@ -737,7 +799,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         try:
             layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
                            adjustments=preferred_adj, deterministic=deterministic,
-                           kitchen_side=kitchen_side)
+                           kitchen_side=kitchen_side, gf_powder_room=_gf_pwd)
         except RuntimeError as e:
             if "no feasible" not in str(e).lower():
                 raise   # not an infeasibility — re-raise as-is
@@ -756,6 +818,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         if layout is None:
             layout = solve(topo, lot, rules, time_limit_s=10.0, verbose=False,
                            adjustments=merged_adj, deterministic=deterministic,
+                           gf_powder_room=_gf_pwd,
                            kitchen_side=kitchen_side)
     except RuntimeError as e:
         # Solver couldn't find a feasible layout. If the topology declares a
@@ -795,7 +858,7 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
                 ms_area_caps[room.id] = float(knobs["max_area_sqm"])
         n_snaps, issues, score = _finish_multistorey(
             layout, topo, brief, rules, lot, void_rects, ms_area_caps,
-            topology_filename, verbose)
+            topology_filename, verbose, gf_powder_room=_gf_pwd)
         if _fallback_warning is not None:
             from validator import Issue as _Issue
             layout.issues.insert(0, _Issue(
@@ -862,8 +925,12 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
         c_id = next((r.id for r in topo.rooms if r.type == "common_bath"), None)
         if e_id and c_id:
             matched_x_pairs.append((e_id, c_id))
+    for a_id, b_id in (topo.match_widths or []):
+        matched_x_pairs.append((a_id, b_id))
+    matched_y_pairs = [(a_id, b_id) for a_id, b_id in (topo.match_depths or [])]
     layout, n_snaps = snap_gaps(layout, verbose=verbose, void_rects=void_rects,
                                 matched_x_pairs=matched_x_pairs,
+                                matched_y_pairs=matched_y_pairs,
                                 max_area_caps=area_caps)
     # Post-snap alcove claim: rectangular dead space next to a void's INTERIOR
     # face (e.g., the strip past a front_right carport_cut's north edge) gets
@@ -871,15 +938,15 @@ def _run_hand_authored(brief: Brief, topology_filename: str,
     # L-shaped. Without this, the wall along the void's north edge doesn't
     # sit flush with the void (a small alcove of unowned interior remains).
     n_alcoves = claim_void_alcoves(layout, void_rects=void_rects, verbose=verbose)
-    # Opt-in dead-strip cleanup (single-storey): topologies that set
-    # claim_dead_strips=true get the same rectangular-interior-strip claimer
-    # the multi-storey path always runs. Off by default so the frozen
-    # single-storey baselines are untouched; enabled on topologies whose
-    # ragged room widths at tight lot sizes leave dead pockets no edge-snap
-    # can reach (e.g. the wide side-split cl topologies at their compact min).
-    if getattr(topo, "claim_dead_strips", False):
-        from snap_gaps import claim_dead_strips as _claim_dead_strips
-        _claim_dead_strips(layout, void_rects=void_rects, verbose=verbose)
+    # Dead-strip cleanup — ALWAYS ON as of 2026-08-06 (was an opt-in
+    # per-topology flag). The multi-storey path always ran it; the
+    # single-storey path gated it purely to keep 60+ frozen baselines
+    # untouched, which stopped being a reason once the catalog was
+    # re-baselined. These plans are customer-discussion documents, and an
+    # unexplained interior void reads as a mistake — 77% of the catalog's
+    # remaining dead space was simply topologies that had never opted in.
+    from snap_gaps import claim_dead_strips as _claim_dead_strips
+    _claim_dead_strips(layout, void_rects=void_rects, verbose=verbose)
     # Build the architectural plan now (post-snap) so the validator's
     # window-area checks (W-H1, W-H2) can see the windows. Attach the plan
     # to the layout — downstream rendering reuses it instead of rebuilding.

@@ -112,6 +112,24 @@ h1.doc-title{font-size:clamp(24px,3.2vw,34px); font-weight:600; letter-spacing:-
 .thumb-card:hover .thumb-name{color:var(--accent-ink);}
 .thumb-media{aspect-ratio:1/1; background:var(--surface-sunk); display:flex; align-items:center; justify-content:center; overflow:hidden; border-bottom:1px solid var(--rule);}
 .thumb-media img{width:92%; height:92%; object-fit:contain; display:block;}
+/* Size-gated sibling pair: ONE topology, two implementations. The card shows
+   one plan at a time; small tabs overlay the media so the whole card stays a
+   single link. Default tab is the gated/preferred design (ld / hall). */
+.thumb-card.is-tabbed{position:relative;}
+.thumb-card .thumb-hit{display:flex; flex-direction:column; color:inherit; text-decoration:none;}
+.thumb-tabs{position:absolute; top:7px; left:7px; display:flex; gap:3px; z-index:2;}
+.thumb-tab{font:inherit; font-size:10px; font-weight:650; letter-spacing:.03em;
+  text-transform:uppercase; padding:2px 7px; border-radius:999px; cursor:pointer;
+  border:1px solid var(--rule-strong); background:var(--surface, #fff);
+  color:var(--ink-2, #555); line-height:1.6; opacity:.85; transition:all .12s;}
+.thumb-tab:hover{opacity:1; border-color:var(--accent, #333);}
+.thumb-tab.is-active{background:var(--ink-1, #222); color:var(--surface, #fff);
+  border-color:var(--ink-1, #222); opacity:1;}
+.thumb-media .thumb-noplan{display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:5px; width:100%; height:100%; color:var(--ink-3, #777);}
+.thumb-media .thumb-noplan .thumb-empty-glyph{font-size:26px; opacity:.5;}
+.thumb-media .thumb-noplan .thumb-empty-text{font-size:11px;}
+.thumb-media img[hidden], .thumb-media .thumb-noplan[hidden]{display:none;}
 .thumb-empty{flex-direction:column; gap:6px; color:var(--ink-faint);}
 .thumb-empty-glyph{font-size:26px; line-height:1;}
 .thumb-empty-text{font-family:var(--font-mono); font-size:10px; letter-spacing:.03em; text-transform:uppercase;}
@@ -221,3 +239,18 @@ table.dims .room-tag{display:inline-block; width:9px; height:9px; margin-right:7
 .stat-label{font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint);}
 .stat-value{font-family:var(--font-mono); font-size:17px; font-weight:600; color:var(--ink); margin-top:2px;}
 .stat-value small{font-size:11px; color:var(--ink-faint); font-weight:400; margin-left:2px;}
+
+/* ---- implementation tabs: two size-gated impls of one topology ---- */
+.impl-switch{display:flex; gap:8px; margin:18px 0 0; flex-wrap:wrap;}
+.impl-tab{display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  padding:9px 14px; border:1px solid var(--rule); border-radius:8px;
+  background:var(--surface-sunk); cursor:pointer; font:inherit; text-align:left;
+  min-width:172px; transition:border-color .12s, background .12s;}
+.impl-tab:hover{border-color:var(--ink-3, #999);}
+.impl-tab.is-active{background:var(--surface, #fff); border-color:var(--ink-1, #222);
+  box-shadow:inset 0 -2px 0 var(--ink-1, #222);}
+.impl-tab-label{font-size:13px; font-weight:650; letter-spacing:.01em;}
+.impl-tab-id{font-size:11px; color:var(--ink-2, #555);}
+.impl-tab-sub{font-size:11px; color:var(--ink-3, #777);}
+.impl-note{margin:10px 0 0; font-size:12.5px; line-height:1.5; color:var(--ink-2, #555);}
+.impl-panel[hidden]{display:none;}

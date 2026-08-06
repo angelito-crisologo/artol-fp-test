@@ -1,0 +1,15 @@
+{
+  "intent": "3-bedroom family home on a squarish lot. Two baths — an ensuite off the master plus a common T&B the other two bedrooms share. Keep the sleeping wing away from the front door; a short hall serving the bedrooms is fine. Separate living and dining, kitchen at the rear.",
+  "lot_width": 13.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "master ensuite",
+    "common bath shared by the other two bedrooms",
+    "bedrooms reached from a hall, not through another room",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2"
+}

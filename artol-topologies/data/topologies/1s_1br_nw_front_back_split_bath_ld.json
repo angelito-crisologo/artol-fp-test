@@ -171,5 +171,7 @@
     "",
     "No lot_adjustment_profiles yet -- untuned, pending real feasibility",
     "testing at its intended med/max sizes (9x11, 10x12)."
-  ]
+  ],
+  "fallback_topology": "1s/1br/narrow/1s_1br_nw_front_back_split_bath_gr.json",
+  "fallback_below_buildable_sqm": 35.0
 }
