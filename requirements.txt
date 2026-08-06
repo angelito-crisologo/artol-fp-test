@@ -4,3 +4,8 @@
 streamlit>=1.35
 anthropic>=0.34
 ortools>=9.9
+# NOTE: google-genai is deliberately NOT listed either. The polished-render
+# command (floorplan_v1/polish.py, see NANO_BANANA_RENDER_DESIGN.md) is a
+# local, manually-invoked tool — the deployed app never calls it, so shipping
+# the SDK to Streamlit Cloud would only bloat the deploy. Install locally:
+#   source .venv/bin/activate && pip install google-genai

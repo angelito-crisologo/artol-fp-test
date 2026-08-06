@@ -19,7 +19,7 @@ Coordinate convention (matches model.py):
   - Front of lot = SOUTH = smaller y
 """
 from dataclasses import dataclass, field, replace as dc_replace
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 from model import Layout, Rect, Room, make_outside_probe, probe_point
 from topology import Topology
@@ -266,6 +266,14 @@ class ArchPlan:
     windows: List[Window]                   = field(default_factory=list)
     open_plan_edges: List[OpenPlanEdge]     = field(default_factory=list)
     counters: List[Counter]                 = field(default_factory=list)
+    # Per-room wall-function hints (bed head / kitchen sink / bath wet +
+    # shower walls) from solver/fixture_orientation.py. Used internally to
+    # bias window placement, and RETAINED here because it is the furniture
+    # intent a downstream renderer needs — fixture_orientation's own
+    # docstring notes it stops short of placing furniture rectangles.
+    # Before 2026-08-06 this was computed inside architecturalize() and
+    # thrown away.
+    orientations: Dict[str, "RoomOrientation"] = field(default_factory=dict)
 
 
 # ----------------------------------------------------------------------------
@@ -1536,6 +1544,7 @@ def architecturalize(layout: Layout, topology: Topology,
     for (room_id, side) in door_segments_by_room.keys():
         door_walls_by_room.setdefault(room_id, set()).add(side)
     orientations = derive_orientations(layout, env, door_walls_by_room)
+    plan.orientations = orientations
 
     # Pass 3: windows for habitable + bath + kitchen on remaining exterior
     # walls, skipping any firewall sides (lot setback = 0).
