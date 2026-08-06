@@ -50,6 +50,28 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-06 — SHARED CODE, but NO regen needed: fixture overlay legibility
+(core/render.py)**
+Two additive functions at the end of `render.py` serving Phase E.2 furniture
+placement (`solver/fixtures.py`). **Nothing in the generation or catalog path
+calls them yet** — `run.py` and `build_catalog.py` are untouched, all 52
+baselines are byte-stable, and the catalog does not show furniture. Logged
+because the file is shared code, not because a regen is owed.
+
+- `fixtures_overlay_svg(fixtures, layout)` — furniture rectangles. Fill is now
+  a SINGLE neutral (`#e3ded4`) for every family. The first cut coloured by
+  family and a pale-blue shower inside a bath read as a separate ROOM against
+  the public zone's `#cfe2f3`. Room fill means zone; fixture fill must mean
+  "contents". Kinds are distinguished by LINEWORK instead — pillow band, basin
+  ellipse, burner circles — which also survives greyscale printing.
+- `inject_overlay(svg_doc, overlay)` — SVG has no z-index, so an appended
+  overlay covered the room labels and a bed landed across
+  `MASTER BR / 5.4x3.7 m . 20.0 sqm`. It now lifts the label `<text>` elements
+  out of the finished document and re-emits them after the overlay. Chosen
+  over teaching the drawing passes about a furniture layer specifically to
+  avoid moving text in 52 baselines for a feature nothing calls yet; a
+  document with no overlay is returned untouched.
+
 **2026-08-06 — SHARED CODE: ONE definition of "exterior wall" (core/model.py)**
 `core/render.py` and `solver/architectural_plan.py` each had their own answer
 to "is this wall exterior", and they disagreed. Render used connectivity (does

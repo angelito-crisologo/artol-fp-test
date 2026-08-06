@@ -62,17 +62,39 @@ def _api_key():
 
 def _render_png(layout, topo, brief_name):
     """Rasterise the plan to PNG bytes — the composite for a 2-storey house
-    (design decision #2), which is exactly what core/render.py already emits."""
+    (design decision #2), which is exactly what core/render.py already emits.
+
+    Since PROMPT_VERSION 4 the drawing we send is FURNISHED: Phase E.2
+    (`solver/fixtures.py`) places measured rectangles for bedrooms, baths and
+    kitchens, and the prompt asks the model to reproduce them rather than
+    invent its own. That narrows the model's job from designing to styling —
+    the whole point of design §7 option C.
+
+    Returns (png_bytes, svg_text, fixtures).
+    """
     import cairosvg
-    from render import archplan_to_svg, layout_to_svg, compose_floor_svgs
+    from render import (archplan_to_svg, compose_floor_svgs,
+                        fixtures_overlay_svg, inject_overlay)
+    from fixtures import place_fixtures
+
+    fixtures = []
+
+    def _one(plan, sub_layout):
+        rep = place_fixtures(sub_layout, plan)
+        fixtures.extend(rep.fixtures)
+        return inject_overlay(archplan_to_svg(plan, door_emphasis=True),
+                              fixtures_overlay_svg(rep.fixtures, sub_layout))
 
     if getattr(layout, "archplan", None) is not None:
-        svg = archplan_to_svg(layout.archplan)
+        svg = _one(layout.archplan, layout)
     else:
-        titled = [(title, archplan_to_svg(plan))
+        # Each floor's ArchPlan carries its own per-floor sub-layout; using the
+        # multi-storey parent here would place furniture against both storeys'
+        # rooms at once (the trap recorded in CLAUDE.md).
+        titled = [(title, _one(plan, plan.layout))
                   for title, plan in layout.archplans]
         svg = compose_floor_svgs(titled)
-    return cairosvg.svg2png(bytestring=svg.encode("utf-8"), scale=2.0), svg
+    return cairosvg.svg2png(bytestring=svg.encode("utf-8"), scale=2.0), svg, fixtures
 
 
 def _solve(brief_name):
@@ -146,9 +168,11 @@ def main(argv=None):
     from render_prompt import build_prompt, PROMPT_VERSION
 
     layout, topo, brief, out_dir = _solve(args.brief)
-    manifest = build_manifest_for_layout(layout, brief)
+    # The raster is built FIRST: it is what places the furniture, and the
+    # manifest must describe the image we actually send, not a different one.
+    png, svg, fixtures = _render_png(layout, topo, args.brief)
+    manifest = build_manifest_for_layout(layout, brief, fixtures)
     prompt = build_prompt(manifest)
-    png, svg = _render_png(layout, topo, args.brief)
 
     os.makedirs(out_dir, exist_ok=True)
     base = os.path.join(out_dir, args.brief)
@@ -219,10 +243,27 @@ def main(argv=None):
         txt = getattr(resp, "text", None)
         raise SystemExit(f"no image in the response. Model said: {txt!r}")
 
-    with open(out_png, "wb") as f:
-        f.write(data)
+    with open(base + "_raw.png", "wb") as f:
+        f.write(data)                       # exactly what came back, untouched
+    print(f"  wrote {base}_raw.png  ({len(data)/1024:.0f} KB — model output as returned)")
+
+    # PROMPT_VERSION 6: the model returns a text-free picture of the lot and
+    # WE draw the words. Invented dimension figures were the one defect in
+    # every render regardless of wording, so the opportunity is removed rather
+    # than argued with. inject_overlay lays the returned image over our plan
+    # and then lifts our own labels back on top of it — our coordinates, our
+    # numbers — while the metre ruler survives because it sits outside the lot
+    # rectangle the image covers.
+    import cairosvg
+    from render import polished_image_overlay, inject_overlay
+    composed = inject_overlay(svg, polished_image_overlay(layout, data))
+    with open(base + "_render.svg", "w", encoding="utf-8") as f:
+        f.write(composed)
+    cairosvg.svg2png(bytestring=composed.encode("utf-8"), write_to=out_png,
+                     scale=2.0)
     open(stamp, "w").write(sig)
-    print(f"  wrote {out_png}  ({len(data)/1024:.0f} KB)")
+    print(f"  wrote {base}_render.svg  (composite: model image + our labels)")
+    print(f"  wrote {out_png}")
     print("  NOTE: illustrative only — the dimensioned SVG remains the plan of record.")
     return 0
 

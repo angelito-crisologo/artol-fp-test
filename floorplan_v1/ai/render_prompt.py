@@ -34,7 +34,74 @@ from typing import Any, Dict, List
 # an L-shaped living room drawn as a plain rectangle. v2 also pins the scale
 # bar (v1 produced two overlapping, mutually inconsistent ones) and forbids
 # labels overlapping furniture or crossing walls.
-PROMPT_VERSION = "3"
+# v4 (2026-08-06): the ask changes from GENERATE to RESTYLE for every room we
+# can now furnish ourselves. Phase E.2 (solver/fixtures.py) places real
+# rectangles for bedrooms, baths and kitchens, and polish.py now sends an
+# image with that furniture already drawn — so for those rooms the instruction
+# is "reproduce what is drawn", not "decide what to put there".
+#
+# This is a deliberate test, not an incremental tweak. v1-v3 all failed the
+# same way: the model regenerates the whole diagram and invents ROOMS (v3
+# added a phantom T&B and a closet, and dropped the kitchen's exterior door).
+# More prescriptive prose made it worse, not better. If the model also cannot
+# hold a plan it does not have to think about, it cannot do this job, and the
+# styling should move into core/render.py where we control the geometry.
+#
+# Living/dining/great rooms, carports and planting are still GENERATED —
+# fixtures.py does not place them yet. That split is stated explicitly per
+# room, because a blanket "preserve everything" would suppress them entirely.
+# v5 (2026-08-06): user review picked v2 as the best IMAGE, with exactly two
+# defects — the kitchen's exterior service door missing (absent in ALL FOUR
+# renders) and the T&B door relocated. Both are doors, so v5 attacks doors and
+# changes nothing else.
+#
+# Two hypotheses, both acted on:
+#   1. The model follows the IMAGE far more than the prose (the one consistent
+#      finding across v1-v4). Both problem doors are 0.7-0.8 m wide, tucked
+#      0.15 m into a corner, drawn as thin grey arcs — one of them next to a
+#      window on the same wall. So polish.py now sends a raster with every
+#      door OVERDRAWN in colour (core/render.py door_emphasis) and the prompt
+#      explains the marking. That is a new lever; more forceful wording is not.
+#   2. The T&B door opens into the KITCHEN, which our own validator flags as
+#      unusual (bath_door_into_kitchen). The model is very likely "correcting"
+#      it toward its priors, so v5 states it is deliberate rather than just
+#      repeating the coordinates louder.
+# v6 (2026-08-06): STOP ASKING THE MODEL FOR TEXT.
+#
+# v5 delivered what was asked of it — all 5 doors including the kitchen's
+# exterior service door, missing from every render before it — which confirmed
+# that marking the doors in the IMAGE works where four rounds of prose failed.
+# But it also invented every dimension figure again (LIVING "3.7x2.6 m .
+# 14.8 sqm" where the plan says "33.1 sqm (L-shaped)"), doubled the scale bar,
+# and kept the magenta marker colour it was told was only a marker.
+#
+# Invented numbers are the one defect present in ALL FIVE renders regardless
+# of wording, and they are the most dangerous one: a customer reads them as
+# fact. So v6 removes the opportunity rather than the temptation — the model
+# returns a picture with NO text anywhere, and render.py composites our own
+# labels back on at our coordinates with our numbers. Deterministic, free, and
+# it cannot drift.
+#
+# Same reasoning retires the scale bar and the ruler from the ask: both are
+# text, both were wrong every time, and both are already correct in our own
+# drawing, which the composite keeps.
+PROMPT_VERSION = "6"
+
+# Room types Phase E.2 furnishes. Everything else still needs generating.
+_FURNISHED_BY_US = {
+    "master_bedroom", "bedroom_standard", "maids_room",
+    "common_bath", "ensuite_bath", "bath_toilet", "maids_bath", "powder_room",
+    "kitchen",
+}
+
+_FIXTURE_PROSE = {
+    "bed_single": "single bed", "bed_double": "double bed",
+    "bed_queen": "queen bed", "bed_king": "king bed",
+    "nightstand": "bedside table", "wardrobe": "wardrobe",
+    "toilet": "toilet", "lavatory": "lavatory basin", "shower": "shower tray",
+    "counter": "kitchen counter run", "sink": "kitchen sink",
+    "range": "cooking range", "fridge": "refrigerator",
+}
 
 _SIDE = {"N": "north", "S": "south", "E": "east", "W": "west"}
 
@@ -171,6 +238,24 @@ def _furniture_for(room: Dict[str, Any], peers=()) -> List[str]:
 
 
 
+def _drawn_fixtures_for(room: Dict[str, Any]) -> List[str]:
+    """Prose for furniture ALREADY PRESENT in the supplied image (v4).
+
+    Stated in words for the same reason openings are: the model follows prose
+    and largely ignores the appended JSON. Each item carries its real size and
+    the wall it backs onto, so "reproduce it" is checkable rather than vague.
+    """
+    out = []
+    for f in room.get("fixtures_already_drawn", []):
+        name = _FIXTURE_PROSE.get(f["kind"], f["kind"].replace("_", " "))
+        w, h = f.get("size_m", [0, 0])
+        where = ""
+        if f.get("against_wall"):
+            where = f", against the {_SIDE.get(f['against_wall'], f['against_wall'])} wall"
+        out.append(f"{name} ({_fmt(w)} x {_fmt(h)} m){where}")
+    return out
+
+
 def _place(pos: float, wall: str) -> str:
     """Where along the wall an opening starts.
 
@@ -214,6 +299,58 @@ def _openings_for(room: Dict[str, Any], names: Dict[str, str] = None) -> List[st
         side = _SIDE.get(w["wall"], w["wall"])
         out.append(f"a {_fmt(w['width_m'])} m window on the {side} wall, "
                    f"{_place(w['position_m'], w['wall'])}")
+    return out
+
+
+def _doors_block(manifest: Dict[str, Any]) -> List[str]:
+    """Every door in the plan, in one place, at the top (v5).
+
+    Previously each door was mentioned only under its own room, halfway down a
+    long prompt. The kitchen's exterior service door was dropped in all four
+    renders. Collecting them into a single numbered checklist gives the model
+    something it can COUNT, and pairing it with the coloured marks in the image
+    gives it something it can SEE.
+    """
+    rows = []
+    for st in manifest["storeys"]:
+        names = {x["id"]: x["description"] for x in st["rooms"]}
+        for r in st["rooms"]:
+            for d in r.get("doors", []):
+                if "wall" not in d:
+                    continue
+                lead = d.get("leads_to")
+                to = "the OUTSIDE" if lead == "outside" else names.get(lead, lead)
+                note = ""
+                if d.get("kind") == "service_door":
+                    note = ("  <- EXTERIOR SERVICE DOOR. This is a real door to "
+                            "the outside, NOT a window. It has been missing from "
+                            "every previous attempt. Draw it.")
+                elif d.get("kind") == "bath_door" and lead in ("kitchen",):
+                    note = ("  <- DELIBERATE: this bathroom's only door opens "
+                            "onto the kitchen. That is intentional in this "
+                            "design. Do not move it to another wall or another "
+                            "room, and do not add a second bathroom door.")
+                rows.append(
+                    f"  {len(rows) + 1}. {names.get(r['id'], r['id']).upper()}: "
+                    f"{_fmt(d.get('clear_width_m', 0.8))} m door on its "
+                    f"{_SIDE.get(d['wall'], d['wall'])} wall, "
+                    f"{_place(d.get('position_m', 0.0), d['wall'])}, "
+                    f"connecting to {to}, swinging into "
+                    f"{names.get(d.get('swings_into'), d.get('swings_into'))}."
+                    + note)
+    if not rows:
+        return []
+    out = ["", f"=== DOORS — ALL {len(rows)} MUST APPEAR, AND NO OTHERS ===",
+           "In the supplied image every door is OVERDRAWN IN MAGENTA/PINK so "
+           "you cannot miss it: the opening across the wall, the door leaf and "
+           "its swing arc. That colour is a MARKER, not part of the design — "
+           "draw these doors in your normal architectural style, in exactly "
+           "the positions marked.",
+           f"There are {len(rows)} magenta marks. Your drawing must have "
+           f"{len(rows)} doors, in those same places:"]
+    out.extend(rows)
+    out.append("Any opening NOT marked in magenta is a WINDOW. Do not convert "
+               "a window into a door or a door into a window.")
     return out
 
 
@@ -265,10 +402,14 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
     n_st = manifest.get("storey_count", len(manifest["storeys"]))
 
     lines: List[str] = []
+    n_drawn = sum(len(r.get("fixtures_already_drawn", []))
+                  for st in manifest["storeys"] for r in st["rooms"])
     lines.append(
-        "Redraw the supplied floor plan as a polished, presentation-quality 2D "
-        "architectural floor plan for a Philippine single-detached mid-market "
-        "house, fully furnished."
+        "RESTYLE the supplied floor plan into a polished, presentation-quality "
+        "2D architectural drawing for a Philippine single-detached mid-market "
+        "house. This is a redrawing task, NOT a design task: the layout and "
+        "most of the furniture are already correct in the supplied image. Your "
+        "job is line weight, palette, texture and finish."
     )
     n_rooms = sum(len(st["rooms"]) for st in manifest["storeys"])
     n_doors = sum(1 for st in manifest["storeys"] for r in st["rooms"]
@@ -276,7 +417,29 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
     n_wins = sum(len(r.get("windows", [])) for st in manifest["storeys"]
                  for r in st["rooms"])
     lines.append("")
-    lines.append("=== FIDELITY CONTRACT — READ FIRST, OVERRIDES EVERYTHING BELOW ===")
+    lines.append("=== OUTPUT FORMAT — ABSOLUTE, OVERRIDES EVERYTHING ELSE ===")
+    lines.append(
+        "1. YOUR IMAGE MUST CONTAIN NO TEXT WHATSOEVER. No room names, no "
+        "dimensions, no areas, no scale bar, no numbers, no ruler, no title, "
+        "no legend, no north letter, no watermark. Not one character. Room "
+        "labels are added afterwards by the software; anything you write will "
+        "be covered up or will conflict with the real figures."
+    )
+    lines.append(
+        "2. YOUR IMAGE MUST CONTAIN NO MAGENTA OR PINK LINES. The bright "
+        "magenta marks in the supplied image are a temporary marker showing "
+        "you where the doors are. Draw those doors in normal architectural "
+        "line work — thin dark leaf and a light swing arc. No magenta, no "
+        "pink, anywhere in your output."
+    )
+    lines.append(
+        "3. Fill the ENTIRE canvas with the lot, edge to edge — the boundary "
+        "of your image IS the boundary of the lot. No white margin, no frame, "
+        "no border, no drop shadow, no page. The composite depends on this "
+        "alignment being exact."
+    )
+    lines.append("")
+    lines.append("=== FIDELITY CONTRACT — OVERRIDES EVERYTHING BELOW ===")
     lines.append(
         f"This plan has EXACTLY {n_rooms} rooms, {n_doors} doorways and "
         f"{n_wins} windows. Your drawing must contain exactly that many — no "
@@ -297,9 +460,23 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
         "number. If a label will not fit, shrink the text — do not edit it."
     )
     lines.append(
-        "- NO furniture, fixture, planting or rug may overlap a doorway, its "
-        "swing arc, or the clear path through it. Move the furniture."
+        f"- The supplied image ALREADY CONTAINS {n_drawn} pieces of furniture "
+        "and sanitary ware, drawn to scale in the correct positions. Reproduce "
+        "every one of them where it already is. Do NOT move, resize, rotate, "
+        "duplicate, remove or substitute any of them. They were placed by "
+        "measurement and their positions are already verified to clear every "
+        "door swing."
     )
+    lines.append(
+        "- Only the rooms explicitly marked 'FURNISH THIS ROOM' below are "
+        "yours to fill. Every other room is already furnished — restyle it, "
+        "do not redesign it."
+    )
+    lines.append(
+        "- NO furniture, fixture, planting or rug may overlap a doorway, its "
+        "swing arc, or the clear path through it."
+    )
+    lines.extend(_doors_block(manifest))
     lines.append("")
     lines.append("Other layout rules:")
     lines.append(
@@ -326,7 +503,7 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
             "title each floor."
         )
     lines.append("")
-    lines.append("FURNISH every space as follows (plan view, drawn to scale):")
+    lines.append("ROOM BY ROOM:")
 
     for st in manifest["storeys"]:
         names = {x["id"]: x["description"] for x in st["rooms"]}
@@ -334,21 +511,40 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
             lines.append("")
             lines.append(f"  [{st['label'].upper()}]")
         for r in st["rooms"]:
-            items = _furniture_for(r, st["rooms"])
+            drawn = _drawn_fixtures_for(r)
+            # A room we furnish ourselves is never handed generation prose —
+            # offering both would invite the model to "improve" on measured
+            # placement, which is the one thing v4 exists to prevent.
+            items = [] if (drawn or r["type"] in _FURNISHED_BY_US) \
+                else _furniture_for(r, st["rooms"])
             openings = _openings_for(r, names)
-            shape = ""   # L-shape prose dropped in v3 — see PROMPT_VERSION notes
-            if not (items or openings or shape):
+            if not (drawn or items or openings):
                 continue
             lbl = r.get("label_text") or r["description"].upper()
             sub = r.get("label_sub_text") or f"{_fmt(r['area_sqm'])} sqm"
-            lines.append(f"  - {r['description'].upper()}:")
-            lines.append(f"      * LABEL THIS ROOM EXACTLY: \"{lbl}\" on the "
-                         f"first line and \"{sub}\" beneath it. Copy both "
-                         f"strings character for character.")
-            if shape:
-                lines.append(f"      * {shape}.")
+            # v6: no "LABEL THIS ROOM" instruction — the model writes nothing.
+            # The label strings still go in the JSON so it knows what the room
+            # IS, but they are ours to draw, not its.
+            # Use the SHORT label, not the description. v6 headed each room
+            # with `description` ("COMMON TOILET & BATH") and the model — which
+            # writes text no matter what it is told — copied that string, which
+            # is wider than the room and so overflows any mask we can put over
+            # it. Headed "T&B" (v5's wording) its stray label stays inside the
+            # room and the chip covers it.
+            lines.append(f"  - {lbl} ({r['description']}, "
+                         f"{sub} — the software writes this text, not you):")
+            if drawn:
+                lines.append("      * ALREADY DRAWN — reproduce exactly where "
+                             "shown, add nothing: " + "; ".join(drawn) + ".")
+            elif r["type"] in _FURNISHED_BY_US:
+                # Phase E.2 ran and placed nothing here: the room is genuinely
+                # too small for standard fixtures. Saying "furnish it" would
+                # have the model draw furniture we have MEASURED will not fit.
+                lines.append("      * leave this room UNFURNISHED — nothing "
+                             "standard fits; draw the empty floor.")
             if items:
-                lines.append("      * furnish with " + "; ".join(items) + ".")
+                lines.append("      * FURNISH THIS ROOM with "
+                             + "; ".join(items) + ".")
             if openings:
                 lines.append("      * openings — " + "; ".join(openings)
                              + ". Draw EVERY one of these and no others.")
@@ -363,11 +559,13 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
     lines.append("  - Plant lawn, shrubs or small trees in the remaining open lot area.")
 
     lines.append("")
-    lines.append("PLACEMENT RULES:")
+    lines.append("PLACEMENT RULES (for the rooms marked FURNISH THIS ROOM only):")
     lines.append("  - Never block a door swing, a window, or a circulation path.")
     lines.append("  - Furniture must fit the stated room area; do not oversize it.")
     lines.append("  - Respect the wall functions given above — they come from the "
                  "plumbing and daylight layout and are not suggestions.")
+    lines.append("  - Do not spill furniture from these rooms into a "
+                 "neighbouring one that is already furnished.")
 
     lines.append("")
     lines.append("STYLE:")
@@ -377,18 +575,15 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
                  "interior partitions, doors shown with swing arcs.")
     lines.append("  - Muted, professional palette; subtle floor textures "
                  "distinguishing tile, timber and outdoor paving.")
-    lines.append("  - Include a north arrow, and EXACTLY ONE scale bar. The "
-                 "scale bar must have evenly spaced ticks with correct, "
-                 "non-repeating labels. Do not draw two scale bars.")
-    lines.append("  - Legible room labels with the area figure beneath, as in "
-                 "the source image. Draw each label on a small opaque "
-                 "rectangular background panel so the text stays legible over "
-                 "flooring and furniture. Every label must sit INSIDE its own room, "
-                 "must not cross a wall into a neighbouring room, and must not "
-                 "be covered by furniture or planting. Move furniture before "
-                 "you obscure a label.")
-    lines.append("  - Keep the lot ruler along all four edges and the "
-                 "'FRONT (street)' caption, as in the source image.")
+    # v6: no north arrow, no scale bar, no ruler, no captions — all of these
+    # are text or carry text, all were wrong in every previous render, and all
+    # are already correct in our own drawing, which the composite retains.
+    lines.append("  - NO scale bar, NO north arrow, NO ruler, NO caption, NO "
+                 "labels. The software adds these. Draw only the building, "
+                 "its contents, and the grounds.")
+    lines.append("  - Leave the middle of each room visually calm — a label "
+                 "will be composited over the centre of every room, so avoid "
+                 "putting busy detail or strong pattern there.")
 
     lines.append("")
     lines.append("AUTHORITATIVE GEOMETRY (metres; use this over your reading of the "

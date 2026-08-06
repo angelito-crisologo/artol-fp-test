@@ -74,7 +74,27 @@ def _orientation_block(orient) -> Dict[str, str]:
     return out
 
 
-def build_manifest(plan, brief=None) -> Dict[str, Any]:
+def _fixtures_by_room(fixtures) -> Dict[str, List[Dict]]:
+    """Group placed furniture rectangles (solver/fixtures.py, Phase E.2).
+
+    These are ALREADY DRAWN in the image we send, so they are ground truth to
+    be reproduced, not a wish list to be generated. Stated here so a render
+    can be checked: "is there a 1.52 x 2.03 m bed in the master with its head
+    against the east wall" has an answer, which it did not before Phase E.2.
+    """
+    out: Dict[str, List[Dict]] = {}
+    for f in fixtures or ():
+        rc = f.rect
+        out.setdefault(f.room, []).append({
+            "kind": f.kind,
+            "rect_m": _rect(rc),
+            "size_m": [_r(rc.x1 - rc.x0), _r(rc.y1 - rc.y0)],
+            "against_wall": getattr(f, "against", None) or None,
+        })
+    return out
+
+
+def build_manifest(plan, brief=None, fixtures=None) -> Dict[str, Any]:
     """Ground-truth description of `plan` (an ArchPlan) for the image model.
 
     Coordinates are metres in lot space. The street is at the SOUTH edge —
@@ -111,6 +131,7 @@ def build_manifest(plan, brief=None) -> Dict[str, Any]:
                 "clear_width_m": _r(d.clear_width_m),
                 "note": "same opening as the one listed on " + owner,
             })
+    fixtures_by_room = _fixtures_by_room(fixtures)
     windows_by_room: Dict[str, List[Dict]] = {}
     for w in plan.windows:
         windows_by_room.setdefault(w.room, []).append({
@@ -160,6 +181,8 @@ def build_manifest(plan, brief=None) -> Dict[str, Any]:
                 "orientation": _orientation_block(plan.orientations.get(r.id)),
                 "doors": doors_by_room.get(r.id, []),
                 "windows": windows_by_room.get(r.id, []),
+                # Already drawn in the supplied image — see _fixtures_by_room.
+                "fixtures_already_drawn": fixtures_by_room.get(r.id, []),
             })
         storeys.append({
             "storey": st,
@@ -199,7 +222,7 @@ def build_manifest(plan, brief=None) -> Dict[str, Any]:
     }
 
 
-def build_manifest_for_layout(layout, brief=None) -> Dict[str, Any]:
+def build_manifest_for_layout(layout, brief=None, fixtures=None) -> Dict[str, Any]:
     """Manifest for a solved layout, single- OR multi-storey.
 
     Single-storey results carry one `layout.archplan`; multi-storey results
@@ -218,7 +241,7 @@ def build_manifest_for_layout(layout, brief=None) -> Dict[str, Any]:
     base = None
     storeys: List[Dict[str, Any]] = []
     for title, plan in plans:
-        m = build_manifest(plan, brief)
+        m = build_manifest(plan, brief, fixtures)
         if base is None:
             base = m
         else:

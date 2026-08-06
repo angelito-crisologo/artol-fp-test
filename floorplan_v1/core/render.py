@@ -10,6 +10,7 @@ Two top-level entry points:
 import html
 import bisect
 import math
+import re
 from typing import List, Optional
 from model import Layout, Rect, make_outside_probe
 
@@ -565,7 +566,12 @@ LOT_FILL = "#fbfbf7"
 ERASE_HALF_PX = 5
 
 
-def _door_svg(door, layout) -> str:
+# Door-emphasis colours, used ONLY when archplan_to_svg(door_emphasis=True).
+# See that function's docstring for why this exists and why it is opt-in.
+_DOOR_HL = "#d81b60"
+
+
+def _door_svg(door, layout, emphasis: bool = False) -> str:
     """Render a door symbol: an opening erased into the wall, a perpendicular
     door panel line, and a quarter-arc swing. The wall side stored on the
     Door is relative to room_a (or room_b if room_a == 'exterior')."""
@@ -678,6 +684,23 @@ def _door_svg(door, layout) -> str:
         f'{sweep} {lxs:.1f} {lys:.1f}" fill="none" stroke="#999" '
         f'stroke-width="0.7" stroke-dasharray="2 2"/>',
     ]
+    if emphasis:
+        # A 0.7 m door tucked 0.15 m into a corner, drawn as a thin grey arc
+        # beside a window, is genuinely hard to SEE at the raster scale the
+        # image model receives — and across four runs the model followed the
+        # image far more reliably than the prose. So make the opening
+        # unmissable rather than describing it harder.
+        parts.append(
+            f'<path d="M {txs:.1f} {tys:.1f} A {radius:.1f} {radius:.1f} 0 0 '
+            f'{sweep} {lxs:.1f} {lys:.1f}" fill="none" stroke="{_DOOR_HL}" '
+            f'stroke-width="2.2" opacity="0.9"/>')
+        parts.append(
+            f'<line x1="{hxs:.1f}" y1="{hys:.1f}" x2="{txs:.1f}" y2="{tys:.1f}" '
+            f'stroke="{_DOOR_HL}" stroke-width="3.0"/>')
+        # The opening itself, marked across the wall line.
+        parts.append(
+            f'<line x1="{nxs:.1f}" y1="{nys:.1f}" x2="{fxs:.1f}" y2="{fys:.1f}" '
+            f'stroke="{_DOOR_HL}" stroke-width="3.4" opacity="0.85"/>')
     return "".join(parts)
 
 
@@ -1700,7 +1723,7 @@ def _counter_svg(ctr, layout) -> str:
     return "".join(parts)
 
 
-def archplan_to_svg(plan) -> str:
+def archplan_to_svg(plan, door_emphasis: bool = False) -> str:
     """Render the full architectural plan: room fills, walls of finite
     thickness (exterior 0.20 m, interior 0.10 m), open-plan transitions
     (where the wall has been suppressed), and doors / windows as openings
@@ -1713,6 +1736,13 @@ def archplan_to_svg(plan) -> str:
       4. open-plan erases (clear room strokes where no wall)
       5. door erases + door panels + swing arcs
       6. window erases + window glass strips
+
+    `door_emphasis` overdraws every door in a saturated colour. It exists for
+    ONE consumer — polish.py, which hands the drawing to an image model that
+    kept dropping the kitchen's exterior service door and relocating the T&B
+    door across four attempts. Default False, so the technical drawing and all
+    52 baselines are untouched; this is a communication aid, never the plan of
+    record.
     """
     base = layout_to_svg(plan.layout)
     overlays = []
@@ -1771,7 +1801,7 @@ def archplan_to_svg(plan) -> str:
             overlays.append(_notch_alcove_rail_svg(r, plan.layout))
     # Doors and windows punch openings through walls.
     for d in plan.doors:
-        overlays.append(_door_svg(d, plan.layout))
+        overlays.append(_door_svg(d, plan.layout, emphasis=door_emphasis))
     for w in plan.windows:
         overlays.append(_window_svg(w, plan.layout))
     # Dining counters (counter_divider adjacencies) — drawn last so the
@@ -1882,3 +1912,187 @@ def gallery_html(layouts: List[Layout], title: str) -> str:
 </div>
 <div class="grid">{''.join(cards)}</div>
 </body></html>"""
+
+# ---------------------------------------------------------------------------
+# Furniture / fixture overlay (Phase E.2)
+# ---------------------------------------------------------------------------
+
+# ONE fill for every fixture family, deliberately.
+#
+# The first cut coloured fixtures by family (sanitary ware pale blue, timber
+# warm) and it was a mistake: a pale-blue shower inside a bath reads as a
+# separate ROOM against the public zone's #cfe2f3, and the drawing's whole
+# job is to make room boundaries unambiguous. Room fill means zone; fixture
+# fill must mean "contents", one value, distinct from every zone colour.
+#
+# Kinds are told apart by LINEWORK instead — pillow band, basin ellipse,
+# burner circles — which also survives greyscale printing, which colour
+# coding does not.
+_FIXTURE_FILL = "#e3ded4"
+_FIXTURE_PILLOW = "#cbc4b4"
+_FIXTURE_STROKE = "#8a8378"
+
+
+def fixtures_overlay_svg(fixtures, layout) -> str:
+    """SVG for a list of Fixture-like objects (.rect, .kind, .room).
+
+    Takes plain data rather than importing solver.fixtures, so core/ keeps its
+    layering: the caller places the furniture and hands the rectangles here.
+    Drawn fixture-weight, matching the dining-counter convention.
+    """
+    out = []
+    for f in fixtures:
+        rc = f.rect
+        x0, y0 = _to_svg_xy(layout.lot, rc.x0, rc.y1)     # SVG y is flipped
+        x1, y1 = _to_svg_xy(layout.lot, rc.x1, rc.y0)
+        fam = f.kind.split("_")[0]
+        out.append(f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
+                   f'height="{y1 - y0:.1f}" fill="{_FIXTURE_FILL}" '
+                   f'stroke="{_FIXTURE_STROKE}" stroke-width="0.8" '
+                   f'rx="1.5" opacity="0.95"/>')
+        # A pillow band marks the head end of a bed, so its orientation is
+        # legible without a label.
+        if fam == "bed" and getattr(f, "against", ""):
+            t = 0.22 * (y1 - y0) if f.against in ("N", "S") else 0.22 * (x1 - x0)
+            if f.against == "N":
+                px0, py0, px1, py1 = x0, y0, x1, y0 + t
+            elif f.against == "S":
+                px0, py0, px1, py1 = x0, y1 - t, x1, y1
+            elif f.against == "W":
+                px0, py0, px1, py1 = x0, y0, x0 + t, y1
+            else:
+                px0, py0, px1, py1 = x1 - t, y0, x1, y1
+            out.append(f'<rect x="{px0:.1f}" y="{py0:.1f}" '
+                       f'width="{px1 - px0:.1f}" height="{py1 - py0:.1f}" '
+                       f'fill="{_FIXTURE_PILLOW}" stroke="none" rx="1"/>')
+        if fam in ("sink", "lavatory", "toilet"):
+            cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+            r = max(1.5, min(x1 - x0, y1 - y0) * 0.28)
+            out.append(f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{r:.1f}" '
+                       f'ry="{r:.1f}" fill="none" stroke="{_FIXTURE_STROKE}" '
+                       f'stroke-width="0.7"/>')
+        if fam == "range":
+            cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+            d = min(x1 - x0, y1 - y0) * 0.22
+            for dx, dy in ((-d, -d), (d, -d), (-d, d), (d, d)):
+                out.append(f'<circle cx="{cx + dx:.1f}" cy="{cy + dy:.1f}" '
+                           f'r="{d * 0.55:.1f}" fill="none" '
+                           f'stroke="{_FIXTURE_STROKE}" stroke-width="0.6"/>')
+    return "".join(out)
+
+
+# The room-name and dimension <text> elements emitted by
+# _emit_centered_text_block. Matched on their fill, which is unique to them:
+# ruler numerals use LABEL_FILL and the stair UP/DN glyph carries a
+# paint-order halo, so neither is caught here.
+_LABEL_TEXT_RE = re.compile(
+    r'<text\b[^>]*\bfill="#(?:222|555)"[^>]*>.*?</text>', re.S)
+
+
+def polished_image_overlay(layout, png_bytes: bytes) -> str:
+    """An `<image>` element covering exactly the LOT rectangle.
+
+    For polish.py. The image model is asked to return the lot edge-to-edge
+    with NO text of any kind, because invented dimension figures were the one
+    defect that survived every prompt version — `KITCHEN 3.2x2.3 m . 7.3 sqm`
+    where the plan says `3.1x2.3 m . 7.1 sqm` is exactly the silent
+    disagreement NANO_BANANA_RENDER_DESIGN.md §1 calls worse than useless.
+
+    So the model draws the picture and we draw the words. Splicing this
+    through `inject_overlay` puts the picture over our plan and then lifts our
+    own label text back on top of it, at our coordinates, with our numbers.
+    The metre ruler survives untouched because it lives OUTSIDE the lot
+    rectangle this image covers.
+    """
+    import base64
+    lot = layout.lot
+    x0, y0 = _to_svg_xy(lot, 0.0, lot.depth)        # SVG y is flipped
+    x1, y1 = _to_svg_xy(lot, lot.width, 0.0)
+    b64 = base64.b64encode(png_bytes).decode("ascii")
+    return (f'<image x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
+            f'height="{y1 - y0:.1f}" preserveAspectRatio="none" '
+            f'href="data:image/png;base64,{b64}"/>')
+
+
+_TEXT_ATTR_RE = re.compile(
+    r'<text[^>]*\bx="([\d.-]+)"[^>]*\by="([\d.-]+)"[^>]*'
+    r'\bfont-size="([\d.]+)"[^>]*>(.*?)</text>', re.S)
+
+
+def room_label_masks(layout, height_m: float = 1.15, width_frac: float = 0.86) -> str:
+    """Opaque chips over the label zone of every room, sized to the ROOM.
+
+    For polish.py. The image model is told, as instruction #1 and in capitals,
+    to write no text; it writes room names and invented dimensions anyway, and
+    places them at the room centre — the same place ours go. Masking by our own
+    text width failed whenever its label was longer than ours (it rendered
+    "COMMON TOILET & BATH" over a chip sized for "KITCHEN").
+
+    Keying the chip to the room instead makes the cover-up independent of what
+    the model chose to write, which is the only version that is actually
+    reliable. Uses the same largest-cell rule archplan_to_svg uses to position
+    a label, so the chip and the real label always agree.
+    """
+    out = []
+    # Setback elements (porch, carport, lanai) carry labels too, and the model
+    # writes over them just as happily.
+    for r in list(layout.rooms) + list(getattr(layout, "elements", []) or []):
+        big = max(getattr(r, "cells", None) or [r.rect], key=lambda c: c.area)
+        w = min(big.w * width_frac, big.w - 0.10)
+        h = min(height_m, big.h - 0.10)
+        if w <= 0 or h <= 0:
+            continue
+        cx, cy = (big.x0 + big.x1) / 2.0, (big.y0 + big.y1) / 2.0
+        x0, y0 = _to_svg_xy(layout.lot, cx - w / 2, cy + h / 2)
+        x1, y1 = _to_svg_xy(layout.lot, cx + w / 2, cy - h / 2)
+        out.append(f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
+                   f'height="{y1 - y0:.1f}" fill="#fbfbf8" opacity="0.93" '
+                   f'rx="4"/>')
+    return "".join(out)
+
+
+def _label_masks(labels, pad_x=7.0, pad_y=3.0) -> str:
+    """Opaque panels sized to each label line, emitted BEHIND the text.
+
+    For polish.py only. The image model was told three times, in capitals and
+    as instruction #1, to write no text — and wrote its own room names and its
+    own (invented) dimensions anyway. Since it places them at the room centre,
+    exactly where ours go, an opaque panel behind our label covers its label.
+    We stop asking and start painting over.
+
+    Width is estimated from the glyph count rather than measured — there is no
+    font metric available here — so the panel is padded generously. It sits on
+    an opaque near-white so it reads as a label chip, not a hole.
+    """
+    out = []
+    for m in _TEXT_ATTR_RE.finditer(labels):
+        cx, cy, fs = float(m.group(1)), float(m.group(2)), float(m.group(3))
+        txt = re.sub(r"<[^>]+>", "", m.group(4))
+        w = 0.62 * fs * max(len(txt), 1) + 2 * pad_x
+        h = fs * 1.25 + 2 * pad_y
+        out.append(f'<rect x="{cx - w / 2:.1f}" y="{cy - fs - pad_y:.1f}" '
+                   f'width="{w:.1f}" height="{h:.1f}" fill="#fbfbf8" '
+                   f'opacity="0.93" rx="3"/>')
+    return "".join(out)
+
+
+def inject_overlay(svg_doc: str, overlay: str, mask_behind_labels=False) -> str:
+    """Splice an overlay in, keeping the room labels readable ON TOP of it.
+
+    SVG has no z-index — paint order IS stacking order — so an overlay
+    appended at the end covers the room labels, and a bed lands squarely
+    across "MASTER BR / 5.4x3.7 m . 20.0 sqm".
+
+    Rather than teach every drawing pass about a furniture layer (which would
+    move text in all 52 baselines for a feature nothing in the pipeline calls
+    yet), lift the label text out of the finished document and re-emit it
+    after the overlay. Text has no fill or stroke interaction with what it
+    passes over, so promoting it is purely a stacking change — and a document
+    with no overlay is never touched.
+    """
+    if not overlay:
+        return svg_doc
+    labels = "".join(_LABEL_TEXT_RE.findall(svg_doc))
+    body = _LABEL_TEXT_RE.sub("", svg_doc)
+    masks = _label_masks(labels) if mask_behind_labels else ""
+    return body.replace("</svg>", overlay + masks + labels + "</svg>")
