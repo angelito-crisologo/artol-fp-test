@@ -6,8 +6,7 @@ Strict Constraints:
     * Keep the floor plan dimensions exactly as they are without expanding or shortening walls.
     * Do not add any room, alcove, closet, or fixture nook that is not in the provided image. This plan has exactly 1 toilet/bath — do not add a powder room or a second bathroom anywhere.
 Multi-Story & Setback Rules:
-    * Render the outdoor setbacks for the ground floor only; upper floors have no setback area to draw.
-    * A plain setback — open ground with no setback element specified on it — must be rendered as GRASS / lawn, green and planted. Do not render it as neutral grey, paving, concrete or bare ground.
+    * Render the outdoor setbacks for the first floor only. Render the setbacks as neutral ground if there are not setback elements specified.
     * If setback elements are specified, render ground appropriate for that element (e.g. lanai can have greens, dirty kitchen should have tile floorings, etc)
     * Only render outdoor areas explicitly specified in the plan (e.g., if only a porch is specified, do not add a carport or lanai).
     * If a carport is specified, it must be rendered with a car. If carport is double, then 2 cars must also be rendered.

@@ -249,6 +249,15 @@ in another, **never all at once**. Treat that as a property of a generative
 model, not as a prompt that is not yet good enough. Do not expect a version
 that nails everything simultaneously, and budget accordingly.
 
+**Confirmed by re-running one prompt unchanged.** `convert_render.txt` was run
+twice, same text, same source image. Run A dropped no labels but misspelled one
+(`DIING`) and rendered the setback grey. Run B lost the `BEDROOM` label
+entirely, corrupted `MASTER BR` to `...ERR`, and gave it `3.1x3.7 m` against a
+real `5.4x3.7`. **So a good render is not a property of the prompt that
+produced it** — the same prompt is not reproducible, and no amount of tuning
+makes it so. Any workflow that depends on the model getting a fact right is
+unsound; §9.5 is not merely the tidier option, it is the only correct one.
+
 ## 9.5 The durable answer: composite, do not negotiate
 
 Built and working (`core/render.py`):
