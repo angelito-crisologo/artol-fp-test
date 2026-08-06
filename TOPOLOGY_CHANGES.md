@@ -64,6 +64,11 @@ because the file is shared code, not because a regen is owed.
   the public zone's `#cfe2f3`. Room fill means zone; fixture fill must mean
   "contents". Kinds are distinguished by LINEWORK instead — pillow band, basin
   ellipse, burner circles — which also survives greyscale printing.
+- `archplan_to_svg(plan, door_emphasis=False)` — overdraws doors in magenta
+  for the image model. Default False; the technical drawing is unchanged.
+- `polished_image_overlay(layout, png)` / `room_label_masks(layout)` — place a
+  returned image over the lot rect and cover each room's label zone, so our
+  own labels can be composited on top. polish.py only.
 - `inject_overlay(svg_doc, overlay)` — SVG has no z-index, so an appended
   overlay covered the room labels and a bed landed across
   `MASTER BR / 5.4x3.7 m . 20.0 sqm`. It now lifts the label `<text>` elements

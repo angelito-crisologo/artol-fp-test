@@ -28,6 +28,102 @@ into false ones. Read them as history; read the table as current fact.
 
 Detail: `SHELL_CAPPING_DESIGN.md` §1a.
 
+## Session handoff (2026-08-06) — READ THIS FIRST
+
+Branch **`setbacks-sizing-capping-2026-08`**, 4 commits, working tree clean
+except two files left alone deliberately (`floorplan_v1/sweep_discover.py`,
+an edit from a cowork session, and `stair-types-04.jpg`).
+**52 pass / 0 fail, 51 sweep pass. No baselines were refreshed** — everything
+below is opt-in and nothing in `run.py` / `app.py` / `build_catalog.py`
+touches it.
+
+| commit | what |
+|---|---|
+| `aca686c` | Phase E.2 furniture placement + first Nano Banana attempt |
+| `79f9e7f` | fixture overlay legibility, furnished source, door emphasis, label compositing |
+| `42bc7d7` | polish.py experiment flags, the "convert" prompt, the 10-call evaluation |
+| `772fbb8` | prompt revert to neutral-ground setback + same-prompt non-reproducibility finding |
+
+### Phase E.2 — furniture as real rectangles (`solver/fixtures.py`)
+
+Places measured rectangles for **bedrooms, baths and kitchens** (beds by
+ranked hierarchy so master always reads primary, nightstands, wardrobes,
+toilet/lavatory/shower, counter/sink/range/fridge). PH mid-market dimensions
+in metres, deterministic, post-solve; never feeds back into the solver and
+never affects validation — a room whose furniture does not fit is **reported,
+not rejected**. `check_door_clearance` trims, then shifts, then removes, in
+that order (an earlier version deleted 280 fixtures because a full-wall
+counter always meets a door on its own wall).
+
+Verified: **748 fixtures across the suite, 0 outside their room.** Living,
+dining and great rooms are NOT placed yet — `SOFA3` / `DINING` / `CAR`
+constants exist but no placement functions. **`fixtures.py` is imported by
+nothing**; wiring it into `run.py` would churn all 52 baselines and was
+deliberately left undone.
+
+Owed: hand-verify the ~15 surviving genuine fit failures before quoting them
+as catalog findings. I reported placement bugs as catalog defects three times
+this session before hand-verification disproved them — see
+[[fixture-placement-phase-e2]].
+
+### `core/render.py` additions (all opt-in, all default off)
+
+- `fixtures_overlay_svg(fixtures, layout)` — ONE neutral fill for every
+  fixture family. The per-family palette was a real mistake: a pale-blue
+  shower read as a separate ROOM against the public zone's `#cfe2f3`. Kinds
+  are distinguished by LINEWORK (pillow band, basin ellipse, burner circles),
+  which also survives greyscale.
+- `inject_overlay(svg, overlay, mask_behind_labels=)` — SVG has no z-index, so
+  an appended overlay covers the room labels. Lifts the label `<text>` out of
+  the finished document and re-emits it after the overlay. A document with no
+  overlay is returned untouched, which is why no baseline moved.
+- `archplan_to_svg(plan, door_emphasis=False)` — overdraws doors in magenta.
+- `polished_image_overlay(layout, png)` / `room_label_masks(layout)` — the
+  composite path (see below).
+
+### Polished render via Gemini "Nano Banana" — **evaluated, 11 calls, ~$0.44**
+
+Full write-up: **`NANO_BANANA_RENDER_DESIGN.md` §9**. Read it before spending
+another peso on this. Headlines:
+
+- **Prompt FRAMING dominated everything.** Six versions in `ai/render_prompt.py`
+  said "redraw"/"restyle" and ALL invented dimension figures. A user-written
+  prompt opening *"**Convert** the provided floor plan image into a 2D
+  architectural render"* got every figure right first try, having been told
+  nothing about numbers. Kept verbatim at **`ai/prompts/convert_render.txt`**.
+- **Counted checklists work; prohibitions do not.** "EXACTLY 5 doors" produced
+  the kitchen service door that four rounds of prose could not. Counts are
+  derivable from the manifest, so this generalises.
+- **Marking a target IN THE IMAGE beats describing it** — the most consistent
+  finding across all 11 runs: this model follows the picture, not the paragraph.
+- **The same prompt is not reproducible.** Identical text + identical source
+  gave a good render once and a broken one the next time (lost `BEDROOM`
+  label, `MASTER BR` corrupted to `...ERR`, `3.1x3.7 m` against a real
+  `5.4x3.7`). **A good render is therefore not a property of the prompt that
+  produced it**, and no tuning fixes that.
+- **Conclusion: use it for STYLING, supply every FACT by composite.**
+
+**Hard user constraint, structural not configurable:** polish must NEVER run
+automatically when floor plans are generated. `run.py` has no polish flag and
+no import of the polish stack; `python3 polish.py --self-check` proves it and
+should stay passing.
+
+`polish.py` flags: `--brief` (required, no sweep mode), `--plain` (solver
+drawing unmodified), `--prompt-file` (verbatim — nothing appended, so a
+hand-written prompt stays a controlled experiment), `--raw-output` (skip the
+composite), `--dry-run`, `--yes`, `--self-check`.
+
+### Next step if this is picked up again
+
+The composite path is built and works but has **never been run against the
+"convert" prompt** — that pairing (best picture + guaranteed-correct labels)
+is the obvious finish. One blocker: the crop keys on GREEN pixels to find the
+model's lot rectangle, and the prompt was reverted to neutral-ground setbacks,
+so it needs re-anchoring on the drawn area instead of the lawn. One line, then
+one call to confirm.
+
+---
+
 ## Session handoff (2026-07-19) — read this first
 
 **Not yet committed** — this session's work (and the prior 2026-07-16
