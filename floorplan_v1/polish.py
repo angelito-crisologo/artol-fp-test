@@ -167,6 +167,13 @@ def main(argv=None):
                     help="Send this file's text VERBATIM instead of the built "
                          "prompt. The manifest is still written for audit, but "
                          "nothing from it is appended.")
+    ap.add_argument("--convert", action="store_true",
+                    help="Build the prompt with the CONVERT framing and counts "
+                         "derived from the manifest, instead of the RESTYLE "
+                         "prompt. Six RESTYLE versions all invented dimension "
+                         "figures; 'Convert the provided floor plan image' did "
+                         "not. Unlike --prompt-file it cannot go stale against "
+                         "the brief, because every count is computed.")
     ap.add_argument("--plain", action="store_true",
                     help="Send the solver's drawing unmodified — no Phase E.2 "
                          "furniture, no door marking.")
@@ -181,7 +188,8 @@ def main(argv=None):
         ap.error("--brief is required (there is deliberately no 'polish everything' mode)")
 
     from render_manifest import build_manifest_for_layout
-    from render_prompt import build_prompt, PROMPT_VERSION
+    from render_prompt import (build_prompt, build_convert_prompt,
+                               PROMPT_VERSION, CONVERT_PROMPT_VERSION)
 
     layout, topo, brief, out_dir = _solve(args.brief)
     # The raster is built FIRST: it is what places the furniture, and the
@@ -194,6 +202,10 @@ def main(argv=None):
         # being tested and make the result unattributable.
         with open(args.prompt_file, encoding="utf-8") as f:
             prompt = f.read()
+    elif args.convert:
+        # Counts derived from the manifest, so this cannot go stale against the
+        # brief the way a hand-written --prompt-file does.
+        prompt = build_convert_prompt(manifest)
     else:
         prompt = build_prompt(manifest)
 

@@ -598,3 +598,164 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
     lines.append(json.dumps(manifest, indent=1, ensure_ascii=False))
     lines.append("```")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Convert-framed prompt (PROMPT_VERSION "C1")
+# ---------------------------------------------------------------------------
+#
+# Six versions of build_prompt() above said "RESTYLE" / "redraw", and every one
+# of them invented dimension figures. A user-written prompt opening "CONVERT
+# the provided floor plan image into a 2D architectural render" got every
+# figure right first try, having been told nothing about numbers — see
+# NANO_BANANA_RENDER_DESIGN.md §9. That wording is preserved here verbatim.
+#
+# What this adds over the hand-written file kept at ai/prompts/convert_render.txt
+# is that the COUNTS are derived from the manifest instead of typed in. That
+# file is specific to the plan it was written for: reused on another brief it
+# asserts "exactly 1 toilet/bath" and names LIVING and DINING rooms that do not
+# exist, and the model duly dropped a bathroom and relocated the kitchen. The
+# design doc already noted counts are derivable and therefore generalise; this
+# is that, built.
+
+CONVERT_PROMPT_VERSION = "C1"
+
+_BATH_TYPES_P = {"common_bath", "ensuite_bath", "bath_toilet", "powder_room",
+                 "maids_bath"}
+_BED_TYPES_P = {"master_bedroom", "bedroom_standard", "maids_room"}
+
+
+def _all_rooms(manifest):
+    return [r for st in manifest["storeys"] for r in st["rooms"]]
+
+
+def _label_of(room):
+    return room.get("label_text") or room.get("description", "").upper()
+
+
+def _unique_doors(manifest):
+    """Every doorway once. A door is listed on BOTH rooms it connects, but the
+    second copy carries no `wall` — that is the existing dedupe key."""
+    out = []
+    for st in manifest["storeys"]:
+        by_id = {r["id"]: r for r in st["rooms"]}
+        for r in st["rooms"]:
+            for d in r.get("doors", []):
+                if "wall" not in d:
+                    continue
+                to = d.get("leads_to", "outside")
+                other = ("outside" if to == "outside"
+                         else _label_of(by_id.get(to, {"description": to})))
+                out.append((_label_of(r), other, d.get("kind", "door")))
+    return out
+
+
+def build_convert_prompt(manifest: Dict[str, Any]) -> str:
+    rooms = _all_rooms(manifest)
+    labels = [_label_of(r) for r in rooms]
+    els = [e for e in (manifest.get("setback_elements") or [])]
+    el_labels = [(e.get("type") or "").upper() for e in els if e.get("type")]
+    baths = [r for r in rooms if r.get("type") in _BATH_TYPES_P]
+    beds = [r for r in rooms if r.get("type") in _BED_TYPES_P]
+    doors = _unique_doors(manifest)
+    n_wins = sum(len(r.get("windows", [])) for r in rooms)
+    n_st = manifest.get("storey_count", len(manifest["storeys"]))
+    has_carport = any((e.get("type") or "").lower() in ("carport", "garage")
+                      for e in els)
+    has_stairs = any(r.get("type") == "stairs" for r in rooms)
+    great = [r for r in rooms if r.get("type") in ("great_room", "living_room",
+                                                   "dining_room")]
+
+    L: List[str] = []
+    a = L.append
+    a("Task: Convert the provided floor plan image into a 2D architectural render.")
+    a("")
+    a("Strict Constraints:")
+    a("    * Maintain zero structural deviation from the provided image.")
+    a("    * Do not add or remove any walls, rooms, doors, windows, or bathrooms.")
+    a("    * Preserve the exact placement of all original doors and windows.")
+    a("    * Keep the floor plan dimensions exactly as they are without expanding or shortening walls.")
+    a("    * Do not add any room, alcove, closet, or fixture nook that is not in the provided image.")
+    a("")
+    a("What this plan contains — match these counts exactly:")
+    a(f"    * EXACTLY {len(rooms)} interior rooms: {', '.join(labels)}."
+      + (f" Plus outdoor: {', '.join(el_labels)}." if el_labels else "")
+      + f" {len(labels) + len(el_labels)} labels in total.")
+    if beds:
+        dup = [x for x in {l for l in labels if labels.count(l) > 1}]
+        a(f"    * EXACTLY {len(beds)} bedrooms."
+          + (f" More than one is labelled {' and '.join(sorted(dup))} — that is"
+             " correct and not a duplication." if dup else ""))
+    a(f"    * EXACTLY {len(baths)} toilet/bath"
+      f"{'s' if len(baths) != 1 else ''}: {', '.join(_label_of(b) for b in baths)}."
+      " Do not add another bathroom or a powder room, and do not merge or drop"
+      " any of these.")
+    a(f"    * EXACTLY {len(doors)} doors:")
+    for i, (frm, to, kind) in enumerate(doors, 1):
+        via = "outside" if to == "outside" else to
+        a(f"        {i}. {frm} to {via}"
+          + (f"  ({kind.replace('_', ' ')})" if kind else ""))
+    a(f"    * EXACTLY {n_wins} windows.")
+    a(f"    * This plan is {n_st}-storey."
+      + ("" if has_stairs else " There are no stairs — do not draw any."))
+    if not has_carport:
+        a("    * There is NO carport and NO garage — do not draw one, and do not draw a car.")
+    a("")
+    a("Setback Rules:")
+    a("    * Render the outdoor setbacks for the first floor only. Render the setbacks as neutral ground.")
+    if el_labels:
+        a(f"    * The only outdoor areas are: {', '.join(el_labels)}. Do not add any other.")
+    a("")
+    a("Furniture & Visual Aids:")
+    a("    * Every fixture and piece of furniture must sit ENTIRELY INSIDE the room it")
+    a("      belongs to. Nothing may cross a wall into a neighbouring room, and no room")
+    a("      may borrow floor area from another to fit its furniture.")
+    a(f"    * EVERY bathroom holds, at minimum, THREE fixtures: a toilet (water closet),")
+    a("      a lavatory (wash basin) and a shower. This plan has "
+      f"{len(baths)} bathroom{'s' if len(baths) != 1 else ''}, so draw "
+      f"{len(baths)} toilet{'s' if len(baths) != 1 else ''}, "
+      f"{len(baths)} lavator{'ies' if len(baths) != 1 else 'y'} and "
+      f"{len(baths)} shower{'s' if len(baths) != 1 else ''} in total"
+      + (f" — one set in each of {', '.join(_label_of(b) for b in baths)}."
+         if len(baths) > 1 else "."))
+    a("      No bathroom may be left with only cabinets or an empty floor.")
+    a("    * A bathtub is OPTIONAL. Include one only where the bathroom is large enough")
+    a("      to hold it IN ADDITION to the toilet, lavatory and shower, without shrinking")
+    a("      any of those three and without crossing a wall. If it does not fit that way,")
+    a("      leave it out.")
+    for g in great:
+        lbl = _label_of(g)
+        if g.get("type") == "great_room":
+            a(f"    * {lbl} is a single combined living and dining space, so it holds BOTH")
+            a("      the seating group and the dining set. It must contain ALL FOUR of these:")
+            a("      (1) a sofa, (2) a centre/coffee table in front of it, (3) a TV, and")
+            a("      (4) a dining table with its chairs. Armchairs are optional extras, not")
+            a("      a substitute for any of the four. Do not split it into separate rooms")
+            a("      and do not label any part of it LIVING or DINING.")
+        elif g.get("type") == "living_room":
+            a(f"    * {lbl} must contain a sofa, a centre/coffee table in front of it, and a TV.")
+        else:
+            a(f"    * {lbl} must contain a dining table with its chairs.")
+    for r in rooms:
+        if r.get("type") == "kitchen":
+            a(f"    * {_label_of(r)} holds the counter run, sink, range and refrigerator.")
+            a("      The counter must stop at the kitchen's own walls.")
+        if r.get("type") == "hallway":
+            a(f"    * {_label_of(r)} is circulation. Keep it EMPTY — no furniture of any kind.")
+    if beds:
+        a("    * Each bedroom holds one bed, a bedside table and a wardrobe."
+          + (f" {_label_of(max(beds, key=lambda b: b.get('area_sqm', 0)))} is the"
+             " largest and must read as the primary bedroom." if len(beds) > 1 else ""))
+    for e in els:
+        a(f"    * {(e.get('type') or '').upper()} is outdoor. Keep it free of indoor furniture.")
+    a("    * Scale all fixtures accurately to the room size. If a fixture does not fit")
+    a("      inside its own room, draw a smaller one — never spill it into the next room.")
+    a("    * Ensure no furniture fully or partially blocks any door.")
+    a("    * The bright magenta marks in the supplied image are a TEMPORARY MARKER showing")
+    a("      you where the doors are. Draw those doors in normal architectural line work —")
+    a("      a thin dark leaf and a light swing arc. No magenta or pink anywhere in your output.")
+    a("    * Make sure all room names and dimension text remain clearly readable.")
+    a("    * Every room label in the provided image must appear in your output with the")
+    a("      same text, and every dimension figure must be copied exactly as written.")
+    a("      Do not invent, round or alter any number.")
+    return "\n".join(L)
