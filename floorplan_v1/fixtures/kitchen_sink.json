@@ -1,0 +1,39 @@
+{
+  "id": "kitchen_sink",
+  "label": "Kitchen sink (double bowl)",
+  "tier": 1,
+  "category": "kitchen",
+  "svg": "kitchen_sink.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.8,
+    "d": 0.55,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.8,
+    "h": 0.55
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "standing to wash up"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dirty_kitchen"
+  ],
+  "notes": "Sits IN the counter run \u2014 overlap with kitchen_counter is expected, not a collision."
+}

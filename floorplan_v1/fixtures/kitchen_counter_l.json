@@ -1,0 +1,63 @@
+{
+  "id": "kitchen_counter_l",
+  "label": "Kitchen counter, L-shaped",
+  "tier": 1,
+  "category": "kitchen",
+  "svg": "kitchen_counter_l.svg",
+  "units": "m",
+  "footprint": {
+    "w": 2.4,
+    "d": 1.8,
+    "shape": "L",
+    "cells": [
+      {
+        "x": 0.0,
+        "y": 0.0,
+        "w": 2.4,
+        "d": 0.6
+      },
+      {
+        "x": 0.0,
+        "y": 0.6,
+        "w": 0.6,
+        "d": 1.2
+      }
+    ]
+  },
+  "viewbox": {
+    "w": 2.4,
+    "h": 1.8
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "corner",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": true,
+  "stretch": {
+    "axis": "both",
+    "min": 0.9,
+    "max": 6.0,
+    "repeat_unit": 0.3,
+    "how": "each leg extends independently from the corner, which stays fixed at the origin"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "working at the counter with a door behind you"
+    },
+    {
+      "side": "right",
+      "depth": 0.9,
+      "reason": "working at the return leg"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dirty_kitchen"
+  ],
+  "notes": "The most common PH kitchen form \u2014 29 of the 79 precedent records describe the counter as an L, against 2 galley and 2 single-wall. Wants a CORNER, two walls meeting at the origin. `w`/`d` are the bounding box; `cells` gives the two legs. The dashed square at the corner is the blind cabinet, reachable from one leg only \u2014 so put the sink on one leg and the range on the other rather than either side of the corner. Handed: mirror for the other hand."
+}

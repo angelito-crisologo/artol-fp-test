@@ -1,0 +1,46 @@
+{
+  "id": "open_shelving",
+  "label": "Open shelving",
+  "tier": 2,
+  "category": "service",
+  "svg": "open_shelving.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.9,
+    "d": 0.35,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.9,
+    "h": 0.35
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 0.6,
+    "max": 2.4,
+    "repeat_unit": 0.3,
+    "how": "extend the run"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "reaching the shelves"
+    }
+  ],
+  "rooms": [
+    "dirty_kitchen",
+    "service_area",
+    "storage"
+  ],
+  "notes": ""
+}

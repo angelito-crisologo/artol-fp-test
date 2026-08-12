@@ -1,0 +1,45 @@
+{
+  "id": "kitchen_counter",
+  "label": "Kitchen counter run",
+  "tier": 1,
+  "category": "kitchen",
+  "svg": "kitchen_counter.svg",
+  "units": "m",
+  "footprint": {
+    "w": 2.4,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 2.4,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 0.9,
+    "max": 6.0,
+    "repeat_unit": 0.3,
+    "how": "extend the run; the nosing line and overhead-cabinet dashed line stretch with it"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "working at the counter with a door behind you"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dirty_kitchen"
+  ],
+  "notes": "Dashed line is the overhead cabinet. Trim rather than delete when it meets a doorway."
+}

@@ -1,0 +1,58 @@
+{
+  "id": "sofa_l",
+  "label": "Sofa, L-shaped (sectional)",
+  "tier": 1,
+  "category": "living",
+  "svg": "sofa_l.svg",
+  "units": "m",
+  "footprint": {
+    "w": 2.4,
+    "d": 1.6,
+    "shape": "L",
+    "cells": [
+      {
+        "x": 0.0,
+        "y": 0.0,
+        "w": 2.4,
+        "d": 0.85
+      },
+      {
+        "x": 0.0,
+        "y": 0.85,
+        "w": 0.85,
+        "d": 0.75
+      }
+    ]
+  },
+  "viewbox": {
+    "w": 2.4,
+    "h": 1.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "corner",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": true,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "walking past the main run"
+    },
+    {
+      "side": "right",
+      "depth": 0.75,
+      "reason": "walking past the return"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room"
+  ],
+  "notes": "Wants a CORNER \u2014 two walls meeting at the origin \u2014 not one wall. `w` and `d` are only the bounding box; `cells` gives what is actually occupied, and the inner corner of the L is free floor, which is where the coffee table goes. Handed: mirror to put the return on the other side. On a small PH living room this seats more than a 3-seat plus armchairs and leaves more floor, which is why it is everywhere."
+}

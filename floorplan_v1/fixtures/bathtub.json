@@ -1,0 +1,38 @@
+{
+  "id": "bathtub",
+  "label": "Bathtub",
+  "tier": 3,
+  "category": "bath",
+  "svg": "bathtub.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.7,
+    "d": 0.75,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.7,
+    "h": 0.75
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": true,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "stepping in"
+    }
+  ],
+  "rooms": [
+    "ensuite_bath"
+  ],
+  "notes": "Uncommon below the upper-mid bracket. Handed: tap end mirrors."
+}

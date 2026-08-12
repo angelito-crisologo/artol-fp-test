@@ -1,0 +1,40 @@
+{
+  "id": "shoe_cabinet",
+  "label": "Shoe cabinet",
+  "tier": 2,
+  "category": "entry",
+  "svg": "shoe_cabinet.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.9,
+    "d": 0.35,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.9,
+    "h": 0.35
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "standing to take shoes off"
+    }
+  ],
+  "rooms": [
+    "foyer",
+    "porch",
+    "hallway"
+  ],
+  "notes": "Near-universal just inside a PH front door."
+}

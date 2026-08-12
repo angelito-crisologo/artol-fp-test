@@ -1,0 +1,55 @@
+{
+  "id": "dining_4",
+  "label": "Dining table, 4-seat",
+  "tier": 1,
+  "category": "dining",
+  "svg": "dining_4.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.4,
+    "d": 0.85,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 2.52,
+    "h": 1.97
+  },
+  "origin": {
+    "x": 0.56,
+    "y": 0.56
+  },
+  "anchor": "center",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "pulling a chair out and walking behind it"
+    },
+    {
+      "side": "back",
+      "depth": 0.9,
+      "reason": "pulling a chair out and walking behind it"
+    },
+    {
+      "side": "left",
+      "depth": 0.75,
+      "reason": "getting past the end of the table"
+    },
+    {
+      "side": "right",
+      "depth": 0.75,
+      "reason": "getting past the end of the table"
+    }
+  ],
+  "rooms": [
+    "dining_room",
+    "great_room",
+    "kitchen"
+  ],
+  "notes": "Footprint is the TABLE. The chairs drawn outside it sit in the clearance zone \u2014 that is deliberate, and it is why a dining room needs roughly 0.90 m clear on the long sides."
+}

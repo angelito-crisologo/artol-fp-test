@@ -1932,6 +1932,23 @@ _FIXTURE_FILL = "#e3ded4"
 _FIXTURE_PILLOW = "#cbc4b4"
 _FIXTURE_STROKE = "#8a8378"
 
+# Which glyph a fixture id gets. Explicit, because the first version derived
+# it as `kind.split("_")[0]` and that only worked while the ids were a private
+# vocabulary: against the real library ids it reads `kitchen_sink` as family
+# "kitchen" and silently drops the basin ellipse. An id with no entry here
+# draws as a plain body, which is the correct default for most of the library.
+_FIXTURE_GLYPH = {
+    "bed_single": "bed", "bed_double": "bed",
+    "bed_queen": "bed", "bed_king": "bed",
+    "kitchen_sink": "basin", "lavatory": "basin",
+    "lavatory_pedestal": "basin", "laundry_sink": "basin", "toilet": "basin",
+    "range_electric": "burners", "stove_gas_2burner": "burners",
+}
+
+
+def _fixture_family(kind: str) -> str:
+    return _FIXTURE_GLYPH.get(kind, "")
+
 
 def fixtures_overlay_svg(fixtures, layout) -> str:
     """SVG for a list of Fixture-like objects (.rect, .kind, .room).
@@ -1945,7 +1962,7 @@ def fixtures_overlay_svg(fixtures, layout) -> str:
         rc = f.rect
         x0, y0 = _to_svg_xy(layout.lot, rc.x0, rc.y1)     # SVG y is flipped
         x1, y1 = _to_svg_xy(layout.lot, rc.x1, rc.y0)
-        fam = f.kind.split("_")[0]
+        fam = _fixture_family(f.kind)
         out.append(f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
                    f'height="{y1 - y0:.1f}" fill="{_FIXTURE_FILL}" '
                    f'stroke="{_FIXTURE_STROKE}" stroke-width="0.8" '
@@ -1965,13 +1982,13 @@ def fixtures_overlay_svg(fixtures, layout) -> str:
             out.append(f'<rect x="{px0:.1f}" y="{py0:.1f}" '
                        f'width="{px1 - px0:.1f}" height="{py1 - py0:.1f}" '
                        f'fill="{_FIXTURE_PILLOW}" stroke="none" rx="1"/>')
-        if fam in ("sink", "lavatory", "toilet"):
+        if fam == "basin":
             cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
             r = max(1.5, min(x1 - x0, y1 - y0) * 0.28)
             out.append(f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{r:.1f}" '
                        f'ry="{r:.1f}" fill="none" stroke="{_FIXTURE_STROKE}" '
                        f'stroke-width="0.7"/>')
-        if fam == "range":
+        if fam == "burners":
             cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
             d = min(x1 - x0, y1 - y0) * 0.22
             for dx, dy in ((-d, -d), (d, -d), (-d, d), (d, d)):

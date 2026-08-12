@@ -1,0 +1,46 @@
+{
+  "id": "wardrobe",
+  "label": "Wardrobe / closet",
+  "tier": 1,
+  "category": "bedroom",
+  "svg": "wardrobe.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.2,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.2,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 0.9,
+    "max": 2.4,
+    "repeat_unit": 0.6,
+    "how": "add or remove 0.60 m door leaves; keep the end panels"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "door leaf swing plus standing room"
+    }
+  ],
+  "rooms": [
+    "master_bedroom",
+    "bedroom_standard",
+    "maids_room"
+  ],
+  "notes": "Dashed line is the hanging rod. Draw at a multiple of 0.60 m."
+}

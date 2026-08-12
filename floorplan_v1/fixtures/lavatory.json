@@ -1,0 +1,41 @@
+{
+  "id": "lavatory",
+  "label": "Lavatory (counter basin)",
+  "tier": 1,
+  "category": "bath",
+  "svg": "lavatory.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.55,
+    "d": 0.45,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.55,
+    "h": 0.45
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.55,
+      "reason": "standing at the basin"
+    }
+  ],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath",
+    "bath_toilet",
+    "powder_room"
+  ],
+  "notes": ""
+}

@@ -1,0 +1,39 @@
+{
+  "id": "shower_stall",
+  "label": "Shower stall",
+  "tier": 1,
+  "category": "bath",
+  "svg": "shower_stall.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.9,
+    "d": 0.9,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.9,
+    "h": 0.9
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "stepping in"
+    }
+  ],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath"
+  ],
+  "notes": "0.90 m square is the PH mid-market minimum. Many mid-market baths have no stall at all \u2014 see tabo_set and floor_drain."
+}

@@ -1,0 +1,40 @@
+{
+  "id": "desk",
+  "label": "Desk",
+  "tier": 2,
+  "category": "study",
+  "svg": "desk.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.2,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.2,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": true,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "chair pull-out"
+    }
+  ],
+  "rooms": [
+    "study",
+    "bedroom_standard",
+    "master_bedroom"
+  ],
+  "notes": "Handed \u2014 drawer pedestal mirrors."
+}

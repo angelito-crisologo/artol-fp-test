@@ -1,0 +1,52 @@
+{
+  "id": "counter_dining_divider",
+  "label": "Dining counter divider",
+  "tier": 1,
+  "category": "dining",
+  "svg": "counter_dining_divider.svg",
+  "units": "m",
+  "footprint": {
+    "w": 2.1,
+    "d": 0.9,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 2.1,
+    "h": 1.42
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 1.5,
+    "max": 3.0,
+    "repeat_unit": 0.3,
+    "how": "extend the run; one seat per 0.60 m of length"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 1.05,
+      "reason": "chair pulled out, plus room to pass behind it"
+    },
+    {
+      "side": "back",
+      "depth": 0.9,
+      "reason": "working at the counter from the kitchen side"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dining_room",
+    "great_room",
+    "living_room"
+  ],
+  "notes": "The divider that doubles as the dining table \u2014 one piece of millwork doing the wall's job and the table's job, which is how a compact PH plan gets a dining area without spending a room on it. 0.60 m of base cabinet plus a 0.30 m unsupported OVERHANG, marked by the dashed line across it. That overhang is the whole difference from counter_peninsula: without knee room you are perching at a snack bar, not sitting at a table. 0.38 m is more comfortable if the plan can spare it. Seats go on the living side only \u2014 the kitchen side stays working counter."
+}

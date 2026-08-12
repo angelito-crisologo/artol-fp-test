@@ -1,0 +1,38 @@
+{
+  "id": "floor_drain",
+  "label": "Floor drain",
+  "tier": 2,
+  "category": "bath",
+  "svg": "floor_drain.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.15,
+    "d": 0.15,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.15,
+    "h": 0.15
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath",
+    "bath_toilet",
+    "powder_room",
+    "service_area",
+    "dirty_kitchen",
+    "lanai"
+  ],
+  "notes": "Every wet room needs one. Set at the low point of the floor slope."
+}

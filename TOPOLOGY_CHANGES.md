@@ -50,6 +50,107 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-12 — SHARED CODE, but NO regen needed: fixture library adopted
+(new `solver/fixture_library.py`, `solver/fixtures.py`, `core/render.py`,
+`ai/render_prompt.py`)**
+Layers A + B of taking up the `floorplan_v1/fixtures/` drawing library (55 SVG
+symbols in metres, each with a placement/clearance manifest). **No geometry
+moved anywhere** — 52 pass / 51 sweep pass, and the fixture rectangles and
+`unfit` list are multiset-identical to before across all 61 floors. Nothing in
+`run.py` / `app.py` / `build_catalog.py` imports any of it, and
+`polish.py --self-check` still passes, so the catalog is unaffected. Logged
+because `solver/*.py` and `core/render.py` are shared code.
+
+- **A. `solver/fixture_library.py` (new)** — loads `fixtures/index.json` into
+  frozen dataclasses (`FixtureSpec`, `Footprint`, `Clearance`, `Stretch`).
+  `fixtures.py`'s hardcoded dimension block now reads from it. The swap was
+  exact: every one of the 16 constants already matched the library to the
+  centimetre, and the replay diff was byte-identical.
+- **A. `Fixture.kind` is now the library id.** `shower`→`shower_stall`,
+  `counter`→`kitchen_counter`, `sink`→`kitchen_sink`, `range`→`range_electric`;
+  the rest already matched. One identifier instead of two, so `LIB.get(f.kind)`
+  always resolves. `_RUN_KINDS` updated with it.
+- **A. `core/render.py::fixtures_overlay_svg`** — family detection was
+  `kind.split("_")[0]`, which reads `kitchen_sink` as family "kitchen" and
+  silently drops the basin ellipse. Replaced by an explicit `_FIXTURE_GLYPH`
+  map. Verified glyph counts unchanged (172 basins = 81 WC + 60 lavatory + 31
+  sink; 29 ranges × 4 burners).
+- **A. `ai/render_prompt.py::_FIXTURE_PROSE`** — rekeyed to library ids. Its
+  fallback is `kind.replace("_"," ")`, so stale keys degraded quietly into
+  worse prompt prose ("range electric") rather than erroring.
+- **B. `check_clearances` + `ClearanceIssue`** — the library's per-side,
+  per-reason clearances replace a single `CLEARANCE = 0.60` that applied to
+  one fixture. Reports only; never moves or drops anything. Structured
+  (`required` / `actual` / `shortfall` / `blocked_by` / the manifest's own
+  `reason`) so callers can rank, with `FixtureReport.tight()` for worst-first.
+  The hand-rolled bed check it replaces **never fired once** across the suite.
+- **B. Three false-positive classes were found and fixed before trusting any
+  number** — see the notes in `fixtures.py`: side-circulation on a non-handed
+  piece is satisfied by EITHER side (a bed's aisle may be on either side of
+  it); the two halves of one shared gap are collapsed into a single finding;
+  and a neighbour must cover more than half an approach to count as blocking
+  it (`_BLOCK_FRAC`). Raw count 323 → 200.
+- **B. `_dedupe_facing` now keys on the DIRECTION as well as the pair.** Keying
+  on the pair alone kept one issue per neighbour, so a wrap-around neighbour
+  blocking two distinct gaps could have one collapse wrongly against the
+  other. Inert on today's data (0 occurrences, verified); covered by a unit
+  test of the pure function.
+- **GEOMETRY MOVED: L-shaped rooms are no longer treated as rectangles.**
+  Placement only ever looked at `cells[0]`, so the 72.9 m² of alcove across 31
+  rooms may as well not have existed, and — worse — a cell edge at an alcove
+  MOUTH was treated as a wall, so **12 must-back-wall fixtures (beds,
+  nightstands, a WC, wardrobes) were drawn floating against thin air.** New
+  `_backed_by_wall` tests the sliver directly behind a candidate rather than
+  the cell's whole side, since an alcove usually meets only part of one.
+  Placement, door-clearance rescue and clearance measurement are all now
+  cell-aware. Net across the suite: **607 fixtures / 134 unfit** (from 605 /
+  138), 4 fixtures rehoused in an alcove, **0 floating, 0 outside their cell**.
+- **Alcove exile is restricted by MEANING, not geometry** (`_ALCOVE_EXILE_OK`
+  = wardrobe, fridge, shower_stall). A nightstand and a kitchen sink both
+  placed fine in an alcove, but a nightstand IS its adjacency to the bed and a
+  sink IS part of the counter run; three metres away each becomes a drawing
+  that quietly says something false. Missing is a finding the reader can act
+  on; misplaced is not.
+- **The toilet now falls back off the wet wall** when that wall turns out to
+  be an alcove mouth, the way the lavatory already did.
+- **GEOMETRY MOVED (the only change here that does):** `_place_bath` placed
+  the WC at an invented `prefer=0.05` while its manifest asks 0.10 m of elbow
+  room. Now read from the library. Net effect: **one MORE fixture placed
+  (604 → 605), one FEWER unfit (139 → 138)**, WC elbow findings 62 → 25, and
+  every other clearance finding unchanged at 138 — a surgical change. The 25
+  that remain are genuine: 23 are the pan touching the lavatory, 2 are walls
+  with no room to honour it. 52 pass / 51 sweep pass; no baselines involved,
+  since nothing in the generation path imports `fixtures.py`.
+- **FIXED — 44 fixtures physically intersected another fixture in the same
+  room** (long-standing; measured identical across every change above before
+  being addressed). An overlap outranks any clearance finding: a clearance
+  finding says a room is tight, an overlap says the drawing is impossible.
+  Two independent causes, split by whether either piece carried a
+  "moved clear of a doorway" note:
+  - **35 — `check_door_clearance` moved pieces onto ones it could not see.**
+    Its blocker list was `[k.rect for k in keep ...]`, and `keep` holds only
+    fixtures the loop has already reached, so everything later in
+    `rep.fixtures` was invisible and a displaced piece came to rest on top of
+    it. Now built from all other fixtures in the room. The counter's TRIM path
+    deliberately keeps no such check — a counter is supposed to overlap the
+    sink and range set into it.
+  - **9 — the kitchen sink and range were positioned independently.** The sink
+    was centred on the wall and the range pinned 0.05 m from the end, with a
+    guard that checked only the TOTAL width; on a 1.50 m run that gives sink
+    0.35–1.15 against range 0.05–0.65. Appliances now go in from the ends and
+    the sink takes the clear space between them.
+- **Relocation before deletion, which the above made necessary.** Blocking
+  properly turned 35 overlaps into 36 deletions, because `_shift_along` only
+  ever slid a piece along the wall it was already on. Displaced fixtures now
+  try the room's other walls (`_RELOCATABLE` — wardrobe, fridge, shower,
+  lavatory, WC; not the position-defined nightstand or sink), and a wet
+  fixture prefers a wall that is already wet, so a WC and basin do not end up
+  on opposite walls of a 1.5 m bath. Net **633 placed / 108 unfit**, from
+  604 / 139 at the start of the session.
+- **Verified invariants across all 633 fixtures: 0 outside their cell, 0
+  backed on air, 0 overlapping, 0 standing in a doorway.** Replay confirmed
+  byte-deterministic.
+
 **2026-08-06 — SHARED CODE, but NO regen needed: fixture overlay legibility
 (core/render.py)**
 Two additive functions at the end of `render.py` serving Phase E.2 furniture

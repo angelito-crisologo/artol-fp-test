@@ -17,36 +17,45 @@ Placement is deterministic and post-solve. It never feeds back into the
 solver and never affects validation — a room whose furniture does not fit is
 reported, not rejected.
 
-Dimensions are PH mid-market practice in metres.
+Dimensions are PH mid-market practice in metres, and since Layer A they come
+from `fixture_library` (the `fixtures/` drawing library) rather than from
+constants written here. The swap was exact — every constant this module used
+to define already matched the library to the centimetre — so it changed no
+geometry. What it bought is the data a bare `(w, d)` tuple cannot carry:
+per-side clearance with a stated reason, anchoring, handedness and stretch
+bounds. See `fixture_library.py`.
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from fixture_library import load_library
 from model import Rect, Room
 
-# --- standard sizes (width across the wall it backs onto, depth out from it) --
-BED = {                     # mattress footprint
-    "single": (0.91, 1.90),
-    "double": (1.37, 1.90),
-    "queen":  (1.52, 2.03),
-    "king":   (1.83, 2.03),
-}
-NIGHTSTAND = (0.45, 0.40)
-WARDROBE_DEPTH = 0.60
-TOILET = (0.40, 0.70)
-LAVATORY = (0.55, 0.45)
-SHOWER = (0.90, 0.90)
-COUNTER_DEPTH = 0.60
-SINK = (0.80, 0.55)
-RANGE = (0.60, 0.60)
-FRIDGE = (0.70, 0.70)
-SOFA3 = (2.10, 0.85)
-COFFEE_TABLE = (1.10, 0.60)
-TV_CONSOLE = (1.40, 0.40)
-DINING = {4: (1.40, 0.85), 6: (1.80, 0.95)}
-CAR = (1.80, 4.50)
+LIB = load_library()
 
-CLEARANCE = 0.60            # circulation a person needs alongside furniture
+# --- standard sizes (width across the wall it backs onto, depth out from it) --
+# Named lookups, not copied numbers: the library file is the source of truth
+# and a size change there reaches placement without an edit here.
+BED = {                     # mattress footprint
+    "single": LIB.size("bed_single"),
+    "double": LIB.size("bed_double"),
+    "queen":  LIB.size("bed_queen"),
+    "king":   LIB.size("bed_king"),
+}
+NIGHTSTAND = LIB.size("nightstand")
+WARDROBE_DEPTH = LIB.get("wardrobe").d
+TOILET = LIB.size("toilet")
+LAVATORY = LIB.size("lavatory")
+SHOWER = LIB.size("shower_stall")
+COUNTER_DEPTH = LIB.get("kitchen_counter").d
+SINK = LIB.size("kitchen_sink")
+RANGE = LIB.size("range_electric")
+FRIDGE = LIB.size("fridge")
+SOFA3 = LIB.size("sofa_3seat")
+COFFEE_TABLE = LIB.size("coffee_table")
+TV_CONSOLE = LIB.size("tv_console")
+DINING = {4: LIB.size("dining_4"), 6: LIB.size("dining_6")}
+CAR = LIB.size("car")
 
 _SIDES = ("N", "S", "E", "W")
 _OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
@@ -54,9 +63,15 @@ _OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
 
 @dataclass
 class Fixture:
-    """One piece of furniture or sanitary ware, as a real rectangle."""
+    """One piece of furniture or sanitary ware, as a real rectangle.
+
+    `kind` IS the library id — `LIB.get(f.kind)` always resolves. It used to be
+    a private vocabulary that mostly-but-not-quite matched ("counter" for
+    `kitchen_counter`, "sink" for `kitchen_sink`), and carrying two names for
+    one thing is how a renderer ends up guessing which it was handed.
+    """
     room: str
-    kind: str                     # "bed_queen", "toilet", "counter", "car", ...
+    kind: str                     # library id: "bed_queen", "kitchen_sink", ...
     rect: Rect
     against: str = ""             # wall it backs onto: N/S/E/W
     cell_idx: int = 0             # which cell of an L-shaped room
@@ -64,14 +79,56 @@ class Fixture:
 
 
 @dataclass
+class ClearanceIssue:
+    """A fixture that FITS but has too little floor kept clear around it.
+
+    Deliberately a separate category from `unfit`. "No shower fits in this
+    bath" and "the shower fits but you cannot open the door past it" are
+    different findings about a room, and collapsing both into one list of
+    strings loses the distinction that makes either actionable.
+
+    Structured rather than pre-formatted because the whole point of Phase E.2
+    is that furniture is QUERYABLE: `actual` and `required` let a caller rank
+    by how badly a room misses, which a sentence cannot.
+    """
+    room: str
+    fixture: str                  # library id
+    side: str                     # local side: front | back | left | right
+    required: float               # metres the library asks for
+    actual: float                 # metres actually free
+    blocked_by: str               # "wall" or the library id of the obstruction
+    reason: str                   # the library's own words for why it is needed
+
+    @property
+    def shortfall(self) -> float:
+        return self.required - self.actual
+
+    def describe(self) -> str:
+        by = ("the wall" if self.blocked_by == "wall"
+              else f"the {self.blocked_by}")
+        return (f"{self.room}: {self.fixture} has {self.actual:.2f} m clear to "
+                f"its {self.side}, needs {self.required:.2f} m ({self.reason}) "
+                f"— {by} is in the way")
+
+
+@dataclass
 class FixtureReport:
     """What could and could not be placed — the queryable output."""
     fixtures: List[Fixture] = field(default_factory=list)
     unfit: List[str] = field(default_factory=list)   # human-readable failures
+    clearance: List[ClearanceIssue] = field(default_factory=list)
 
     def add(self, f: Optional[Fixture]):
         if f is not None:
             self.fixtures.append(f)
+
+    def tight(self, min_shortfall: float = 0.0) -> List[ClearanceIssue]:
+        """Clearance issues worst-first. `min_shortfall` filters out the
+        near-misses — a 50 mm gap beside a WC is real but is not the finding
+        you lead with when a kitchen is 400 mm short of a working aisle."""
+        return sorted((c for c in self.clearance
+                       if c.shortfall >= min_shortfall - 1e-9),
+                      key=lambda c: -c.shortfall)
 
 
 def _against(cell: Rect, wall: str, width: float, depth: float,
@@ -106,7 +163,8 @@ def _span_depth(cell: Rect, wall: str):
 
 
 def _fit_on_wall(cell: Rect, wall: str, width: float, depth: float,
-                 blockers: List[Rect], prefer: Optional[float] = None):
+                 blockers: List[Rect], prefer: Optional[float] = None,
+                 siblings: Optional[List[Rect]] = None):
     """Search along `wall` for a clear `width` x `depth` position.
 
     Returns (rect, None) on success or (None, reason). Every placement goes
@@ -115,6 +173,11 @@ def _fit_on_wall(cell: Rect, wall: str, width: float, depth: float,
     "no 0.90 m shower fits" reports against baths that had 1.3 m of shower
     wall and 2.0 m of depth. A fixture must exhaust its wall before failing,
     and the reason must name the real cause.
+
+    `siblings` are the room's OTHER cells. Where they are given, a position
+    whose back lands on the mouth of an alcove is rejected: that edge of the
+    cell is an opening, not a wall, and a bed with its head there has no
+    headboard wall at all. 12 fixtures in the suite were placed that way.
     """
     span, avail = _span_depth(cell, wall)
     if width > span + 1e-9:
@@ -127,23 +190,32 @@ def _fit_on_wall(cell: Rect, wall: str, width: float, depth: float,
     target = (span - width) / 2.0 if prefer is None else prefer
     step = 0.05
     n = int(max(0.0, hi - lo) / step) + 1
+    blocked = False
     for off in sorted((lo + k * step for k in range(n)),
                       key=lambda v: abs(v - target)):
         cand = _against(cell, wall, width, depth, off)
-        if cand is not None and not any(_overlaps(cand, b) for b in blockers):
-            return cand, None
+        if cand is None or any(_overlaps(cand, b) for b in blockers):
+            continue
+        if siblings and not _backed_by_wall(cand, wall, siblings):
+            blocked = True
+            continue
+        return cand, None
+    if blocked:
+        return None, (f"the {wall} side of this cell is the mouth of the "
+                      f"room's alcove, not a wall")
     return None, (f"no clear {width:.2f} x {depth:.2f} m spot on the {wall} "
                   f"wall — blocked by other fixtures")
 
 
 def _fit_anywhere(cell: Rect, walls, width: float, depth: float,
-                  blockers: List[Rect]):
+                  blockers: List[Rect], siblings: Optional[List[Rect]] = None):
     """Try each wall in order. On total failure, say so honestly: name every
     wall tried and whether the obstacle was SIZE or other fixtures. Reporting
     the last wall's reason alone reads as if only that wall was attempted."""
     reasons = []
     for wall in walls:
-        r, why = _fit_on_wall(cell, wall, width, depth, blockers)
+        r, why = _fit_on_wall(cell, wall, width, depth, blockers,
+                              siblings=siblings)
         if r is not None:
             return r, wall, None
         reasons.append((wall, why))
@@ -191,7 +263,19 @@ def _place_bedroom(room: Room, orient, door_walls: set,
             else _longest_free_wall(cell, door_walls))
     kind = _bed_kind(room, master_area)
     bw, bd = BED[kind]
+    sibs = room.cells[1:]
     bed = _centred(cell, head, bw, bd)
+    if bed is not None and sibs and not _backed_by_wall(bed, head, sibs):
+        bed = None                    # centred position has no wall behind it
+    if bed is None:
+        bed, _why = _fit_on_wall(cell, head, bw, bd, [], siblings=sibs)
+    if bed is None and sibs:
+        # The chosen head wall is (partly) the alcove mouth. Another wall with
+        # real masonry behind it beats a headboard against thin air.
+        bed, alt, _why = _fit_anywhere(
+            cell, [x for x in _SIDES if x != head], bw, bd, [], siblings=sibs)
+        if bed is not None:
+            head = alt
     if bed is None:
         rep.unfit.append(f"{room.id}: {kind} bed ({bw:.2f} x {bd:.2f} m) does "
                          f"not fit on the {head} wall of a "
@@ -199,17 +283,20 @@ def _place_bedroom(room: Room, orient, door_walls: set,
         return
     rep.add(Fixture(room.id, f"bed_{kind}", bed, against=head))
 
-    # Circulation: a bed needs CLEARANCE on at least one long side.
+    # The bed's side-circulation check used to live here as a hand-rolled
+    # `span - bw < CLEARANCE` test. It is now `check_clearances`, which reads
+    # the same requirement off the bed's own manifest (right: 0.60,
+    # "circulation down one long side") and applies the equivalent test to
+    # every other fixture too.
     w, h = cell.x1 - cell.x0, cell.y1 - cell.y0
     span = w if head in ("N", "S") else h
-    if span - bw < CLEARANCE - 1e-9:
-        rep.unfit.append(f"{room.id}: {kind} bed leaves {span - bw:.2f} m beside it, "
-                         f"under the {CLEARANCE:.2f} m circulation minimum")
 
     # Nightstand in the gap beside the bed, if there is one.
     if span - bw >= NIGHTSTAND[0]:
         off = (span - bw) / 2.0 - NIGHTSTAND[0]
         ns = _against(cell, head, NIGHTSTAND[0], NIGHTSTAND[1], max(0.0, off))
+        if ns is not None and sibs and not _backed_by_wall(ns, head, sibs):
+            ns = None
         if ns is not None and not _overlaps(ns, bed):
             rep.add(Fixture(room.id, "nightstand", ns, against=head))
 
@@ -224,13 +311,25 @@ def _place_bedroom(room: Room, orient, door_walls: set,
         for ww in (min(1.80, run), 1.20, 0.90):
             if ww > run + 1e-9:
                 continue
-            wd, why = _fit_on_wall(cell, wall, ww, WARDROBE_DEPTH, mine)
+            wd, why = _fit_on_wall(cell, wall, ww, WARDROBE_DEPTH, mine,
+                                   siblings=sibs)
             if wd is not None:
                 rep.add(Fixture(room.id, "wardrobe", wd, against=wall))
                 placed = True
                 break
         if placed:
             break
+    if not placed and len(room.cells) > 1:
+        # A wardrobe is the natural tenant of an alcove: 0.60 m deep, and most
+        # of the suite's alcoves are shallow limbs that suit nothing else.
+        for ww in (1.80, 1.20, 0.90):
+            wd, wall, idx = _fit_in_room(room, ww, WARDROBE_DEPTH, mine,
+                                         must_wall=True, skip=0)
+            if wd is not None:
+                rep.add(Fixture(room.id, "wardrobe", wd, against=wall,
+                                cell_idx=idx, note="in the room's alcove"))
+                placed = True
+                break
     if not placed:
         rep.unfit.append(f"{room.id}: wardrobe — no clear 0.90 x "
                          f"{WARDROBE_DEPTH:.2f} m run on any wall "
@@ -243,18 +342,39 @@ def _place_bath(room: Room, orient, rep: FixtureReport):
     shower_wall = (orient.shower_wall if orient and orient.shower_wall
                    else _OPPOSITE.get(wet, "S"))
     powder = room.type == "powder_room"
+    sibs = room.cells[1:]
     mine: List[Rect] = []
 
-    t, why = _fit_on_wall(cell, wet, TOILET[0], TOILET[1], mine, prefer=0.05)
+    # Tuck the WC toward the end of the wet wall, but not tighter than its own
+    # manifest allows: 0.05 m was an invented number that put the pan 50 mm
+    # from the return wall while the library asks 0.10 m of elbow room, and it
+    # was the single largest source of clearance findings in the suite.
+    # `_fit_on_wall` treats this as a preference, so a wall with no room to
+    # honour it still places the WC rather than failing.
+    _wc_elbow = LIB.get("toilet").clearance_for("left")
+    t, why = _fit_on_wall(cell, wet, TOILET[0], TOILET[1], mine,
+                          prefer=_wc_elbow.depth if _wc_elbow else 0.05,
+                          siblings=sibs)
+    if t is None:
+        # The wet wall can turn out to be the mouth of the room's alcove, which
+        # is no wall at all. Plumbing prefers the wet wall; it does not prefer
+        # having no WC. Fall back the way the lavatory already does.
+        t, wet2, why = _fit_anywhere(
+            cell, [x for x in _SIDES if x != wet], TOILET[0], TOILET[1], mine,
+            siblings=sibs)
+        if t is not None:
+            wet = wet2
     if t is None:
         rep.unfit.append(f"{room.id}: toilet — {why}")
     else:
         rep.add(Fixture(room.id, "toilet", t, against=wet)); mine.append(t)
 
-    lav, why = _fit_on_wall(cell, wet, LAVATORY[0], LAVATORY[1], mine)
+    lav, why = _fit_on_wall(cell, wet, LAVATORY[0], LAVATORY[1], mine,
+                            siblings=sibs)
     if lav is None:
         lav, w2, why = _fit_anywhere(
-            cell, [s for s in _SIDES if s != wet], LAVATORY[0], LAVATORY[1], mine)
+            cell, [s for s in _SIDES if s != wet], LAVATORY[0], LAVATORY[1],
+            mine, siblings=sibs)
         if lav is not None:
             rep.add(Fixture(room.id, "lavatory", lav, against=w2)); mine.append(lav)
         else:
@@ -267,12 +387,21 @@ def _place_bath(room: Room, orient, rep: FixtureReport):
     # Shower: preferred wall first, then ANY wall. Only then is it a real
     # statement that the room cannot take one.
     order = [shower_wall] + [s for s in _SIDES if s != shower_wall]
-    sh, wall, why = _fit_anywhere(cell, order, SHOWER[0], SHOWER[1], mine)
+    sh, wall, why = _fit_anywhere(cell, order, SHOWER[0], SHOWER[1], mine,
+                                  siblings=sibs)
+    if sh is None and len(room.cells) > 1:
+        sh, wall, idx = _fit_in_room(room, SHOWER[0], SHOWER[1], mine,
+                                     must_wall=True, walls=order, skip=0)
+        if sh is not None:
+            rep.add(Fixture(room.id, "shower_stall", sh, against=wall,
+                            cell_idx=idx, note="in the bath's alcove"))
+            mine.append(sh)
+            return
     if sh is None:
         rep.unfit.append(f"{room.id}: shower — {why}; room is "
                          f"{cell.w:.2f} x {cell.h:.2f} m = {room.area:.2f} sqm")
     else:
-        rep.add(Fixture(room.id, "shower", sh, against=wall)); mine.append(sh)
+        rep.add(Fixture(room.id, "shower_stall", sh, against=wall)); mine.append(sh)
 
 
 def _place_kitchen(room: Room, orient, rep: FixtureReport):
@@ -285,25 +414,123 @@ def _place_kitchen(room: Room, orient, rep: FixtureReport):
     if counter is None:
         rep.unfit.append(f"{room.id}: no {COUNTER_DEPTH:.2f} m counter run fits")
         return
-    rep.add(Fixture(room.id, "counter", counter, against=sink_wall,
+    rep.add(Fixture(room.id, "kitchen_counter", counter, against=sink_wall,
                     note="main counter run"))
-    rep.add(_centred(cell, sink_wall, SINK[0], SINK[1]) and
-            Fixture(room.id, "sink", _centred(cell, sink_wall, SINK[0], SINK[1]),
-                    against=sink_wall))
+
+    # Appliances go in from the ENDS first, then the sink takes what is left in
+    # the middle. The old order placed the sink dead-centre and the range at a
+    # fixed 0.05 m from the end, each ignoring the other: the guard below
+    # checks the TOTAL width fits, but two independently chosen offsets can
+    # still collide, and on a 1.50 m run they did — sink 0.35–1.15 against
+    # range 0.05–0.65. That was 9 hobs sitting inside a sink.
+    #
+    # `appliances` deliberately does NOT include the counter: the sink, range
+    # and fridge are set INTO the run, and overlapping it is correct.
+    appliances: List[Rect] = []
     if run >= SINK[0] + RANGE[0] + 0.10:
         rg = _against(cell, sink_wall, RANGE[0], RANGE[1], 0.05)
-        rep.add(rg and Fixture(room.id, "range", rg, against=sink_wall))
+        if rg is not None:
+            rep.add(Fixture(room.id, "range_electric", rg, against=sink_wall))
+            appliances.append(rg)
     else:
         rep.unfit.append(f"{room.id}: counter run {run:.2f} m too short for "
                          f"sink + range side by side")
     if run >= SINK[0] + RANGE[0] + FRIDGE[0] + 0.20:
         fr = _against(cell, sink_wall, FRIDGE[0], FRIDGE[1], run - FRIDGE[0] - 0.05)
-        rep.add(fr and Fixture(room.id, "fridge", fr, against=sink_wall))
+        if fr is not None:
+            rep.add(Fixture(room.id, "fridge", fr, against=sink_wall))
+            appliances.append(fr)
+
+    sink, _why = _fit_on_wall(cell, sink_wall, SINK[0], SINK[1], appliances)
+    if sink is not None:
+        rep.add(Fixture(room.id, "kitchen_sink", sink, against=sink_wall))
+    else:
+        rep.unfit.append(f"{room.id}: kitchen sink — no clear {SINK[0]:.2f} m "
+                         f"of counter left between the range and the fridge "
+                         f"on a {run:.2f} m run")
 
 
 def _overlaps(a: Rect, b: Rect, tol: float = 1e-6) -> bool:
     return (a.x0 < b.x1 - tol and a.x1 > b.x0 + tol and
             a.y0 < b.y1 - tol and a.y1 > b.y0 + tol)
+
+
+# --- L-shaped rooms: the alcove is floor, not a hole -------------------------
+#
+# A room's `cells` are `rect` plus an optional `rect2` alcove, and since
+# dead-strip claiming became always-on those alcoves are routine: 31 rooms in
+# the suite hold 72.9 m² of them. Everything here used to look at `rect` only,
+# so that floor may as well not have existed — furniture was deleted for want
+# of somewhere to stand while an empty limb of the same room sat unused.
+#
+# The subtlety is that a cell's boundary is NOT all wall. Where two cells meet
+# there is an OPENING, and a wardrobe backed onto an opening is furniture
+# floating in mid-room. So a candidate position is checked against the real
+# thing: is the sliver directly behind it inside a sibling cell?
+
+def _strip_behind(r: Rect, wall: str, t: float) -> Rect:
+    """The band of floor `t` deep immediately outside `wall` of `r`."""
+    if wall == "N":
+        return Rect(r.x0, r.y1, r.x1, r.y1 + t)
+    if wall == "S":
+        return Rect(r.x0, r.y0 - t, r.x1, r.y0)
+    if wall == "E":
+        return Rect(r.x1, r.y0, r.x1 + t, r.y1)
+    return Rect(r.x0 - t, r.y0, r.x0, r.y1)
+
+
+def _backed_by_wall(r: Rect, wall: str, siblings: List[Rect]) -> bool:
+    """True when `r`'s `wall` side really is a wall, not the way into the
+    room's other cell. Tested on the actual footprint rather than on the
+    cell's whole side, because an alcove commonly meets only PART of a side —
+    treating the entire side as open would refuse good positions."""
+    strip = _strip_behind(r, wall, 0.02)
+    return not any(_overlaps(strip, s) for s in siblings)
+
+
+def _fixture_wd(f: "Fixture"):
+    """(width along its backing wall, depth off it) — the fixture's own
+    dimensions, independent of which wall it currently sits on."""
+    w, h = f.rect.x1 - f.rect.x0, f.rect.y1 - f.rect.y0
+    return (w, h) if f.against in ("N", "S") else (h, w)
+
+
+def _fit_in_cell(room: Room, idx: int, width: float, depth: float,
+                 blockers: List[Rect], must_wall: bool, walls=None):
+    """Try to seat a `width` x `depth` fixture in cell `idx` of `room`.
+
+    Returns (rect, wall) or (None, None). When `must_wall`, a position whose
+    back is an opening into another cell is rejected.
+    """
+    cells = room.cells
+    cell = cells[idx]
+    sibs = [c for i, c in enumerate(cells) if i != idx]
+    for wall in (walls or _SIDES):
+        cand, _ = _fit_on_wall(cell, wall, width, depth, blockers)
+        if cand is None:
+            continue
+        if must_wall and not _backed_by_wall(cand, wall, sibs):
+            continue
+        return cand, wall
+    return None, None
+
+
+def _fit_in_room(room: Room, width: float, depth: float, blockers: List[Rect],
+                 must_wall: bool, walls=None, skip: int = -1):
+    """Same, but sweeping every cell — primary first, then the alcoves.
+
+    Primary first is deliberate and not just ordering convenience: an alcove
+    is a NOOK. A bed or a counter run belongs in the body of the room, and
+    only what spills over should end up in the limb.
+    """
+    for idx in range(len(room.cells)):
+        if idx == skip:
+            continue
+        cand, wall = _fit_in_cell(room, idx, width, depth, blockers,
+                                  must_wall, walls)
+        if cand is not None:
+            return cand, wall, idx
+    return None, None, -1
 
 
 def _door_zone(door, room: Room) -> Optional[Rect]:
@@ -322,7 +549,26 @@ def _door_zone(door, room: Room) -> Optional[Rect]:
             else Rect(c.x0, y0, c.x0 + w, y0 + w))
 
 
-_RUN_KINDS = {"counter"}          # fixtures that may be SHORTENED rather than moved
+_RUN_KINDS = {"kitchen_counter"}  # fixtures that may be SHORTENED rather than moved
+
+# Which fixtures may be banished to the room's alcove when a doorway leaves
+# them nowhere else to go. Only pieces that mean the same thing wherever they
+# stand.
+#
+# The excluded ones are excluded on meaning, not geometry — they placed
+# perfectly well in the alcove when this was unrestricted. A nightstand IS its
+# adjacency to the bed, and a sink IS part of the counter run; three metres
+# away in a nook, each becomes a drawing that quietly says something false. A
+# plan honestly missing its sink is a finding the reader can act on. A plan
+# showing the sink in the wrong place is one they cannot.
+_ALCOVE_EXILE_OK = {"wardrobe", "fridge", "shower_stall"}
+
+# Pieces free to sit on a DIFFERENT WALL of the same room. Wider than the
+# exile set, because moving a lavatory or WC to another wall of its own bath
+# keeps it in the wet room and reads correctly, where banishing it to a nook
+# would not. Still excludes the position-defined pieces: a nightstand belongs
+# beside the bed and a sink belongs in the counter run, wherever those are.
+_RELOCATABLE = _ALCOVE_EXILE_OK | {"lavatory", "toilet"}
 
 
 def _trim_run(f: "Fixture", zone: Rect) -> Optional[Rect]:
@@ -398,9 +644,19 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
             continue
         room = rooms.get(f.room)
         cell = room.cells[min(f.cell_idx, len(room.cells) - 1)] if room else None
-        others = [k.rect for k in keep if k.room == f.room]
+        # EVERY other fixture in the room, not just the ones already processed.
+        # `keep` holds only what this loop has reached, so building the blocker
+        # list from it made everything later in `rep.fixtures` invisible — and
+        # a piece shifted out of a doorway would come to rest on top of it.
+        # That accounted for 35 of the suite's 44 fixture-on-fixture overlaps
+        # (a lavatory inside a WC, a nightstand inside a bed). Pieces already
+        # processed are at their final position; the rest are at their placed
+        # one, which is the best information available at this point.
+        others = [o.rect for o in rep.fixtures if o.room == f.room and o is not f]
 
         if f.kind in _RUN_KINDS:
+            # No `others` check here on purpose: a counter run is SUPPOSED to
+            # overlap its own sink, range and fridge — they are set into it.
             trimmed = _trim_run(f, hit)
             if trimmed is not None and not any(_overlaps(trimmed, z) for z in zs):
                 f.rect = trimmed
@@ -414,9 +670,233 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
                 f.note = (f.note + "; shifted clear of a doorway").strip("; ")
                 keep.append(f)
                 continue
+        # Last resort before deleting: ANOTHER WALL. `_shift_along` only slides
+        # along the wall the fixture already sits on, so a piece boxed in on
+        # that one wall was thrown away while three other walls stood empty.
+        # Removals were by far the largest category of "unfit" in the suite.
+        # Restricted to pieces whose meaning does not depend on where they are:
+        # a lavatory is a lavatory on any wall of its bath, a nightstand is
+        # only a nightstand beside the bed.
+        if room is not None and f.kind in _RELOCATABLE:
+            fw, fd = _fixture_wd(f)
+            spec = LIB.get(f.kind) if f.kind in LIB else None
+            must = bool(spec and spec.must_back_wall)
+            # A wet fixture prefers a wall that is already wet. Without this
+            # the search takes walls in N/S/E/W order and cheerfully puts the
+            # WC on the north wall and the basin on the south, which is two
+            # plumbing walls in a 1.5 m bath — legal, drawn correctly, and
+            # something no one would build.
+            order = None
+            if spec and spec.needs_plumbing_wall:
+                wet = {o.against for o in rep.fixtures
+                       if o.room == f.room and o is not f and o.against
+                       and o.kind in LIB and LIB.get(o.kind).needs_plumbing_wall}
+                order = ([s for s in _SIDES if s in wet]
+                         + [s for s in _SIDES if s not in wet])
+            cand, wall = _fit_in_cell(room, f.cell_idx, fw, fd,
+                                      zs + others, must, walls=order)
+            idx = f.cell_idx
+            where = "on another wall"
+            if cand is None and f.kind in _ALCOVE_EXILE_OK:
+                cand, wall, idx = _fit_in_room(room, fw, fd, zs + others, must,
+                                               skip=f.cell_idx)
+                where = "to the room's alcove"
+            if cand is not None:
+                f.rect, f.against = cand, wall
+                f.cell_idx = idx if idx >= 0 else f.cell_idx
+                f.note = (f.note + f"; moved {where} "
+                          "to clear a doorway").strip("; ")
+                keep.append(f)
+                continue
         rep.unfit.append(f"{f.room}: {f.kind} removed — no clear position "
                          f"that avoids a doorway")
     rep.fixtures = keep
+
+
+# --- Layer B: clearance checking ------------------------------------------
+#
+# The library gives clearance per SIDE, in the symbol's own local space:
+# front is +y (into the room), back is -y, left is -x, right is +x. Those
+# sides rotate with the symbol, so they have to be resolved against the wall
+# the fixture actually backs onto before they mean anything in room space.
+#
+# The library's local frame has +x right and +y front, and the placement
+# transform is `scale(S, -S) rotate(θ)`, so at θ=0 local +y points NORTH and
+# local +x points EAST — i.e. θ=0 is a fixture backed onto its SOUTH wall.
+# Each 90° step rotates the whole frame from there.
+_LOCAL_TO_GLOBAL = {
+    "S": {"front": "N", "back": "S", "right": "E", "left": "W"},
+    "E": {"front": "W", "back": "E", "right": "N", "left": "S"},
+    "N": {"front": "S", "back": "N", "right": "W", "left": "E"},
+    "W": {"front": "E", "back": "W", "right": "S", "left": "N"},
+}
+
+
+# How much of an approach a neighbour must cover before it counts as blocking
+# it. A fixture that clips the CORNER of another's approach has not taken it
+# away: in an 8x11 narrow bath the shower overlaps the WC's 0.40 m approach by
+# 0.05 m, leaving seven eighths of it open and the whole room beyond, and
+# counting that as "0.00 m clear in front of the toilet" was the checker's
+# single worst false positive — it produced the largest shortfall in the suite
+# for a bath that is genuinely usable.
+_BLOCK_FRAC = 0.5
+
+
+def _free_depth(r: Rect, cell: Rect, side: str, blockers: List["Fixture"],
+                siblings: Optional[List[Rect]] = None):
+    """How much clear floor there really is off `side` of `r`, and what ends
+    it — the room boundary, or the nearest fixture in the way.
+
+    An obstruction counts only when it covers more than half the width of the
+    approach (`_BLOCK_FRAC`): a wardrobe two metres down the wall does not
+    shorten the floor in front of a bed, and neither does a shower tray
+    catching one corner of it. Doorways deliberately do NOT count — a doorway
+    IS circulation, and `check_door_clearance` has already guaranteed nothing
+    solid is standing in one.
+
+    Returns (depth, blocker, side) — blocker is a Fixture, or None for the
+    wall; side is echoed back so callers can tell which way was measured.
+    """
+    if side == "N":
+        limit, along = cell.y1 - r.y1, (r.x0, r.x1)
+    elif side == "S":
+        limit, along = r.y0 - cell.y0, (r.x0, r.x1)
+    elif side == "E":
+        limit, along = cell.x1 - r.x1, (r.y0, r.y1)
+    else:
+        limit, along = r.x0 - cell.x0, (r.y0, r.y1)
+
+    width = max(along[1] - along[0], 1e-9)
+    limit = max(0.0, limit)
+    # Where the cell's edge is an OPENING into the room's other cell, the floor
+    # carries on and so does the clearance. Measuring to the cell edge treats
+    # an alcove mouth as a wall and reports a fixture as boxed in by nothing.
+    for s in (siblings or ()):
+        probe = _strip_behind(_strip_behind(r, side, limit), side, 0.02)
+        if not _overlaps(probe, s):
+            continue
+        limit += (s.y1 - s.y0 if side in ("N", "S") else s.x1 - s.x0)
+        break
+
+    best, who = limit, None
+    for b in blockers:
+        o = b.rect
+        if side in ("N", "S"):
+            cross, near = (o.x0, o.x1), (o.y0 - r.y1 if side == "N"
+                                         else r.y0 - o.y1)
+        else:
+            cross, near = (o.y0, o.y1), (o.x0 - r.x1 if side == "E"
+                                         else r.x0 - o.x1)
+        overlap = min(cross[1], along[1]) - max(cross[0], along[0])
+        if overlap / width <= _BLOCK_FRAC:
+            continue                      # clips the approach; does not take it
+        if -1e-9 <= near < best:
+            best, who = max(0.0, near), b
+    return best, who, side
+
+
+def _sides_to_test(spec, c) -> List[str]:
+    """Which local side(s) actually have to satisfy clearance `c`.
+
+    Usually just the one named. The exception is a side-circulation clearance
+    on a piece that is NOT handed and names only one of left/right — a bed's
+    `right: 0.60, "circulation down one long side"`. That piece mirrors freely,
+    so which side the library happened to draw it on carries no meaning, and
+    demanding the gap on that specific side reports a bedroom as cramped when
+    the aisle is simply on the other side of the bed. Either side satisfies it.
+
+    When a manifest names BOTH left and right (the WC's 0.10 elbow room) each
+    is required on its own, and this returns them separately.
+    """
+    if c.side not in ("left", "right") or spec.handed:
+        return [c.side]
+    named = {x.side for x in spec.clearance}
+    if "left" in named and "right" in named:
+        return [c.side]
+    return ["left", "right"]
+
+
+def check_clearances(rep: "FixtureReport", layout) -> None:
+    """Measure the floor kept clear around every placed fixture.
+
+    This replaces a single `CLEARANCE = 0.60` applied to one fixture (the bed)
+    with the library's per-side, per-reason numbers applied to all of them.
+    The numbers are not cosmetic: every wet fixture asks 0.90 m in front, not
+    0.60, so the old check was optimistic by 300 mm across every kitchen in
+    the catalog. (The check it replaces was also inert — it never fired once
+    across the 61 floors in the suite.)
+
+    Reports only. Nothing is moved or dropped — a tight room is a finding
+    about the topology, and silently shuffling furniture to make the finding
+    go away is how a plan comes to look better than the house would be.
+    """
+    rooms = {r.id: r for r in layout.rooms}
+    found = []                            # (fixture, blocker, issue)
+    for f in rep.fixtures:
+        try:
+            spec = LIB.get(f.kind)
+        except KeyError:
+            continue                      # not a library piece; nothing to check
+        room = rooms.get(f.room)
+        if room is None or not spec.clearance:
+            continue
+        cells = room.cells
+        ci = min(f.cell_idx, len(cells) - 1)
+        cell = cells[ci]
+        sibs = [c for i, c in enumerate(cells) if i != ci]
+        sides = _LOCAL_TO_GLOBAL.get(f.against)
+        if sides is None:
+            continue                      # free-standing; no back wall to rotate from
+        others = [o for o in rep.fixtures if o.room == f.room and o is not f]
+        for c in spec.clearance:
+            if c.side == "back" and spec.must_back_wall:
+                continue                  # the back IS the wall, on purpose
+            local = _sides_to_test(spec, c)
+            best = None
+            for ls in local:
+                g = sides.get(ls)
+                if g is None:
+                    continue
+                actual, who, gdir = _free_depth(f.rect, cell, g, others, sibs)
+                if best is None or actual > best[0]:
+                    best = (actual, who, gdir)
+            if best is None or best[0] >= c.depth - 1e-9:
+                continue
+            found.append((f, best[1], best[2], ClearanceIssue(
+                room=f.room, fixture=f.kind, side="|".join(local),
+                required=c.depth, actual=best[0],
+                blocked_by=best[1].kind if best[1] else "wall",
+                reason=c.reason)))
+    rep.clearance.extend(_dedupe_facing(found))
+
+
+def _dedupe_facing(found) -> List[ClearanceIssue]:
+    """Collapse the two halves of a shared gap into one finding.
+
+    A bed whose foot faces a wardrobe 0.35 m away breaks both pieces' front
+    clearance, but there is ONE problem there and one thing to do about it.
+    Reporting it from both sides doubles the count and makes a tight bedroom
+    look like two tight bedrooms. The surviving record is the one asking for
+    more room, since satisfying it satisfies the other.
+
+    Keyed on the DIRECTION as well as the pair. Keying on the pair alone
+    silently kept only one issue per neighbour, so a piece whose front and
+    side were both blocked by the same wrap-around neighbour — two distinct
+    gaps — would have had one of them escape collapse entirely.
+    """
+    by_edge = {}
+    for f, blocker, side, issue in found:
+        if blocker is not None:
+            by_edge[(id(f), id(blocker), side)] = issue
+    drop = set()
+    for (a, b, side), issue in by_edge.items():
+        other = by_edge.get((b, a, _OPPOSITE[side]))
+        if other is None or id(issue) in drop or id(other) in drop:
+            continue
+        loser = (other if (issue.required, issue.shortfall, issue.fixture) >=
+                 (other.required, other.shortfall, other.fixture) else issue)
+        drop.add(id(loser))
+    return [i for _, _, _, i in found if id(i) not in drop]
 
 
 _BEDROOMS = {"master_bedroom", "bedroom_standard", "maids_room"}
@@ -454,4 +934,5 @@ def place_fixtures(layout, plan) -> FixtureReport:
             elif r.type == "kitchen":
                 _place_kitchen(r, o, rep)
     check_door_clearance(rep, layout, plan)
+    check_clearances(rep, layout)
     return rep

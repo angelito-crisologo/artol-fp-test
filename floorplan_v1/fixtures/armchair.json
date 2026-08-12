@@ -1,0 +1,40 @@
+{
+  "id": "armchair",
+  "label": "Armchair",
+  "tier": 1,
+  "category": "living",
+  "svg": "armchair.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.8,
+    "d": 0.85,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.8,
+    "h": 0.85
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "getting in and out"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room"
+  ],
+  "notes": ""
+}

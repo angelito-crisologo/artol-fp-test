@@ -1,0 +1,33 @@
+{
+  "id": "water_heater",
+  "label": "Water heater (wall)",
+  "tier": 2,
+  "category": "bath",
+  "svg": "water_heater.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.35,
+    "d": 0.25,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.35,
+    "h": 0.25
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath"
+  ],
+  "notes": "Wall-mounted, no floor area. Draw over the shower or basin wall."
+}

@@ -1,0 +1,40 @@
+{
+  "id": "tv_console",
+  "label": "TV console (empty)",
+  "tier": 1,
+  "category": "living",
+  "svg": "tv_console.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.4,
+    "d": 0.4,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.4,
+    "h": 0.4
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "circulation in front"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room"
+  ],
+  "notes": "The stand on its own. Use tv_on_console for the usual case."
+}

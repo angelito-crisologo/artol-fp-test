@@ -1,0 +1,39 @@
+{
+  "id": "washing_machine",
+  "label": "Washing machine",
+  "tier": 2,
+  "category": "service",
+  "svg": "washing_machine.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.6,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.6,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "loading"
+    }
+  ],
+  "rooms": [
+    "service_area",
+    "dirty_kitchen"
+  ],
+  "notes": "Needs a floor drain and a tap. Top-loaders are the norm \u2014 the drum circle reads either way."
+}

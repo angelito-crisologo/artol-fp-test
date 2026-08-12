@@ -1,0 +1,40 @@
+{
+  "id": "water_tank",
+  "label": "Water tank (1000 L)",
+  "tier": 2,
+  "category": "service",
+  "svg": "water_tank.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.1,
+    "d": 1.1,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.1,
+    "h": 1.1
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.45,
+      "reason": "access for cleaning and the pump"
+    }
+  ],
+  "rooms": [
+    "service_area",
+    "lanai",
+    "carport"
+  ],
+  "notes": "Poly tank, roughly 1.1 m diameter. Overhead or ground-level with a pressure pump \u2014 the plan mark is the same."
+}

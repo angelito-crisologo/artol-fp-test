@@ -94,13 +94,19 @@ _FURNISHED_BY_US = {
     "kitchen",
 }
 
+# Keyed on the fixture-library id, which is what Fixture.kind now carries.
+# The fallback at the call site is `kind.replace("_", " ")`, so a stale key
+# degrades quietly into worse prose ("range electric") rather than an error —
+# which is exactly why these are worth keeping current on a path whose whole
+# difficulty is wording.
 _FIXTURE_PROSE = {
     "bed_single": "single bed", "bed_double": "double bed",
     "bed_queen": "queen bed", "bed_king": "king bed",
     "nightstand": "bedside table", "wardrobe": "wardrobe",
-    "toilet": "toilet", "lavatory": "lavatory basin", "shower": "shower tray",
-    "counter": "kitchen counter run", "sink": "kitchen sink",
-    "range": "cooking range", "fridge": "refrigerator",
+    "toilet": "toilet", "lavatory": "lavatory basin",
+    "shower_stall": "shower tray",
+    "kitchen_counter": "kitchen counter run", "kitchen_sink": "kitchen sink",
+    "range_electric": "cooking range", "fridge": "refrigerator",
 }
 
 _SIDE = {"N": "north", "S": "south", "E": "east", "W": "west"}

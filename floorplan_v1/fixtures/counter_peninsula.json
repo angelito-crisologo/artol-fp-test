@@ -1,0 +1,52 @@
+{
+  "id": "counter_peninsula",
+  "label": "Peninsula counter (mini-bar)",
+  "tier": 1,
+  "category": "dining",
+  "svg": "counter_peninsula.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.8,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.8,
+    "h": 1.12
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 1.2,
+    "max": 2.7,
+    "repeat_unit": 0.3,
+    "how": "extend the run; stools space out to suit, one per 0.60 m"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 1.05,
+      "reason": "stool pulled out, plus room to pass behind it"
+    },
+    {
+      "side": "back",
+      "depth": 0.9,
+      "reason": "working at the counter from the kitchen side"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dining_room",
+    "great_room",
+    "living_room"
+  ],
+  "notes": "The most common divider in the precedent set \u2014 26 of 79 records separate kitchen from dining or living with a counter and stools and NOTHING else, and PH vendor plans often label it MINI-BAR outright. Footprint is the counter; the stools are drawn beyond it because that is where they are, which shows the real cost: 0.60 m of counter but about 1.65 m of floor. One end normally meets the kitchen counter or a wall \u2014 it is a peninsula, not an island. At 0.60 m deep there is no knee room, so this is a perch: use counter_dining_divider where the counter has to serve as the dining table."
+}

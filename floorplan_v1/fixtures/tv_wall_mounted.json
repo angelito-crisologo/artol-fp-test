@@ -1,0 +1,35 @@
+{
+  "id": "tv_wall_mounted",
+  "label": "Wall-mounted TV",
+  "tier": 2,
+  "category": "living",
+  "svg": "tv_wall_mounted.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.2,
+    "d": 0.1,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.2,
+    "h": 0.14
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room",
+    "master_bedroom"
+  ],
+  "notes": "A wall mark only. Draw on the wall the sofa faces; no floor area."
+}
