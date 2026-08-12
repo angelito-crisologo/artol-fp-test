@@ -1133,9 +1133,14 @@ def _furnished_svg(layout, topo):
         combined.fixtures.extend(rep.fixtures)
         combined.unfit.extend(rep.unfit)
         combined.clearance.extend(rep.clearance)
+        # No `mask_behind_labels`: those opaque chips exist for polish.py, to
+        # paint over the text an image model writes despite being told not to.
+        # Nothing here writes rogue text, so the chips have nothing to cover
+        # and simply hide the furniture underneath them. inject_overlay still
+        # lifts the labels ABOVE the overlay, which is what actually keeps
+        # them readable — the chips were never doing that job.
         return inject_overlay(archplan_to_svg(plan),
-                              fixtures_overlay_svg(rep.fixtures, sub_layout),
-                              mask_behind_labels=True)
+                              fixtures_overlay_svg(rep.fixtures, sub_layout))
 
     archplans = getattr(layout, "archplans", None)
     if archplans:

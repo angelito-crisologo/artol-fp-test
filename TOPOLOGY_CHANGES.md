@@ -67,8 +67,11 @@ Until now Phase E.2 furniture appeared in NO generated plan at all —
 - Multi-storey furnishes each floor from ITS OWN sub-layout (`plan.layout`),
   not the parent — the both-storeys trap in CLAUDE.md. Verified visually on a
   2s 3BR composite.
-- Labels are lifted above the furniture via `inject_overlay(...,
-  mask_behind_labels=True)`, so a bed cannot land across `MASTER BR`.
+- Labels are lifted above the furniture by `inject_overlay`, which is what
+  keeps them readable. `mask_behind_labels` is deliberately NOT passed: those
+  opaque chips exist for polish.py, to paint over text an image model writes
+  despite being told not to. Nothing in this path writes rogue text, so the
+  chips had nothing to cover and merely hid the furniture behind every label.
 - Note it draws the same neutral rectangles + three glyph families the overlay
   has always used, NOT the 55 library symbols — that is still Layer C, and it
   is independent of this wiring.
