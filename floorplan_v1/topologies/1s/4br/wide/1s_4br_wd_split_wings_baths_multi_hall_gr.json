@@ -1,0 +1,339 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_4br_wd_split_wings_baths_multi_hall_gr",
+  "label": "Wide-shell 4BR / baths MULTI, SPLIT WINGS — first 1s/4br catalog entry. Public LDK in the center; two symmetric bedroom wings hang off it, each behind its own hall lobby. Each wing holds one principal bedroom (with private ensuite) plus one secondary bedroom, and its own shared common bath — so every bedroom reaches a bath without crossing the public volume, and no bath door faces the LDK.",
+  "target_shell": "wide",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "ensuite_m",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br_guest1",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common_w",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall_w",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "ensuite2",
+      "type": "ensuite_bath",
+      "zone": "private",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br_guest2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common_e",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall_e",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "hall_w",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "west wing lobby mouths open into the great_room (codebase rule: hallway↔great_room is always open) — the wing's single point of public access, mirroring pep_SHD-2015021's twin doored lobbies but open instead of doored so both wings clear rule 2"
+    },
+    {
+      "a": "br_guest1",
+      "b": "hall_w",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "guest bedroom (west wing, front) doors into the lobby"
+    },
+    {
+      "a": "master",
+      "b": "hall_w",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master (west wing, rear) doors into the lobby — the private-suite position, deepest from the public volume"
+    },
+    {
+      "a": "br_guest1",
+      "b": "master",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "the west wing's two bedrooms stack front-to-rear — wall only, no door"
+    },
+    {
+      "a": "common_w",
+      "b": "hall_w",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "west wing's shared bath (serves br_guest1) doors into the lobby — fixes the source precedent's guest-bath-onto-public-with-no-vestibule finding: here the bath opens off circulation, not off the LDK"
+    },
+    {
+      "a": "master",
+      "b": "ensuite_m",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "master's private ensuite — interior door off the bedroom, rear of the west wing"
+    },
+    {
+      "a": "common_w",
+      "b": "ensuite_m",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "the wing's two baths share a plumbing wall at the rear of the west wing — one plumbing run per wing"
+    },
+    {
+      "a": "great",
+      "b": "hall_e",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "east wing lobby mouths open into the great_room — mirrors hall_w"
+    },
+    {
+      "a": "br_guest2",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "guest bedroom (east wing, front) doors into the lobby"
+    },
+    {
+      "a": "br2",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "second principal bedroom (east wing, rear) doors into the lobby"
+    },
+    {
+      "a": "br_guest2",
+      "b": "br2",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "the east wing's two bedrooms stack front-to-rear — wall only, no door"
+    },
+    {
+      "a": "common_e",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "east wing's shared bath (serves br_guest2) doors into the lobby"
+    },
+    {
+      "a": "br2",
+      "b": "ensuite2",
+      "min_shared_wall_m": 0.8,
+      "kind": "ensuite_door",
+      "note": "br2's private ensuite — interior door off the bedroom, rear of the east wing. In the source house both principal bedrooms are co-equal suites of identical size with neither labelled master; this topology designates 'master' and 'br2' only to satisfy the schema's single-master vocabulary — both suites are intended as equivalent in the canonical form"
+    },
+    {
+      "a": "common_e",
+      "b": "ensuite2",
+      "min_shared_wall_m": 1.0,
+      "kind": "wet_core",
+      "note": "east wing's two baths share a plumbing wall — mirrors common_w/ensuite_m"
+    },
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style) at the center of the plan, between the two wings"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "hall_w",
+      "b": "hall_e",
+      "weight": 5,
+      "note": "mild pull to keep both wing lobbies aligned across the great_room for a symmetric street elevation"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": true,
+  "ensuite_alcove_joins_master": true,
+  "left_anchored": null,
+  "right_anchored": null,
+  "rear_anchored": [
+    "master",
+    "ensuite_m",
+    "common_w",
+    "br2",
+    "ensuite2",
+    "common_e"
+  ],
+  "front_to_rear_stacks": null,
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_wd_split_wings_baths_multi_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 145
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 1.0
+        },
+        "ensuite_bath": {
+          "min_area_sqm": 2.5
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "master_bedroom": {
+          "max_area_sqm": 16.0
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 10.0
+        }
+      },
+      "preferred_apply": {
+        "ensuite_bath": {
+          "min_area_sqm": 3.0
+        },
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "Three wide columns across the frontage (west wing ~3.5 m + LDK ~5.0 m + east wing ~3.5 m), each wing itself two bedrooms deep — the widest-and-deepest-hungry parti in the whole 1s catalog so far. Profile triggers early (145 m²) and both wing-bedroom bands cap hard to keep the lobby and both baths above their floors; frontage < ~13.5 m should be treated as infeasible for this parti rather than relaxed further, since dropping either wing's bath below 3.0 m² breaks the HARD common-bath minimum."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "First 1s/4br catalog entry — SPLIT WINGS with twin doored-then-opened lobbies,",
+    "sourced from pep_SHD-2015021 (the corpus's only single-storey 4BR precedent).",
+    "Natural floor band untested against the solver as of authoring; scale up from",
+    "the 3BR wide split_wings sibling (1s_3br_wd_split_wings_baths_ds_hall_gr,",
+    "~92-106 m² for 3 bedrooms) — expect roughly +25-35 m² for the fourth bedroom",
+    "plus third bath, so a floor near 130-145 m² is the working estimate pending",
+    "verification.",
+    "",
+    "Layout intent (canonical, west = left):",
+    "  West wing:  [br_guest1 (front) | hall_w | master : ensuite_m : common_w (rear)]",
+    "  Center:     [great_room (entry, front) | kitchen (rear)]",
+    "  East wing:  [br_guest2 (front) | hall_e | br2 : ensuite2 : common_e (rear)]",
+    "",
+    "Deliberate corrections from the source precedent (pep_SHD-2015021), per",
+    "established catalog practice of fixing sanitation/access issues found in",
+    "source drawings when authoring the canonical form:",
+    "  - Source: the shared GUEST BATH opened with NO vestibule straight onto the",
+    "    open receiving/dining volume (flagged 'violated' against rule 1's",
+    "    'bath opens off circulation, not public' spirit). Fixed here: each wing",
+    "    gets its OWN shared bath, and both bath doors open onto their wing's",
+    "    hall lobby, never onto the LDK.",
+    "  - Source: GUEST ROOM 2 had no bath on its own side of the plan and had to",
+    "    cross the entire public volume to reach the one shared guest bath. Fixed",
+    "    here: symmetric wings mean every bedroom's bath is in its own wing.",
+    "  - Source: the two principal suites were co-equal in size with neither",
+    "    labelled master. Schema requires one master_bedroom; 'master' and 'br2'",
+    "    are intended as equivalent suites in spirit, not a real seniority claim.",
+    "",
+    "Preserved from the source: twin symmetric wing-lobby circulation (novel to",
+    "this precedent — no existing catalog token expresses paired left/right",
+    "lobbies, so this file establishes that as the 1s/4br split_wings signature),",
+    "and baths_multi scheme (3 baths total: 2 ensuites + 2 shared common baths).",
+    "",
+    "Plumbing: two independent wing stacks, each pairing its ensuite with its",
+    "common bath on one shared wall — cheaper than the source's fully-dispersed",
+    "3-drop layout, at the cost of the ensuite no longer being at a wing corner.",
+    "",
+    "zone_split left null: this is a 3-column (wing/LDK/wing) parti, and the",
+    "schema's zone_split only expresses a single public/private binary split —",
+    "same limitation already accepted in the 3BR wide split_wings sibling, which",
+    "also omits its east wing from zone_split's room lists.",
+    "",
+    "Carport: NCP base form. On a lot this wide, a carport most naturally sits in",
+    "front of one wing's setback without disturbing either lobby; declare via",
+    "brief.carport_side.",
+    "",
+    "STATUS: VERIFIED 2026-08-12. Solves COMPLIANT at 18x13 (112.0 m2 floor,",
+    "0 errors, 1 warning) — inside the 100-150 m2 4BR/3-bath band. Feasible",
+    "18x13 / 17x12 / 16x12; 15x11 also solves but at 65.3 m2 is far below band.",
+    "",
+    "The authoring-time note that this was 'a reproducible, environment-specific",
+    "solver issue' was WRONG and has been removed. The cause was specific and in",
+    "this file: left_anchored + right_anchored + front_to_rear_stacks declared",
+    "together over-constrain the solver against its own adjacency graph — the",
+    "recurring trap CLAUDE.md records from 2026-07-19, which produced infeasibility",
+    "at EVERY lot size for two 3BR squarish topologies before this one. Bisected",
+    "at a 25x25 envelope: dropping any one or any two of the three still fails;",
+    "dropping all three solves. They are now null.",
+    "",
+    "The parti SURVIVES the relaxation, which is the part a solve cannot tell you.",
+    "Checked at 18x13: master + ensuite_m + common_w + hall_w + br_guest1 form the",
+    "west wing, br2 + ensuite2 + common_e + hall_e + br_guest2 mirror it east, and",
+    "great_room (front) + kitchen (rear) hold the centre — the twin-wing-lobby",
+    "arrangement the source precedent was chosen for. Room sizes are sane: master",
+    "12.0, guest bedrooms 14.0 / 10.8, br2 9.2, great 27.2, kitchen 10.6, each bath",
+    "4.0, each hall 6.0.",
+    "",
+    "The same wrong 'environment issue' claim appears on the three squarish",
+    "topologies added alongside this one; treat it as unreliable there too."
+  ]
+}

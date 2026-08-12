@@ -50,6 +50,50 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-12 — NEW: `1s_4br_wd_split_wings_baths_multi_hall_gr` (the catalog's
+first 4-bedroom topology), VERIFIED**
+Twin symmetric bedroom wings flanking a central public core: master +
+ensuite_m + common_w + hall_w + br_guest1 west, br2 + ensuite2 + common_e +
+hall_e + br_guest2 east, great_room (front) + kitchen (rear) between. Every
+bedroom reaches a bath inside its own wing and both shared-bath doors open onto
+a hall lobby, never onto the LDK — two corrections against the source
+precedent (pep_SHD-2015021).
+- **Was INFEASIBLE at every lot size as authored.** `left_anchored` +
+  `right_anchored` + `front_to_rear_stacks` declared together over-constrain
+  the solver against the topology's own adjacency graph — the recurring trap
+  recorded 2026-07-19. Bisected at a 25x25 envelope: dropping any one or any
+  two of the three still fails; dropping all three solves. All three are now
+  null, `rear_anchored` alone does the shaping.
+- **The parti survives the relaxation** — checked at 18x13, which a solve alone
+  cannot tell you. master 12.0, guest bedrooms 14.0 / 10.8, br2 9.2, great
+  27.2, kitchen 10.6, baths 4.0 each, halls 6.0 each.
+- Canonical brief `1s_4br_18x13_wd_split_wings_baths_multi_hall_gr_ncp`
+  (112.0 m² floor, inside the 100-150 m² 4BR/3-bath band). Feasible 18x13 /
+  17x12 / 16x12; 15x11 solves at 65.3 m² but is far below band. Baseline
+  written. **53 pass / 0 fail** (was 52), 51 sweep pass.
+- New directory `topologies/1s/4br/wide/` — first 4BR in the catalog, so the
+  regen adds a bedroom-count group.
+
+**2026-08-12 — THREE new squarish 3BR topologies added but NOT validated**
+`1s_3br_sq_center_spine_baths_ds_gr`, `1s_3br_sq_half_spine_baths_ds_hall_gr`,
+`1s_3br_sq_side_corridor_baths_ds_hall_gr`. All three are INFEASIBLE as
+authored, all three by the same over-constrained-anchors trap. No test briefs,
+no baselines — they must not be counted as catalog entries until validated.
+- **Their `notes` carry a WRONG diagnosis**, since corrected on `half_spine`:
+  they claim "a reproducible, environment-specific solver issue affecting the
+  spine/hall parti family broadly, not a defect this file introduces". It is a
+  defect in the files. Anchor bisection gives a minimal fix for each
+  (`center_spine`: drop left+right+`zone_split`; `half_spine`: drop
+  left+right; `side_corridor`: drop left+right+`front_to_rear_stacks`).
+- **Relaxing is not enough for two of them.** `center_spine` loses its
+  private/public separation and lands the kitchen between br2 and the ensuite.
+  `half_spine` solves at 15x15 but degenerately — great 50.6 and master 32.2
+  against a 3.5 m² kitchen and both standard bedrooms pinned at the 6.0 m²
+  hard floor; `set_max_area_sqm` does NOT help, because snap_gaps and the
+  dead-strip claimer inflate after the solve. These need authoring, not a flag
+  change. `side_corridor` relaxes to a solve whose corridor lands mid-plan
+  rather than along a side.
+
 **2026-08-12 — Furniture sits against the wall FACE, not the room edge**
 A `Room`'s rect is the wall CENTRELINE and adjacent rooms share it exactly, so
 furniture placed flush to the rect was drawn INSIDE the wall band. Where two

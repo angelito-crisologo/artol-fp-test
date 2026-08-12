@@ -1,0 +1,329 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_half_spine_baths_ds_hall_gr",
+  "label": "Squarish-shell 3BR / baths DISTRIBUTED (two dispersed common baths, no ensuite), HALF-SPINE — one bedroom+bath pair is served by a real hall spine, the other bedroom+bath pair sits directly off the great_room behind a short buffer. Sourced from pep_SHD-2017036-DESIGN1, whose defining move is splitting the private zone's circulation logic in two: half hall-served, half open straight onto the LDK.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common_e",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall_e",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common_w",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall_w",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style), matching the source's continuous LIVING/DINING/KITCHEN volume"
+    },
+    {
+      "a": "great",
+      "b": "hall_e",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the east hall's mouth opens into the great_room. FIXED from the source: pep_SHD-2017036-DESIGN1 doors this connection off a single hinged door (flagged 'violated' against the rule 2 [PREFER] hallway-open-to-public default); this topology applies the catalog's standard open-mouth convention instead."
+    },
+    {
+      "a": "master",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master (the source's largest, undesignated BEDROOM 1) doors into the east hall, at its front end"
+    },
+    {
+      "a": "br2",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors into the east hall, at its rear end — matches the source's BEDROOM 2"
+    },
+    {
+      "a": "common_e",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "east wing's shared bath doors into the hall, between master and br2 — matches the source's T&B between BEDROOM 2 and BEDROOM 1"
+    },
+    {
+      "a": "master",
+      "b": "common_e",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's T&B/BEDROOM 1 shared wall"
+    },
+    {
+      "a": "br2",
+      "b": "common_e",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's BEDROOM 2/T&B shared wall"
+    },
+    {
+      "a": "great",
+      "b": "br3",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "br3 doors directly onto the great_room — the half of the plan with NO dedicated hall, matching the source's BEDROOM 3 (which opens straight onto the open LIVING/DINING/KITCHEN volume with no hallway on that side of the plan at all). Kept as-is per rule 1's sanctioned tight-lot-bedroom-off-public exception, rather than forcing a hall this precedent never had."
+    },
+    {
+      "a": "great",
+      "b": "hall_w",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "a short buffer/vestibule opens off the great_room, sized only to host common_w's door"
+    },
+    {
+      "a": "common_w",
+      "b": "hall_w",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "west bath doors into the small vestibule. FIXED from the source: pep_SHD-2017036-DESIGN1's T&B (under BEDROOM 3) opens with no vestibule at all straight onto the open LIVING/DINING/KITCHEN volume, in view of the sofa and dining table (flagged 'violated' against rule 1's 'bath opens off circulation, not public' spirit — the same category of finding as pep_SHD-2015021's guest bath). Unlike br3's direct public door (a sanctioned bedroom exception), a bath with no buffer at all has no such exception, so this topology gives it the smallest workable vestibule rather than leaving it on the open floor."
+    },
+    {
+      "a": "br3",
+      "b": "common_w",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's BEDROOM 3/T&B shared wall"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "hall_w",
+      "b": "hall_e",
+      "weight": 10,
+      "note": "mild pull to keep both wing entries reasonably aligned along the great_room's rear wall"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": {
+    "axis": "vertical",
+    "private_side": "right",
+    "private_rooms": [
+      "master",
+      "br2",
+      "common_e",
+      "hall_e"
+    ],
+    "public_rooms": [
+      "great",
+      "kitchen"
+    ]
+  },
+  "fallback_topology": null,
+  "match_bedroom_widths": false,
+  "left_anchored": [
+    "br3",
+    "common_w",
+    "hall_w"
+  ],
+  "right_anchored": [
+    "master",
+    "br2",
+    "common_e",
+    "hall_e"
+  ],
+  "rear_anchored": [
+    "br2",
+    "common_e",
+    "common_w"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "master",
+      "hall_e",
+      "br2"
+    ],
+    [
+      "great",
+      "hall_w",
+      "common_w"
+    ],
+    [
+      "great",
+      "br3"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_half_spine_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 105
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.5
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 12.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 15.0
+        }
+      },
+      "preferred_apply": {
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        },
+        "common_bath": {
+          "min_area_sqm": 3.5
+        }
+      },
+      "rationale": "Half the private zone pays for a hall (east wing) while the other half (west wing) only pays for a small bath vestibule, so this parti is cheaper on circulation than a full side_split or center_spine but pricier than the source's own no-vestibule version. Profile triggers at 105 m², matching the source's generous 146 m² footprint at the high end and giving room to relax down toward a tighter squarish shell before falling back."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Squarish 3BR catalog topology — HALF-SPINE, first squarish member of the",
+    "half_spine family (the wide sibling, 1s_3br_wd_half_spine_baths_ds_hall_lk,",
+    "uses 'half' in a different sense — there, the ENTIRE private zone is",
+    "hall-served and 'half' refers to which half of the FOOTPRINT carries the",
+    "spine at all. Here, sourced from pep_SHD-2017036-DESIGN1, both halves of",
+    "the footprint hold private rooms, but only one wing's bedroom+bath pair is",
+    "hall-served — the other wing's pair opens directly onto the great_room.",
+    "Both readings share the token because both leave exactly half the private",
+    "program without dedicated circulation; the source record's own",
+    "parti_note makes the same call.",
+    "",
+    "Layout intent (canonical, hall-served wing on the right):",
+    "  Right (spine) wing: [master (front) | hall_e | br2 : common_e (rear)]",
+    "  Center:             [great_room (entry, front) | kitchen (rear)]",
+    "  Left (open) wing:   [br3 (doors to great) : common_w (vestibule only)]",
+    "",
+    "No bedroom is designated master in the source (all three carry plain",
+    "numbers). master here is the source's largest and hall-served BEDROOM 1",
+    "(18.0 sqm) — a judgement call on size and hall position alone, consistent",
+    "with how this project resolves undesignated-master precedents elsewhere.",
+    "",
+    "Two corrections made from the source, per established catalog practice of",
+    "fixing access/privacy issues found in source drawings when authoring the",
+    "canonical form:",
+    "  1. hall_e <-> great is open_plan here; the source doors this connection",
+    "     with a single hinged door (a rule 2 [PREFER] violation the source's",
+    "     own compliance notes flag).",
+    "  2. common_w gets a minimal vestibule (hall_w) rather than opening with no",
+    "     buffer at all onto the open LDK, as the source's T&B does (flagged in",
+    "     the source as a rule 1 [PREFER] violation with 'no stated layout win'",
+    "     justifying it).",
+    "Preserved as-is: br3's direct bedroom_to_public door. This is the sanctioned",
+    "tight-lot exception (rule 1), not the same category of issue as an",
+    "un-buffered bath door, and it is the defining feature that makes this a",
+    "genuinely half-spine parti rather than a relabelled side_split.",
+    "",
+    "Wet core: fully dispersed, matching the source (the two baths share no wall",
+    "with each other or the kitchen) — grade 'dispersed' per rule 3, accepted",
+    "here as in the source rather than invented as a fix, since clustering would",
+    "require relocating a whole wing.",
+    "",
+    "Carport: NCP base form. The source shows an open (unwalled) carport eating",
+    "most of one side setback; declare via brief.carport_side rather than baking",
+    "it into the base topology, per catalog convention.",
+    "",
+    "STATUS: NOT VALIDATED — infeasible as authored, and the authoring-time",
+    "diagnosis was wrong. Investigated 2026-08-12.",
+    "",
+    "The note here previously claimed 'a reproducible, environment-specific solver",
+    "issue affecting the spine/hall parti family broadly, not a defect this file",
+    "introduces'. That is incorrect and has been removed. The cause is specific and",
+    "in this file: left_anchored + right_anchored declared together over-constrain",
+    "the solver against its own adjacency graph — the recurring trap CLAUDE.md",
+    "records from 2026-07-19. Bisected at a 25x25 envelope: dropping either list",
+    "alone still fails, dropping BOTH solves. Room-level bisection found no lighter",
+    "fix — removing any single room from either list, or one room from each, still",
+    "fails, so the whole pairing has to go.",
+    "",
+    "NOT applied, because the relaxation trades infeasibility for a bad plan. With",
+    "both lists null the topology solves at 15x15 (110 m2, in band) but the areas",
+    "are degenerate: great_room 50.6 and master 32.2 absorb three quarters of the",
+    "floor while the KITCHEN falls to 3.5 m2 and br2/br3 sit pinned at the 6.0 m2",
+    "PD 1096 hard floor. set_max_area_sqm on great and master does NOT fix it —",
+    "capped at 26.0/18.0 the realized areas are unchanged, because snap_gaps and",
+    "the dead-strip claimer inflate rooms AFTER the solve and funnel all remaining",
+    "slack into one room (the open issue CLAUDE.md records under shell capping).",
+    "",
+    "So this needs authoring work, not a relaxation: the program has to fill its",
+    "envelope at solve time. Until then it stays out of the suite. The same wrong",
+    "'environment issue' claim appears on the other topologies added alongside it."
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_side_corridor_baths_ds_hall_gr",
+  "label": "Squarish-shell 3BR / baths DISTRIBUTED (two dispersed common baths, no ensuite), SIDE CORRIDOR — a single hall spine runs the full depth of one column, taking all three bedroom doors and both bath doors; the whole public zone (kitchen+dining+living, fully open) runs the other column and meets the hall through one open mouth. Sourced from pep_small-house-design-2014005.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "bath1",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "bath2",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style), matching the source's continuous KITCHEN/DINING/LIVING ROOM volume"
+    },
+    {
+      "a": "hall",
+      "b": "great",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the corridor's front end mouths into the great_room. FIXED from the source: pep_small-house-design-2014005 doors this single connection with a hinged door — the corridor's ONLY link to the public zone (flagged 'violated' against rule 2's [PREFER] hallway-open-to-public default). This topology applies the catalog's standard open mouth instead."
+    },
+    {
+      "a": "hall",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "bath1 (rear end of the corridor, beside the kitchen) doors into the hall — its only door, matching the source's first BATH"
+    },
+    {
+      "a": "hall",
+      "b": "master",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master doors into the corridor, rear-most bedroom, beside bath1 — matches the source's BEDROOM 1 (the largest of the three, designated master here on size alone, same judgement call the source record itself makes)"
+    },
+    {
+      "a": "kitchen",
+      "b": "bath1",
+      "min_shared_wall_m": 1.0,
+      "kind": "wall_only",
+      "note": "geometry only, no door — matches the source's kitchen/first-BATH shared wall with no opening"
+    },
+    {
+      "a": "master",
+      "b": "br2",
+      "min_shared_wall_m": 2.0,
+      "kind": "bedroom_to_bedroom_wall",
+      "note": "master and br2 share a party wall — matches the source's BEDROOM 1 / BEDROOM 2 shared wall, both beds against it"
+    },
+    {
+      "a": "hall",
+      "b": "br2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors into the corridor, mid-depth — matches the source's BEDROOM 2"
+    },
+    {
+      "a": "br2",
+      "b": "bath2",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's BEDROOM 2 / second-BATH shared wall"
+    },
+    {
+      "a": "hall",
+      "b": "bath2",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "bath2 doors into the corridor, mid-depth, between br2 and br3 — its only door, matching the source's second BATH"
+    },
+    {
+      "a": "bath2",
+      "b": "br3",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's second-BATH / BEDROOM 3 shared wall"
+    },
+    {
+      "a": "hall",
+      "b": "br3",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br3 doors into the corridor, front-most bedroom, closest to the great_room mouth — matches the source's BEDROOM 3"
+    }
+  ],
+  "soft_proximities": [
+    {
+      "a": "master",
+      "b": "bath1",
+      "weight": 15,
+      "note": "keep master's bath trip shortest, matching the source's rear-of-corridor clustering of BEDROOM 1 and the first BATH"
+    }
+  ],
+  "entry_point": "great",
+  "zone_split": null,
+  "match_bedroom_widths": true,
+  "left_anchored": [
+    "great",
+    "kitchen"
+  ],
+  "right_anchored": [
+    "hall",
+    "master",
+    "br2",
+    "br3",
+    "bath1",
+    "bath2"
+  ],
+  "rear_anchored": [
+    "kitchen",
+    "master",
+    "bath1"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "br3",
+      "br2",
+      "master"
+    ],
+    [
+      "great",
+      "hall"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "compact_sq_side_corridor_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 95
+      },
+      "auto_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        },
+        "hallway": {
+          "min_least_dim_m": 0.95
+        },
+        "common_bath": {
+          "min_area_sqm": 3.0,
+          "max_area_sqm": 4.0
+        },
+        "bedroom_standard": {
+          "max_area_sqm": 11.0
+        },
+        "master_bedroom": {
+          "max_area_sqm": 13.0
+        }
+      },
+      "preferred_apply": {
+        "kitchen": {
+          "min_least_dim_m": 2.0
+        }
+      },
+      "rationale": "The corridor runs the full depth of the house and carries five doors (three bedrooms, two baths) along one side, so its area cost is paid once per room rather than once total — the same trade-off already noted on the narrow 2BR side_corridor sibling, but here spread across two baths instead of one. Profile triggers at 95 m², matching the source's own tight per-room dimensions (bedrooms 10.8-12.96 sqm, kitchen least-dim 2.5 m) with little slack to give back before hitting hard minimums on the two undimensioned baths."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Squarish 3BR catalog topology — SIDE CORRIDOR, sourced from",
+    "pep_small-house-design-2014005. Unusual pairing the source record itself",
+    "flags: side_corridor is normally a narrow-lot device (see the 2BR and 3BR",
+    "narrow side_corridor siblings), but this precedent's shell reads close to",
+    "squarish (an approximate, inferred reading — no lot or setback dimension is",
+    "printed on the source sheet at all, only per-room figures) despite using",
+    "the same single-spine idiom.",
+    "",
+    "Layout intent (canonical, corridor on the right):",
+    "  [GREAT (entry) | hall] — [br3 | hall] — [br2 : bath2 | hall] —",
+    "  [bath1 | hall] — [master | hall] — [(kitchen, rear) | hall]",
+    "  front / street  ------------------------------------------->  rear",
+    "",
+    "No bedroom is captioned MASTER in the source (all three are 'BEDROOM 1/2/3'",
+    "with no ensuite anywhere). master here is the source's BEDROOM 1 (12.96",
+    "sqm, the largest, positioned nearest the better-placed bath) — the same",
+    "judgement the source record itself makes when reading rooms[bedroom1].type.",
+    "",
+    "One correction made from the source, per established catalog practice: hall",
+    "<-> great is open_plan here; the source doors this single connection with",
+    "a hinged door (a rule 2 [PREFER] violation the source's own compliance",
+    "notes flag explicitly). Everything else — five doors converging on one",
+    "undoored-from-the-bedroom-side corridor, two fully dispersed common baths",
+    "with no ensuite, bedrooms spanning the full depth of the private column",
+    "rather than clustering at the front — is carried through unchanged, since",
+    "none of it violates a HARD rule and all of it is exactly what makes this",
+    "precedent worth cataloguing as a distinct member from the existing narrow",
+    "side_corridor entries.",
+    "",
+    "bath_scheme recorded as baths_ds per the source's own 'least-bad fit' call:",
+    "two common baths, dispersed (no shared wall with each other or the",
+    "kitchen), neither an ensuite of any bedroom — baths_ds is used here to mean",
+    "'two distributed common baths', not the more usual 'one ensuite + one",
+    "common' reading, consistent with how the source record itself flags this",
+    "as an enum mismatch rather than a clean fit.",
+    "",
+    "Not carried into this topology: the source's unlabelled built-in shelf/",
+    "cabinet standing inside the hall itself (furniture in circulation space,",
+    "not a walled room — no catalog room type applies) and its unlabelled rear",
+    "exterior door landing on the hall's north end near the kitchen (a second,",
+    "secondary entrance the schema has no vocabulary to declare on a hallway",
+    "room).",
+    "",
+    "Carport: NCP base form — the source shows no carport or garage anywhere on",
+    "the sheet.",
+    "",
+    "STATUS: run through the CP-SAT solver at authoring time (2026-08-12).",
+    "INFEASIBLE at every tested lot (10.5x14, 9.5x13, 11x15). Control tests on",
+    "the ALREADY-CATALOGUED narrow siblings 1s_2br_nw_side_corridor_bath_hall",
+    "and 1s_3br_nw_side_corridor_baths_ds_hall_gr.json — both unmodified,",
+    "pre-existing in the repo before this session — were ALSO infeasible in",
+    "this same environment, as were the wide half_spine and center_spine",
+    "siblings when control-tested. This points to a reproducible, environment-",
+    "specific solver issue affecting the spine/hall parti family broadly, not a",
+    "defect this file introduces. Structural/schema validation (room-id",
+    "references, adjacency completeness) passed. Re-run verification once the",
+    "solver environment issue is resolved; do not treat INFEASIBLE here as",
+    "evidence against the topology's own design."
+  ]
+}
