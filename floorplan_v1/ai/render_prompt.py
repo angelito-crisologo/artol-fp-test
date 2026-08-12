@@ -347,15 +347,15 @@ def _doors_block(manifest: Dict[str, Any]) -> List[str]:
     if not rows:
         return []
     out = ["", f"=== DOORS — ALL {len(rows)} MUST APPEAR, AND NO OTHERS ===",
-           "In the supplied image every door is OVERDRAWN IN MAGENTA/PINK so "
+           "In the supplied image every door is OVERDRAWN IN HEAVY DARK LINE WORK so "
            "you cannot miss it: the opening across the wall, the door leaf and "
            "its swing arc. That colour is a MARKER, not part of the design — "
            "draw these doors in your normal architectural style, in exactly "
            "the positions marked.",
-           f"There are {len(rows)} magenta marks. Your drawing must have "
+           f"There are {len(rows)} marked openings. Your drawing must have "
            f"{len(rows)} doors, in those same places:"]
     out.extend(rows)
-    out.append("Any opening NOT marked in magenta is a WINDOW. Do not convert "
+    out.append("Any opening NOT marked that way is a WINDOW. Do not convert "
                "a window into a door or a door into a window.")
     return out
 
@@ -432,11 +432,9 @@ def build_prompt(manifest: Dict[str, Any]) -> str:
         "be covered up or will conflict with the real figures."
     )
     lines.append(
-        "2. YOUR IMAGE MUST CONTAIN NO MAGENTA OR PINK LINES. The bright "
-        "magenta marks in the supplied image are a temporary marker showing "
-        "you where the doors are. Draw those doors in normal architectural "
-        "line work — thin dark leaf and a light swing arc. No magenta, no "
-        "pink, anywhere in your output."
+        "2. Doors in the supplied image are drawn in HEAVIER line work than "
+        "the walls so they are easy to find. Reproduce every one of them in "
+        "normal architectural line work."
     )
     lines.append(
         "3. Fill the ENTIRE canvas with the lot, edge to edge — the boundary "
@@ -751,9 +749,13 @@ def build_convert_prompt(manifest: Dict[str, Any]) -> str:
     a("    * Scale all fixtures accurately to the room size. If a fixture does not fit")
     a("      inside its own room, draw a smaller one — never spill it into the next room.")
     a("    * Ensure no furniture fully or partially blocks any door.")
-    a("    * The bright magenta marks in the supplied image are a TEMPORARY MARKER showing")
-    a("      you where the doors are. Draw those doors in normal architectural line work —")
-    a("      a thin dark leaf and a light swing arc. No magenta or pink anywhere in your output.")
+    # No colour caveat here on purpose. The marker used to be magenta and the
+    # model copied the magenta into its output; naming a colour you do not want
+    # is the surest way to get it, and the doc already shows prohibitions fail
+    # on this model. The marker is now ordinary near-black, so copying it
+    # verbatim is CORRECT and there is nothing to warn about.
+    a("    * Doors in the supplied image are drawn in HEAVIER line work than the walls")
+    a("      so they are easy to find. Reproduce every one of them.")
     a("    * Make sure all room names and dimension text remain clearly readable.")
     a("    * Every room label in the provided image must appear in your output with the")
     a("      same text, and every dimension figure must be copied exactly as written.")

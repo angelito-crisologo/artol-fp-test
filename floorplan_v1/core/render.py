@@ -566,9 +566,22 @@ LOT_FILL = "#fbfbf7"
 ERASE_HALF_PX = 5
 
 
-# Door-emphasis colours, used ONLY when archplan_to_svg(door_emphasis=True).
+# Door-emphasis colour, used ONLY when archplan_to_svg(door_emphasis=True).
 # See that function's docstring for why this exists and why it is opt-in.
-_DOOR_HL = "#d81b60"
+#
+# This was a saturated magenta, on the reasoning that the marking had to be
+# unmissable. It was — and the image model copied it straight into its output,
+# so every render came back with bright pink doors. Telling it not to did not
+# work: the generated prompt said "No magenta or pink anywhere in your output"
+# and it produced pink doors anyway, which is the standing finding that this
+# model follows the picture and ignores prohibitions.
+#
+# The emphasis never needed colour. It also triples the line WEIGHT (2.2-3.4 px
+# against thin grey arcs), and that is what actually makes a 0.7 m door tucked
+# into a corner findable at raster scale. So the marker is now near-black: still
+# unmissable in the source, and indistinguishable from correct architectural
+# linework if the model copies it, which it will.
+_DOOR_HL = "#1a1a1a"
 
 
 def _door_svg(door, layout, emphasis: bool = False) -> str:
@@ -1737,7 +1750,9 @@ def archplan_to_svg(plan, door_emphasis: bool = False) -> str:
       5. door erases + door panels + swing arcs
       6. window erases + window glass strips
 
-    `door_emphasis` overdraws every door in a saturated colour. It exists for
+    `door_emphasis` overdraws every door in heavy near-black line work (see
+    _DOOR_HL — it was a saturated magenta until the model started reproducing
+    the magenta). It exists for
     ONE consumer — polish.py, which hands the drawing to an image model that
     kept dropping the kitchen's exterior service door and relocating the T&B
     door across four attempts. Default False, so the technical drawing and all
