@@ -50,6 +50,33 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-12 — Furniture sits against the wall FACE, not the room edge**
+A `Room`'s rect is the wall CENTRELINE and adjacent rooms share it exactly, so
+furniture placed flush to the rect was drawn INSIDE the wall band. Where two
+rooms share a party wall their furniture met at the centreline: in the
+lobby-hub plan the two bedrooms' headboards touched at a gap of exactly
+0.000 m, reading as two beds shoved together with no wall between them.
+- `_clear_cell` / `_RoomFloor` pull a cell in by half the wall thickness per
+  side, exterior vs interior decided by `make_outside_probe` — the same shared
+  definition the renderer uses, so furniture and drawn wall cannot disagree. A
+  side opening into the room's own alcove has no wall and is not inset.
+- **Applied to the RESULT, not the search space** (`_clip_to_clear_floor`, run
+  after door clearance). Insetting BEFORE placement was tried first and is
+  wrong: it shrinks the room the placer reasons about and fixtures fall out of
+  rooms that hold them fine — both lobby-hub bedrooms lost their beds, a worse
+  drawing than the one being fixed. Clipping after costs nothing: **633 placed
+  / 108 unfit, unchanged**, 0 fixtures intruding into a wall band, 0 overlaps.
+- The two headboards are now 0.100 m apart, exactly the interior wall drawn
+  between them.
+- Clearance is measured on the clear floor too, which is the honest floor:
+  findings 215 → 286, but the rise is concentrated in the trivial band
+  (`<0.10 m` shortfall 34 → 81) while the `>=0.30 m` headline `--furnish`
+  prints moved only 115 → 134.
+- Door zones deliberately keep TRUE geometry: a door's `position_m` is measured
+  from the original rect's origin, so deriving zones from an inset cell slides
+  every zone off its own doorway. Caught by a spike in bogus
+  "blocked by a doorway" removals.
+
 **2026-08-12 — SHARED CODE, NO regen needed: `run.py --furnish` (opt-in)**
 Until now Phase E.2 furniture appeared in NO generated plan at all —
 `place_fixtures` had exactly one consumer in the repo, `polish.py`, and

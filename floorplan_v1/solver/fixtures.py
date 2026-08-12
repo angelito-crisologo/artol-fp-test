@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from fixture_library import load_library
-from model import Rect, Room
+from model import Rect, Room, make_outside_probe, probe_point
 
 LIB = load_library()
 
@@ -59,6 +59,87 @@ CAR = LIB.size("car")
 
 _SIDES = ("N", "S", "E", "W")
 _OPPOSITE = {"N": "S", "S": "N", "E": "W", "W": "E"}
+
+
+# --- clear floor: furniture goes against the wall FACE ----------------------
+#
+# A Room's rect is the wall CENTRELINE, not the inside face. Adjacent rooms
+# share an edge exactly — `br2` ends at x=4.60 and `br3` begins at x=4.60 —
+# and the renderer draws the wall band STRADDLING that line, 0.05 m into each
+# room for an interior partition.
+#
+# Placing furniture flush to the rect therefore buries it in the wall, and
+# where two rooms share a party wall their furniture meets at the centreline:
+# in the lobby-hub plan the two beds' headboards touched at a gap of exactly
+# 0.000 m, reading as two beds shoved against each other with no wall between.
+#
+# So placement runs on the CLEAR FLOOR — the rect pulled in by half the wall
+# thickness on every side that has a wall. Exterior walls are thicker, and
+# which sides are exterior comes from `make_outside_probe`, the one shared
+# definition the renderer also uses, so the furniture and the drawn wall can
+# never disagree. A side that opens into the room's own alcove has no wall and
+# is not inset.
+from render import (WALL_THICKNESS_EXTERIOR,          # noqa: E402
+                    WALL_THICKNESS_INTERIOR)
+
+
+def _clear_cell(cell: Rect, siblings: List[Rect], faces_outside) -> Rect:
+    """`cell` pulled in to the inside face of whatever wall bounds each side."""
+    edge = {}
+    for side in _SIDES:
+        if any(_overlaps(_strip_behind(cell, side, 0.02), s) for s in siblings):
+            edge[side] = 0.0                     # alcove mouth: no wall here
+            continue
+        outside = False
+        if faces_outside is not None:
+            try:
+                outside = faces_outside(*probe_point(cell, side))
+            except Exception:
+                outside = False
+        edge[side] = (WALL_THICKNESS_EXTERIOR if outside
+                      else WALL_THICKNESS_INTERIOR) / 2.0
+    out = Rect(cell.x0 + edge["W"], cell.y0 + edge["S"],
+               cell.x1 - edge["E"], cell.y1 - edge["N"])
+    # Degenerate guard: a cell thinner than its own walls would invert.
+    if out.x1 - out.x0 < 0.20 or out.y1 - out.y0 < 0.20:
+        return cell
+    return out
+
+
+class _RoomFloor:
+    """A Room seen as its clear floor: same identity and true area, but `rect`
+    and `cells` are inset to the wall faces. Placement, door clearance and the
+    clearance check all run on this so they agree with the drawing."""
+
+    __slots__ = ("_r", "rect", "cells")
+
+    def __init__(self, room: Room, faces_outside):
+        self._r = room
+        raw = room.cells
+        self.cells = [_clear_cell(c, [o for o in raw if o is not c],
+                                  faces_outside) for c in raw]
+        self.rect = self.cells[0]
+
+    def __getattr__(self, name):     # id, type, area, storey, ... stay truthful
+        return getattr(self._r, name)
+
+
+def _floor_probe(layout):
+    """`faces_outside` for the storey this layout describes, or None.
+
+    Scoped to ONE storey: a multi-storey layout carries both floors' rooms and
+    the upper footprint would mask the lower one's perimeter gaps.
+    """
+    try:
+        env = layout.lot.envelope()
+        storeys = {getattr(r, "storey", 1) for r in layout.rooms}
+        one = min(storeys) if len(storeys) == 1 else None
+        obstacles = [c for r in layout.rooms
+                     if one is None or getattr(r, "storey", 1) == one
+                     for c in r.cells]
+        return make_outside_probe(env, obstacles)
+    except Exception:
+        return None
 
 
 @dataclass
@@ -625,10 +706,16 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
     works.
     """
     rooms = {r.id: r for r in layout.rooms}
+    # Door zones come from the TRUE room geometry, never the clear floor: a
+    # door's `position_m` is measured along the wall from the ORIGINAL rect's
+    # origin, so deriving the zone from an inset cell slides every zone off
+    # its own doorway — which reads downstream as furniture blocking doors
+    # that it is nowhere near.
+    true_rooms = {r.id: r for r in layout.rooms}
     zones: Dict[str, List[Rect]] = {}
     for d in getattr(plan, "doors", []):
         for rid in (d.room_a, d.room_b):
-            r = rooms.get(rid)
+            r = true_rooms.get(rid)
             if r is None:
                 continue
             z = _door_zone(d, r)
@@ -816,7 +903,7 @@ def _sides_to_test(spec, c) -> List[str]:
     return ["left", "right"]
 
 
-def check_clearances(rep: "FixtureReport", layout) -> None:
+def check_clearances(rep: "FixtureReport", layout, floors=None) -> None:
     """Measure the floor kept clear around every placed fixture.
 
     This replaces a single `CLEARANCE = 0.60` applied to one fixture (the bed)
@@ -830,7 +917,7 @@ def check_clearances(rep: "FixtureReport", layout) -> None:
     about the topology, and silently shuffling furniture to make the finding
     go away is how a plan comes to look better than the house would be.
     """
-    rooms = {r.id: r for r in layout.rooms}
+    rooms = floors or {r.id: r for r in layout.rooms}
     found = []                            # (fixture, blocker, issue)
     for f in rep.fixtures:
         try:
@@ -899,6 +986,31 @@ def _dedupe_facing(found) -> List[ClearanceIssue]:
     return [i for _, _, _, i in found if id(i) not in drop]
 
 
+def _clip_to_clear_floor(rep: "FixtureReport", floors) -> None:
+    """Pull every fixture inside the wall FACES.
+
+    Applied to the RESULT rather than to the search space, and that ordering is
+    the whole point. Insetting before placement shrinks the room the placer is
+    reasoning about, and fixtures start falling out of rooms that can hold them
+    perfectly well — tried it, and both bedrooms of the lobby-hub plan lost
+    their beds, which is a worse drawing than the one being fixed.
+
+    Clipping afterwards costs nothing: a bed backed onto a party wall loses
+    50 mm of its nominal length and gains a 0.10 m gap from the bed on the
+    other side, which is exactly the wall now drawn between them.
+    """
+    for f in rep.fixtures:
+        fl = floors.get(f.room)
+        if fl is None:
+            continue
+        cell = fl.cells[min(f.cell_idx, len(fl.cells) - 1)]
+        r = f.rect
+        clipped = Rect(max(r.x0, cell.x0), max(r.y0, cell.y0),
+                       min(r.x1, cell.x1), min(r.y1, cell.y1))
+        if clipped.x1 - clipped.x0 > 0.05 and clipped.y1 - clipped.y0 > 0.05:
+            f.rect = clipped
+
+
 _BEDROOMS = {"master_bedroom", "bedroom_standard", "maids_room"}
 _BATHS = {"common_bath", "ensuite_bath", "bath_toilet", "powder_room", "maids_bath"}
 
@@ -911,6 +1023,11 @@ def place_fixtures(layout, plan) -> FixtureReport:
     """
     rep = FixtureReport()
     orientations = getattr(plan, "orientations", {}) or {}
+    # One clear-floor view of every room, built once. Everything downstream —
+    # placement, door clearance, the clearance check — works on this so the
+    # furniture sits against the wall FACE, matching what gets drawn.
+    probe = _floor_probe(layout)
+    floors = {r.id: _RoomFloor(r, probe) for r in layout.rooms}
 
     door_walls: Dict[str, set] = {}
     for d in getattr(plan, "doors", []):
@@ -934,5 +1051,6 @@ def place_fixtures(layout, plan) -> FixtureReport:
             elif r.type == "kitchen":
                 _place_kitchen(r, o, rep)
     check_door_clearance(rep, layout, plan)
-    check_clearances(rep, layout)
+    _clip_to_clear_floor(rep, floors)
+    check_clearances(rep, layout, floors)
     return rep
