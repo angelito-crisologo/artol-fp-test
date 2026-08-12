@@ -1114,7 +1114,75 @@ def _run_ai(brief: Brief, adjustments: dict = None, verbose: bool = True,
     )
 
 
-def _write(name, layout, topo, reason, rel_dir="", out_root=None, write_png=False):
+def _furnished_svg(layout, topo):
+    """The plan again, with Phase E.2 furniture drawn on it, plus its fit
+    report. Returns (svg, report) or (None, None) when nothing was placed.
+
+    Imported lazily and called only from the `--furnish` path. The fixture
+    stack stays out of the default pipeline on purpose: it is post-solve
+    cosmetics that must never influence a solve or a validation, and keeping
+    the import here means an ordinary run cannot even reach it.
+    """
+    from render import fixtures_overlay_svg, inject_overlay      # noqa: E402
+    from fixtures import place_fixtures, FixtureReport           # noqa: E402
+
+    combined = FixtureReport()
+
+    def _one(plan, sub_layout):
+        rep = place_fixtures(sub_layout, plan)
+        combined.fixtures.extend(rep.fixtures)
+        combined.unfit.extend(rep.unfit)
+        combined.clearance.extend(rep.clearance)
+        return inject_overlay(archplan_to_svg(plan),
+                              fixtures_overlay_svg(rep.fixtures, sub_layout),
+                              mask_behind_labels=True)
+
+    archplans = getattr(layout, "archplans", None)
+    if archplans:
+        # Each floor's ArchPlan carries its own per-floor sub-layout. Using the
+        # multi-storey parent here would furnish against BOTH storeys' rooms at
+        # once — the trap recorded in CLAUDE.md.
+        svg = compose_floor_svgs([(title, _one(p, p.layout))
+                                  for title, p in archplans])
+    else:
+        plan = getattr(layout, "archplan", None) or architecturalize(layout, topo)
+        svg = _one(plan, layout)
+    return svg, combined
+
+
+def _write_furnished(name, layout, topo, out_dir, write_png=False):
+    """Write `<name>.furnished.svg` BESIDE the plain plan, never over it.
+
+    A sidecar rather than an in-place change so that turning furniture on
+    cannot move a single one of the 52 baselines, and so the plain drawing
+    stays the thing the validator and the catalog are talking about.
+    """
+    try:
+        svg, rep = _furnished_svg(layout, topo)
+    except Exception as e:
+        print(f"  furnishing skipped: {e.__class__.__name__}: {e}")
+        return
+    path = os.path.join(out_dir, f"{name}.furnished.svg")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(svg)
+    tight = rep.tight(min_shortfall=0.30)
+    print(f"  wrote {path}")
+    print(f"  furniture: {len(rep.fixtures)} placed, {len(rep.unfit)} did not "
+          f"fit, {len(tight)} tight (>=0.30 m short of clearance)")
+    for line in rep.unfit[:4]:
+        print(f"    unfit: {line}")
+    for c in tight[:4]:
+        print(f"    tight: {c.describe()}")
+    if write_png and _HAS_CAIROSVG:
+        try:
+            cairosvg.svg2png(url=path, write_to=path[:-4] + ".png",
+                             output_width=560)
+        except Exception as e:
+            print(f"  PNG conversion skipped: {e.__class__.__name__}: {e}")
+
+
+def _write(name, layout, topo, reason, rel_dir="", out_root=None,
+           write_png=False, furnish=False):
     """Write the architectural plan SVG + PNG. Mirrors the brief's relative
     path under `out_root` (defaults to the canonical OUT dir). Test runs
     point this at TEST_OUT_DIR or TEST_BASELINES_DIR instead. Overwrites
@@ -1145,12 +1213,14 @@ def _write(name, layout, topo, reason, rel_dir="", out_root=None, write_png=Fals
             print(f"  wrote {png_path}")
         except Exception as e:
             print(f"  PNG conversion skipped: {e.__class__.__name__}: {e}")
+    if furnish:
+        _write_furnished(name, layout, topo, out_dir, write_png=write_png)
     print(f"  reasoning: {reason}")
     print(f"  topology id: {topo.id}")
 
 
 def _run_tests(update_baselines: bool = False, brief_filter: str = None,
-               write_png: bool = False) -> int:
+               write_png: bool = False, furnish: bool = False) -> int:
     """Run every brief in briefs/test/ through the hand-authored solver +
     architectural-plan pipeline. Renders go to test_output/ (or
     test_baselines/ when --update-baselines is set).
@@ -1192,6 +1262,7 @@ def _run_tests(update_baselines: bool = False, brief_filter: str = None,
         warns = sum(1 for i in layout.issues if i.severity == "warning")
         sugg  = sum(1 for i in layout.issues if i.severity == "suggestion")
         _write(name, layout, topo, reason, rel_dir=rel_dir, out_root=out_root,
+               furnish=furnish,
               write_png=write_png)
         print(f"  PASS  ({warns} warn, {sugg} sugg)")
         n_pass += 1
@@ -1229,6 +1300,13 @@ def _parse_args(argv=None):
                         "checked into git) instead of test_output/. Use after "
                         "an intentional renderer or topology change to refresh "
                         "the human-eye baseline.")
+    p.add_argument("--furnish", action="store_true",
+                   help="Also write a <name>.furnished.svg beside every plan, "
+                        "with Phase E.2 furniture drawn on it. Off by default "
+                        "and written as a SIDECAR, so no baseline moves and "
+                        "the plain drawing stays what the validator and "
+                        "catalog describe. Never affects solving or "
+                        "validation.")
     png_group = p.add_mutually_exclusive_group()
     png_group.add_argument("--png", action="store_true",
                    help="Also write a .png next to every .svg (requires "
@@ -1247,7 +1325,8 @@ def main(argv=None):
 
     if args.test:
         sys.exit(_run_tests(update_baselines=args.update_baselines,
-                            brief_filter=args.brief, write_png=write_png))
+                            brief_filter=args.brief, write_png=write_png,
+                            furnish=args.furnish))
     if args.update_baselines:
         print("note: --update-baselines only does anything with --test; ignoring.")
 

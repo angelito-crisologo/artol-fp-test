@@ -50,6 +50,29 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-12 — SHARED CODE, NO regen needed: `run.py --furnish` (opt-in)**
+Until now Phase E.2 furniture appeared in NO generated plan at all —
+`place_fixtures` had exactly one consumer in the repo, `polish.py`, and
+`run.py` / `app.py` / `build_catalog.py` never imported it. `--furnish` writes
+`<name>.furnished.svg` **beside** the plain plan and prints the fit report
+(placed / did-not-fit / tight, with examples).
+
+- **Sidecar, never in place.** The plain drawing stays what the validator and
+  the catalog describe, and no baseline moves. Verified: full suite with
+  `--furnish` writes 52 sidecars and touches 0 baselines; `test_output/` is
+  already gitignored.
+- **Off by default, lazy-imported.** The fixture stack is post-solve cosmetics
+  that must never influence a solve or a validation; keeping the import inside
+  the `--furnish` path means an ordinary run cannot reach it.
+- Multi-storey furnishes each floor from ITS OWN sub-layout (`plan.layout`),
+  not the parent — the both-storeys trap in CLAUDE.md. Verified visually on a
+  2s 3BR composite.
+- Labels are lifted above the furniture via `inject_overlay(...,
+  mask_behind_labels=True)`, so a bed cannot land across `MASTER BR`.
+- Note it draws the same neutral rectangles + three glyph families the overlay
+  has always used, NOT the 55 library symbols — that is still Layer C, and it
+  is independent of this wiring.
+
 **2026-08-12 — SHARED CODE, but NO regen needed: fixture library adopted
 (new `solver/fixture_library.py`, `solver/fixtures.py`, `core/render.py`,
 `ai/render_prompt.py`)**
