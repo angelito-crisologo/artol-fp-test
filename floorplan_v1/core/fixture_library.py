@@ -29,7 +29,12 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-# solver/ → floorplan_v1/ → fixtures/index.json
+# core/ → floorplan_v1/ → fixtures/index.json. Lives in core/ rather than
+# solver/ because BOTH layers need it: solver/fixtures.py for placement rules,
+# core/render.py for the drawings. core/ is the lower layer — solver imports
+# from it, never the reverse — and it already owns the other data loader
+# (core/rules.py). Imports are unaffected either way: run.py puts core/ and
+# solver/ both on sys.path, so `from fixture_library import ...` resolves.
 LIBRARY_DIR = os.path.normpath(os.path.join(_HERE, "..", "fixtures"))
 _INDEX_PATH = os.path.join(LIBRARY_DIR, "index.json")
 

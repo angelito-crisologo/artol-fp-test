@@ -72,9 +72,19 @@ Until now Phase E.2 furniture appeared in NO generated plan at all —
   opaque chips exist for polish.py, to paint over text an image model writes
   despite being told not to. Nothing in this path writes rogue text, so the
   chips had nothing to cover and merely hid the furniture behind every label.
-- Note it draws the same neutral rectangles + three glyph families the overlay
-  has always used, NOT the 55 library symbols — that is still Layer C, and it
-  is independent of this wiring.
+- **Layer C landed the same day:** it now draws the library's REAL symbols,
+  not neutral rectangles. `core/render.py` gains `fixture_symbol_svg` and
+  `fixtures_overlay_svg(..., symbols=True)`; anything the library cannot draw
+  falls back to the old rectangle. `fixture_library.py` MOVED `solver/` →
+  `core/`, since both layers need it and core/ is the lower one (imports are
+  unaffected — both dirs are on sys.path). 1204 symbols across the suite,
+  0 fallbacks.
+- **The cairosvg stroke trap is handled.** The library sets
+  `vector-effect="non-scaling-stroke"`; cairosvg does not implement it, so at
+  SCALE=42 a 0.9 px line rasterises ~38 px and every symbol becomes a blob.
+  Stroke widths are divided by SCALE **and the attribute removed** — doing one
+  without the other is broken in one renderer or the other (a renderer that
+  DOES honour it would then draw 0.9/42 px, i.e. nothing).
 
 **2026-08-12 — SHARED CODE, but NO regen needed: fixture library adopted
 (new `solver/fixture_library.py`, `solver/fixtures.py`, `core/render.py`,

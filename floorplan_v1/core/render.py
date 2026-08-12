@@ -1950,16 +1950,118 @@ def _fixture_family(kind: str) -> str:
     return _FIXTURE_GLYPH.get(kind, "")
 
 
-def fixtures_overlay_svg(fixtures, layout) -> str:
+# --- Layer C: draw the library's real symbols -------------------------------
+#
+# Every symbol in fixtures/ is drawn in METRES in its own local space: the wall
+# it backs onto is at y = 0, it faces +y into the room, and the footprint's
+# back-left corner sits at `origin` inside the viewBox. One transform carries
+# the metre-to-pixel conversion and the y-flip together:
+#
+#     translate(px, py) scale(S, -S) rotate(theta) translate(-ox, -oy)
+#
+# S is SCALE, which the library was authored against. The trailing translate
+# puts the footprint's back-left corner on the anchor point — not always (0,0),
+# since the dining tables draw their chairs outside their own footprint.
+#
+# A welcome side effect: the symbol draws its TRUE shape, so an L-sofa and a
+# round table read correctly even though Fixture.rect is only their bounding
+# box. The placer still reasons about the rectangle; only the drawing improves.
+
+# theta=0 is a fixture backed onto its SOUTH wall: after the y-flip, local +y
+# (into the room) points north.
+_SYMBOL_THETA = {"S": 0, "E": 90, "N": 180, "W": 270}
+
+# Which corner of the fixture's rect is the footprint's back-left. "Left" is
+# defined facing INTO the room, so it rotates with the symbol.
+_SYMBOL_ANCHOR = {
+    "S": lambda r: (r.x0, r.y0),
+    "N": lambda r: (r.x1, r.y1),
+    "E": lambda r: (r.x1, r.y0),
+    "W": lambda r: (r.x0, r.y1),
+}
+
+_SYM_INNER = re.compile(r"<svg[^>]*>(.*)</svg>\s*$", re.S)
+_SYM_STRIP = re.compile(r"<(title|desc)>.*?</\1>", re.S)
+_SYM_STROKE = re.compile(r'stroke-width="([\d.]+)"')
+_SYM_VECTOR = re.compile(r'\s*vector-effect="non-scaling-stroke"')
+
+_SYMBOL_CACHE = {}
+
+
+def _symbol_body(fixture_id: str) -> str:
+    """The drawable content of a symbol file, ready to place.
+
+    Two edits to what the library ships, and they go together:
+
+    The library sets `vector-effect="non-scaling-stroke"` on every stroked
+    element so a 0.9 px line stays 0.9 px however the symbol is scaled.
+    Browsers and resvg honour it; **cairosvg does not implement it at all**,
+    and cairosvg is what run.py --png and the whole of polish.py rasterise
+    with. Left alone, scaling by 42 turns a 0.9 px outline into a 38 px slab
+    and every symbol becomes a featureless blob.
+
+    So stroke widths are divided by SCALE, which renders identically at 1:1.
+    The attribute must then be REMOVED, or a renderer that does honour it
+    would apply 0.9/42 px and draw nothing at all. Fixing one without the
+    other is broken in one viewer or the other.
+
+    Cached: this is immutable file content, no per-layout state.
+    """
+    if fixture_id in _SYMBOL_CACHE:
+        return _SYMBOL_CACHE[fixture_id]
+    from fixture_library import load_library
+    with open(load_library().get(fixture_id).svg_path, encoding="utf-8") as fh:
+        raw = fh.read()
+    m = _SYM_INNER.search(raw)
+    body = _SYM_STRIP.sub("", m.group(1)) if m else ""
+    body = _SYM_VECTOR.sub("", body)
+    body = _SYM_STROKE.sub(
+        lambda s: f'stroke-width="{float(s.group(1)) / SCALE:.5f}"', body)
+    _SYMBOL_CACHE[fixture_id] = body
+    return body
+
+
+def fixture_symbol_svg(kind: str, rect, against: str, layout) -> Optional[str]:
+    """One placed library symbol, or None when there is nothing to draw."""
+    if not against or against not in _SYMBOL_THETA:
+        return None                      # free-standing; no wall to orient from
+    try:
+        from fixture_library import load_library
+        spec = load_library().get(kind)
+    except (KeyError, ImportError, OSError):
+        return None
+    body = _symbol_body(kind)
+    if not body:
+        return None
+    mx, my = _SYMBOL_ANCHOR[against](rect)
+    px, py = _to_svg_xy(layout.lot, mx, my)
+    return (f'<g transform="translate({px:.3f},{py:.3f}) '
+            f'scale({SCALE},{-SCALE}) rotate({_SYMBOL_THETA[against]}) '
+            f'translate({-spec.origin_x:.4f},{-spec.origin_y:.4f})">'
+            f'{body}</g>')
+
+
+def fixtures_overlay_svg(fixtures, layout, symbols: bool = True) -> str:
     """SVG for a list of Fixture-like objects (.rect, .kind, .room).
 
     Takes plain data rather than importing solver.fixtures, so core/ keeps its
     layering: the caller places the furniture and hands the rectangles here.
     Drawn fixture-weight, matching the dining-counter convention.
+
+    With `symbols` (the default) each piece is drawn as its real library
+    symbol. Anything the library has no drawing for — or that is free-standing,
+    with no wall to orient from — falls back to the neutral rectangle and
+    linework glyph below, which is also all `symbols=False` emits.
     """
     out = []
     for f in fixtures:
         rc = f.rect
+        if symbols:
+            sym = fixture_symbol_svg(f.kind, rc, getattr(f, "against", ""),
+                                     layout)
+            if sym:
+                out.append(sym)
+                continue
         x0, y0 = _to_svg_xy(layout.lot, rc.x0, rc.y1)     # SVG y is flipped
         x1, y1 = _to_svg_xy(layout.lot, rc.x1, rc.y0)
         fam = _fixture_family(f.kind)
