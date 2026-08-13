@@ -50,6 +50,36 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-13 — `1s_3br_sq_center_spine_baths_ds_gr` investigated, NOT shipped;
+recommend dropping**
+Completes the 2026-08-12 drop. Same trap (`left_anchored` + `right_anchored` +
+`zone_split` infeasible together), but here the anchors ENCODE the parti —
+`[master, ensuite, kitchen]` / `[br2, br3, common]` are exactly the three
+columns flanking the full-depth great_room. Keeping them and dropping
+everything else was tried in all four combinations; all infeasible. The only
+solving configuration discards the parti.
+- **The file contradicts its own label**, worth knowing for any redraw:
+  `zone_split` is horizontal/private-rear (a front BAND, incompatible with a
+  full-depth spine); `kitchen` is declared public by `zone_split` yet also
+  sits in `rear_anchored`, so it is required front and rear at once; and
+  `front_to_rear_stacks` puts great IN FRONT OF the bedrooms, again a band
+  reading rather than a spine.
+- **The feasible version is permanently degenerate.** `great` takes **47-48%
+  of the floor at every size** (38.5 / 42.0 / 52.5 / 53.2 at 13.5 / 14 / 15 /
+  16 square) while br2 and br3 stay at or beside the 6.0 m² PD 1096 floor.
+  Added area never reaches the bedrooms — it goes to great_room and master.
+- **And it is a near-duplicate** of `1s_3br_sq_front_back_split_baths_ds_hall_gr`
+  shipped the same day: same front-block-plus-rear-band shape, differing only
+  by having no corridor, worse in every proportion (great 48% vs 39%, both
+  bedrooms at the floor vs 6.0/7.5), and reaching no smaller lot. Same
+  near-duplicate reasoning that retired `1s_2br_wd_l_wrap_bath_hall_gr`.
+- No brief, no baseline, topology unchanged. 55 pass / 0 fail.
+
+**All four topologies from the 2026-08-12 drop are now resolved:** 4BR
+split_wings and side_corridor shipped, half_spine's resolution shipped under
+an honest name (`front_back_split_baths_ds_hall_gr`) with the parent retained
+for redraw, center_spine recommended for deletion.
+
 **2026-08-13 — `1s_3br_sq_side_corridor_baths_ds_hall_gr` VERIFIED and shipped
 under its own name**
 Unlike its two siblings this one keeps its parti once made feasible, so it
