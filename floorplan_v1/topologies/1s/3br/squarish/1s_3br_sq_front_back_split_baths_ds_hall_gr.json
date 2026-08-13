@@ -1,0 +1,229 @@
+{
+  "$schema": "https://aisolutionmaven.com/schemas/topology-v0.1.json",
+  "id": "1s_3br_sq_front_back_split_baths_ds_hall_gr",
+  "label": "Squarish-shell 3BR / baths DISTRIBUTED, FRONT-BACK SPLIT with a rear corridor. The front half is master + great_room side by side; the whole rear band holds br2, br3, both baths and the kitchen, served by a corridor running across the band's front edge. br3's bath doors off the bedroom; the other bath doors off the corridor, which opens into the great_room.",
+  "target_shell": "squarish",
+  "rooms": [
+    {
+      "id": "master",
+      "type": "master_bedroom",
+      "zone": "private",
+      "size_priority": "master_bedroom"
+    },
+    {
+      "id": "br2",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common_e",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "hall_e",
+      "type": "hallway",
+      "zone": "circulation",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "br3",
+      "type": "bedroom_standard",
+      "zone": "private",
+      "size_priority": "other_bedrooms"
+    },
+    {
+      "id": "common_w",
+      "type": "common_bath",
+      "zone": "service",
+      "size_priority": "service_and_baths"
+    },
+    {
+      "id": "great",
+      "type": "great_room",
+      "zone": "public",
+      "size_priority": "public_LDK",
+      "hosts_entry": true
+    },
+    {
+      "id": "kitchen",
+      "type": "kitchen",
+      "zone": "public",
+      "size_priority": "public_LDK"
+    }
+  ],
+  "adjacencies": [
+    {
+      "a": "great",
+      "b": "kitchen",
+      "min_shared_wall_m": 1.5,
+      "kind": "open_plan",
+      "note": "great_room + kitchen form the open LDK (gr style), matching the source's continuous LIVING/DINING/KITCHEN volume"
+    },
+    {
+      "a": "great",
+      "b": "hall_e",
+      "min_shared_wall_m": 0.9,
+      "kind": "open_plan",
+      "note": "the east hall's mouth opens into the great_room. FIXED from the source: pep_SHD-2017036-DESIGN1 doors this connection off a single hinged door (flagged 'violated' against the rule 2 [PREFER] hallway-open-to-public default); this topology applies the catalog's standard open-mouth convention instead."
+    },
+    {
+      "a": "master",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "master (the source's largest, undesignated BEDROOM 1) doors into the east hall, at its front end"
+    },
+    {
+      "a": "br2",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_door",
+      "note": "br2 doors into the east hall, at its rear end — matches the source's BEDROOM 2"
+    },
+    {
+      "a": "common_e",
+      "b": "hall_e",
+      "min_shared_wall_m": 1.0,
+      "kind": "bath_door",
+      "note": "east wing's shared bath doors into the hall, between master and br2 — matches the source's T&B between BEDROOM 2 and BEDROOM 1"
+    },
+    {
+      "a": "master",
+      "b": "common_e",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's T&B/BEDROOM 1 shared wall"
+    },
+    {
+      "a": "br2",
+      "b": "common_e",
+      "min_shared_wall_m": 1.2,
+      "kind": "bath_to_bedroom_wall",
+      "note": "geometry only, no door — matches the source's BEDROOM 2/T&B shared wall"
+    },
+    {
+      "a": "great",
+      "b": "br3",
+      "min_shared_wall_m": 1.0,
+      "kind": "bedroom_to_public",
+      "note": "br3 doors directly onto the great_room — the half of the plan with NO dedicated hall, matching the source's BEDROOM 3 (which opens straight onto the open LIVING/DINING/KITCHEN volume with no hallway on that side of the plan at all). Kept as-is per rule 1's sanctioned tight-lot-bedroom-off-public exception, rather than forcing a hall this precedent never had."
+    },
+    {
+      "a": "common_w",
+      "b": "br3",
+      "kind": "bath_door",
+      "min_shared_wall_m": 0.8,
+      "note": "br3's bath doors off the bedroom. In the half_spine parent this bath opened onto a vestibule (hall_w); removing that vestibule is what makes this topology feasible AND lets the bath reach its 3.0 m2 legal floor, which it never could with hall_w present at any lot size tested."
+    }
+  ],
+  "soft_proximities": [],
+  "entry_point": "great",
+  "zone_split": null,
+  "fallback_topology": null,
+  "match_bedroom_widths": false,
+  "left_anchored": null,
+  "right_anchored": null,
+  "rear_anchored": [
+    "br2",
+    "common_e",
+    "common_w"
+  ],
+  "front_to_rear_stacks": [
+    [
+      "great",
+      "kitchen"
+    ],
+    [
+      "master",
+      "hall_e",
+      "br2"
+    ],
+    [
+      "great",
+      "br3"
+    ]
+  ],
+  "lot_adjustment_profiles": [
+    {
+      "name": "sq_front_back_split_baths_ds_hall_gr",
+      "when": {
+        "buildable_area_lt_sqm": 200
+      },
+      "auto_apply": {
+        "common_bath": {
+          "min_area_sqm": 3.0
+        }
+      },
+      "preferred_apply": {
+        "kitchen": {
+          "min_least_dim_m": 1.8
+        }
+      },
+      "rationale": "The common_bath 3.0 m2 floor is the load-bearing entry and applies at every size this topology reaches, hence the deliberately generous threshold — without it the west bath settles around 2.0 m2, under the legal minimum. Caps on master/bedroom_standard and a hallway least-dimension floor were tried and are all individually infeasible here, so they are deliberately absent rather than forgotten."
+    }
+  ],
+  "setback_elements": [
+    {
+      "type": "dirty_kitchen",
+      "location": "rear_setback",
+      "covered": false,
+      "behind": "kitchen"
+    },
+    {
+      "type": "service_area",
+      "location": "rear_setback",
+      "covered": false
+    },
+    {
+      "type": "lanai",
+      "location": "side_setback",
+      "covered": false
+    }
+  ],
+  "building_voids": [],
+  "notes": [
+    "Squarish 3BR, baths distributed, front-back split with a rear corridor.",
+    "",
+    "PROVENANCE — this is NOT a design drawn from a precedent. It is what",
+    "1s_3br_sq_half_spine_baths_ds_hall_gr actually resolves to once it is made",
+    "feasible, promoted to its own file under an honest name on 2026-08-13.",
+    "That parent (sourced from pep_SHD-2017036-DESIGN1) is infeasible at every",
+    "lot size as authored, and every route to fixing it either stays infeasible",
+    "or lands here. Keeping this under the half_spine name would have been the",
+    "'relabelled side_split' the parent's own notes warn against, so it was",
+    "separated instead. The parent is retained, unshipped, for a proper redraw.",
+    "",
+    "WHAT IT IS. Front half: master (left) and great_room (right), side by side,",
+    "both full depth. Rear band: common_e, br2, common_w, br3 and kitchen across",
+    "the back. hall_e runs east-west along the front edge of that band and opens",
+    "into the great_room — a rear corridor, not a wing spine. master and br2 door",
+    "off it, common_e doors off it, and br3's bath (common_w) doors off br3.",
+    "",
+    "WHAT CHANGED FROM THE PARENT. Three things, and the first is the one that",
+    "matters: hall_w (a bath vestibule) was REMOVED. It was wedged between br3 and",
+    "a great_room that also had to reach hall_e and the kitchen, so great_room",
+    "wrapped the west side and crushed it — br3 6.2 m2, common_w 2.0, hall_w 1.5,",
+    "against great 50.6 and master 32.2, with the kitchen down to 3.5. Removing it",
+    "recovers the kitchen to 7.0, br3 to 9.0, drops master to 24.9, and lets",
+    "common_bath reach its 3.0 m2 legal floor — which was unsatisfiable at EVERY",
+    "lot size with hall_w present, tested up to 20x16. Also: left_anchored and",
+    "right_anchored nulled (declared together they are infeasible — the",
+    "over-constrained-anchors trap), and zone_split nulled (the parent's was wrong",
+    "regardless: it declared private_side 'right' while listing only the east",
+    "rooms, though br3 and common_w are private and sit west).",
+    "",
+    "VERIFIED 2026-08-13. Canonical 14x14: 90.0 m2 floor, 0 errors, 0 warnings.",
+    "Typical split: great ~34-35, master ~25-26, bedrooms 6.0-7.5, kitchen 4.5-6.0, baths 3.0 and 4.5. Individual figures shift a little between runs (CP-SAT is non-deterministic even with a fixed seed); the totals and arrangement are stable.",
+    "Also solves 13.5x13.5 (80.8 m2, the band floor) and 15x15 (110.0). INFEASIBLE",
+    "at 13x13 and below. All inside the 80-120 m2 3BR/2-bath band.",
+    "",
+    "KNOWN WEAKNESS: br2 sits at the 6.0 m2 hard floor while master takes 24.9, so",
+    "the bedroom hierarchy is lopsided. Caps on master_bedroom or bedroom_standard",
+    "are individually infeasible here, and set_max_area_sqm does not bite because",
+    "snap_gaps and the dead-strip claimer inflate rooms after the solve. Live with",
+    "it or re-tune; do not assume it is untried."
+  ]
+}

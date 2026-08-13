@@ -50,6 +50,40 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-13 — NEW: `1s_3br_sq_front_back_split_baths_ds_hall_gr`, VERIFIED**
+Front half is master (left) + great_room (right) side by side, both full
+depth; the rear band holds common_e, br2, common_w, br3 and the kitchen, with
+`hall_e` running east-west along that band's front edge and opening into the
+great_room. br3's bath doors off the bedroom; common_e doors off the corridor.
+- **Provenance matters here.** This is not drawn from a precedent — it is what
+  `1s_3br_sq_half_spine_baths_ds_hall_gr` actually resolves to once made
+  feasible, promoted to its own file under an honest name. Keeping it under
+  the half_spine id would have been the "relabelled side_split" that file's
+  own notes warn against. The parent stays unshipped for a proper redraw.
+- **The unlock was removing `hall_w`**, the bath vestibule. It sat between br3
+  and a great_room that also had to reach hall_e and the kitchen, so
+  great_room wrapped the west side and crushed it. Removing it recovers the
+  kitchen 3.5 → 7.0, br3 6.2 → 9.0, drops master 32.2 → 24.9, and lets
+  `common_bath` reach its 3.0 m² legal floor — which was unsatisfiable at
+  EVERY lot size with hall_w present, tested up to 20x16.
+- Also: `left_anchored` / `right_anchored` nulled (declared together they are
+  the over-constrained-anchors trap), `zone_split` nulled (the parent's was
+  wrong regardless — it declared private_side "right" while listing only the
+  east rooms, though br3 and common_w are private and sit west).
+- **The `common_bath` 3.0 m² floor in `lot_adjustment_profiles` is
+  load-bearing**, and its threshold is deliberately generous (200 m²) so it
+  applies at every size the topology reaches. Caps on master_bedroom /
+  bedroom_standard and a hallway least-dimension floor are each individually
+  INFEASIBLE here — absent on purpose, not forgotten.
+- Canonical brief `1s_3br_14x14_sq_front_back_split_baths_ds_hall_gr_ncp`:
+  90.0 m², 0 errors, **0 warnings**. Feasible 13.5x13.5 (80.8, band floor)
+  through 15x15 (110.0); INFEASIBLE at 13x13 and below. Baseline written.
+  **54 pass / 0 fail** (was 53), 51 sweep pass.
+- Known weakness recorded in the notes: br2 sits at the 6.0 m² hard floor
+  while master takes ~25, so the bedroom hierarchy is lopsided. Both cap
+  routes are infeasible and `set_max_area_sqm` does not bite (post-solve
+  inflation), so it is documented rather than fixed.
+
 **2026-08-12 — NEW: `1s_4br_wd_split_wings_baths_multi_hall_gr` (the catalog's
 first 4-bedroom topology), VERIFIED**
 Twin symmetric bedroom wings flanking a central public core: master +
