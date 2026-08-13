@@ -144,38 +144,14 @@
   "entry_point": "great",
   "zone_split": null,
   "match_bedroom_widths": true,
-  "left_anchored": [
-    "great",
-    "kitchen"
-  ],
-  "right_anchored": [
-    "hall",
-    "master",
-    "br2",
-    "br3",
-    "bath1",
-    "bath2"
-  ],
+  "left_anchored": null,
+  "right_anchored": null,
   "rear_anchored": [
     "kitchen",
     "master",
     "bath1"
   ],
-  "front_to_rear_stacks": [
-    [
-      "great",
-      "kitchen"
-    ],
-    [
-      "br3",
-      "br2",
-      "master"
-    ],
-    [
-      "great",
-      "hall"
-    ]
-  ],
+  "front_to_rear_stacks": null,
   "lot_adjustment_profiles": [
     {
       "name": "compact_sq_side_corridor_baths_ds_hall_gr",
@@ -269,17 +245,46 @@
     "Carport: NCP base form — the source shows no carport or garage anywhere on",
     "the sheet.",
     "",
-    "STATUS: run through the CP-SAT solver at authoring time (2026-08-12).",
-    "INFEASIBLE at every tested lot (10.5x14, 9.5x13, 11x15). Control tests on",
-    "the ALREADY-CATALOGUED narrow siblings 1s_2br_nw_side_corridor_bath_hall",
-    "and 1s_3br_nw_side_corridor_baths_ds_hall_gr.json — both unmodified,",
-    "pre-existing in the repo before this session — were ALSO infeasible in",
-    "this same environment, as were the wide half_spine and center_spine",
-    "siblings when control-tested. This points to a reproducible, environment-",
-    "specific solver issue affecting the spine/hall parti family broadly, not a",
-    "defect this file introduces. Structural/schema validation (room-id",
-    "references, adjacency completeness) passed. Re-run verification once the",
-    "solver environment issue is resolved; do not treat INFEASIBLE here as",
-    "evidence against the topology's own design."
+    "STATUS: VERIFIED 2026-08-13. Solves COMPLIANT at 13.5x13.5 — 80.7 m2 floor,",
+    "0 errors, 1 warning (window_area_habitable, present at every size tested).",
+    "Also solves 13x13 (72.0, below the 80 m2 band floor), 14x14 (90.0) and",
+    "14.5x14.5 (99.7). Published minimum 13.5x13.5, the smallest in-band size.",
+    "",
+    "The authoring-time note claiming 'a reproducible, environment-specific solver",
+    "issue affecting the spine/hall parti family broadly, not a defect this file",
+    "introduces' was WRONG and has been removed. The cause was specific and in this",
+    "file: left_anchored + right_anchored + front_to_rear_stacks declared together",
+    "over-constrain the solver against its own adjacency graph — the recurring trap",
+    "CLAUDE.md records from 2026-07-19. Bisected at a 25x25 envelope: no single",
+    "knob and no pair is enough; all three must go. Finer edits were tried and all",
+    "fail — dropping only the [great, hall] stack entry, dropping it plus either",
+    "anchor list, and removing the stacks while keeping both anchor lists. All",
+    "three are now null; rear_anchored alone does the shaping, with",
+    "match_bedroom_widths holding the bedroom column together.",
+    "",
+    "THE PARTI SURVIVES, which is the part a solve cannot tell you and which is",
+    "why this file ships where its two siblings did not. `hall` still serves every",
+    "private room — master, br2, br3, bath1 and bath2 all door onto it — and still",
+    "opens into the great_room. At 13.5x13.5 it comes out 1.25 x 4.80 m running",
+    "north-south, with the master + br2 bedroom column on its west and the public",
+    "zone on its east.",
+    "",
+    "Two honest caveats on the realized geometry:",
+    "  - br3 does NOT sit in the bedroom column. It lands front-right, south of",
+    "    the great_room, reached from the corridor's south end. The corridor is",
+    "    therefore single-loaded for two of the three bedrooms, not all three.",
+    "  - The corridor sits between the bedroom column and the public zone rather",
+    "    than hard against a side wall, so it reads as the side of the BEDROOM",
+    "    BLOCK, not the side of the plan.",
+    "",
+    "Bedroom hierarchy is tight rather than clean: at 13.5x13.5 master 12.9 against",
+    "br2 13.1 and br3 12.4, so a standard bedroom can label marginally larger than",
+    "the master. This worsens as the lot grows (at 14x14, br3 14.2 against master",
+    "13.0), which is the main reason the canonical brief sits at the band floor",
+    "rather than mid-band.",
+    "",
+    "The lot_adjustment_profiles entry fires below 95 m2 buildable and makes NO",
+    "difference at any size tested — verified by forcing it to always apply. It is",
+    "inert, kept only because it is harmless; do not assume it is doing work."
   ]
 }

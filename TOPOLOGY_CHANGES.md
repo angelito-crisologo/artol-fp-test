@@ -50,6 +50,38 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-13 — `1s_3br_sq_side_corridor_baths_ds_hall_gr` VERIFIED and shipped
+under its own name**
+Unlike its two siblings this one keeps its parti once made feasible, so it
+ships as authored rather than being renamed.
+- Same trap: `left_anchored` + `right_anchored` + `front_to_rear_stacks`
+  declared together, infeasible at every lot size. No single knob and no pair
+  is enough; all three must go. Finer edits all fail too — dropping only the
+  `[great, hall]` stack entry, that plus either anchor list, and removing the
+  stacks while keeping both anchor lists. `rear_anchored` plus
+  `match_bedroom_widths` now do the shaping.
+- **The parti survives:** `hall` still serves every private room — master,
+  br2, br3, bath1, bath2 all door onto it — and still opens into the
+  great_room. Two honest caveats recorded in the notes: br3 lands front-right
+  rather than in the bedroom column, so the corridor is single-loaded for only
+  two of three bedrooms; and the corridor sits between the bedroom column and
+  the public zone rather than against a side wall, so it reads as the side of
+  the BEDROOM BLOCK, not of the plan.
+- Canonical brief `1s_3br_13.5x13.5_sq_side_corridor_baths_ds_hall_gr_ncp`:
+  80.7 m², 0 errors, 1 warning (`window_area_habitable`, present at every size
+  tested). Deliberately at the band FLOOR, not mid-band: bedroom hierarchy is
+  tight (master ~12.9 vs br2 ~13.1) and degrades as the lot grows (at 14x14,
+  br3 14.2 vs master 13.0), so a bigger canonical would show a standard
+  bedroom clearly outsizing the master. Also solves 13x13 (72.0, below band),
+  14x14 (90.0), 14.5x14.5 (99.7). Baseline written.
+  **55 pass / 0 fail** (was 54), 51 sweep pass.
+- Its `lot_adjustment_profiles` entry is INERT — verified by forcing it to
+  always apply, no difference at any size. Kept because harmless; do not
+  assume it is doing work.
+
+Remaining from the 2026-08-12 drop: only `1s_3br_sq_center_spine_baths_ds_gr`
+is still unvalidated.
+
 **2026-08-13 — NEW: `1s_3br_sq_front_back_split_baths_ds_hall_gr`, VERIFIED**
 Front half is master (left) + great_room (right) side by side, both full
 depth; the rear band holds common_e, br2, common_w, br3 and the kitchen, with
