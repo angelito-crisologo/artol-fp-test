@@ -50,8 +50,16 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
-**2026-08-13 — `1s_3br_sq_center_spine_baths_ds_gr` investigated, NOT shipped;
-recommend dropping**
+**2026-08-13 — `1s_3br_sq_center_spine_baths_ds_gr` DELETED**
+Investigated, then removed at user request. Regen note: it never had a brief,
+a baseline or an inbound `fallback_topology`, so nothing else moves — but the
+squarish 3BR group loses a file it never counted as an entry.
+
+The unrelated wide `1s_3br_wd_center_spine_baths_ds_hall_gr` is a DIFFERENT
+topology and is untouched; `1s_3br_wd_split_wings_baths_ds_hall_gr` falls back
+to it and that reference was verified to still resolve.
+
+Why it was dropped:
 Completes the 2026-08-12 drop. Same trap (`left_anchored` + `right_anchored` +
 `zone_split` infeasible together), but here the anchors ENCODE the parti —
 `[master, ensuite, kitchen]` / `[br2, br3, common]` are exactly the three
