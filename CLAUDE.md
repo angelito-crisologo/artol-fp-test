@@ -777,18 +777,22 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
   likewise placed on their bounding box, so the free corners a circle buys are
   not exploited. Living/dining/great/carport ARE placed as of 2026-08-14.
 - **Fit report ANALYSED 2026-08-14 — the headline number was misleading.** Of
-  121 "did not fit" entries, **103 are rooms that HAVE the space and are only
-  blocked by a doorway; just 18 rooms genuinely have nowhere to put the
-  fixture.** So the report was making the catalog look far worse than it is,
+  114 "did not fit" entries, **101 are rooms that HAVE the space and are only
+  blocked by a doorway; just 13 rooms genuinely have nowhere to put the
+  fixture.** (Started at 140/18 before two Layer-D bugs were fixed: the counter
+  blocking its own appliances, and the dining-counter blindness below.) So the report was making the catalog look far worse than it is,
   and anyone quoting the raw count as a catalog defect list would have been
   wrong. The test that separates them: re-place the fixture ignoring ONLY the
   door zone — if it then fits, the room is big enough.
-  **The 18 real ones, and these ARE catalog findings:** 9 `common_bath` +
-  1 `ensuite_bath` cannot take a 0.90 m shower at any position, and 8
+  **The 13 real ones, and these ARE catalog findings:** 9 `common_bath` +
+  1 `ensuite_bath` cannot take a 0.90 m shower at any position, and 3
   `great_room`s are too small for even the 5.0 m² compact dining table.
+  **14 of the original 18 sat at their topology's published MINIMUM**, where a
+  tight plan is the design rather than a defect; only 4 were above it, and
+  those are the ones actually worth investigating.
   Worst briefs: `1s_2br_11x10_wd_side_split_baths_cl_gr` (7),
   `1s_2br_10x11_sq_side_split_baths_cl_hall_ld` (6).
-  **Still open:** the 103 doorway conflicts are placement quality, not room
+  **Still open:** the 101 doorway conflicts are placement quality, not room
   size. The largest single mechanical cause was found and fixed (see the
   counter note below); what remains is showers, sinks and beds losing to a
   door swing on their only viable wall.
@@ -853,6 +857,17 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
 - **1BR topologies need `private_area_floor: false`** — the solver's hard "private ≥ public" area rule assumes a multi-bedroom private wing; a single bedroom can never satisfy it against a full LDK. See [[solver-topology-overrides]].
 - **Zone ratio (private/public split) is now per-topology configurable, not just on/off.** `zone_ratio_private_floor_pct` / `zone_ratio_private_target_pct` (both default 50.0/55.0, reproducing the old fixed 55/45-favoring-private behavior byte-for-byte for every topology that doesn't set them) generalize what used to be hardcoded constants in `solver.py`'s zone-ratio block. Use for a deliberately public-heavy design (target < 50 — keep floor ≤ target on that side of 50 or the hard floor contradicts the soft target and the block goes infeasible). See [[zone-ratio-configurable]].
 - **Dead-strip reclaiming is ALWAYS ON and deliberately permissive — there is no `claim_dead_strips` flag any more** (removed 2026-08-06 from the dataclass, loader, 7 copy sites and 5 topology JSONs; don't go looking for a switch). Rationale: these plans are **customer-discussion documents** and a brief for the architect who draws the official version, not construction sets — an unexplained interior void reads as a mistake, while a slightly irregular room reads as "this space belongs to the living room". So the claimer favours the room that obviously owns a strip over rule-keeping: no master-supremacy check (it still holds at solve time and during snap growth, so only the LABELS can show a standard marginally larger), room-type priority is a tie-break not a gate, thickness floor 0.25 m, contact floor 0.2. **The one rule that survives is the daylight guard** — a claim is skipped if it would cut a window-requiring room off from the exterior, because that is a hard PD 1096 §808 error that makes the plan an unusable brief. Don't remove it when loosening further. Prefer this over `match_widths`/width-pinning, which ADD solver constraints and break feasibility at exactly the tight sizes you're trying to fix.
+- **A great_room served by a `counter_divider` does NOT want a dining table.**
+  The counter is the catalog's deliberate answer for compact plans — a
+  great_room near its hard minimum fits a couch and a TV but not a table, so
+  the millwork does the table's job (a LOCKED design). It is built by
+  `architectural_plan.py` and drawn by `render.py`, living in `plan.counters`,
+  NOT in `solver/fixtures.py`. Layer D initially reported those rooms as "no
+  dining table fits" — a false defect for a dining function that was already
+  present, drawn by another subsystem. `_has_dining_counter` now checks
+  `Counter.room` / `Counter.facing`, skips the table, and gives the seating
+  group the whole room instead of half. Before adding furniture to a room,
+  check whether another subsystem already furnishes it.
 - **The anchor-trap SIGNATURE is a reason to TEST, not a diagnosis.** Nine
   topologies arriving 2026-08-12/14 all declared `left_anchored` +
   `right_anchored` + `rear_anchored` together, but the causes differed and one

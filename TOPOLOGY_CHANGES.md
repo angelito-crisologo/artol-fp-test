@@ -52,6 +52,17 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 _Nothing pending — regenerated 2026-08-14._
 
+**2026-08-14 — SHARED CODE (`solver/fixtures.py`): Layer D no longer demands a
+dining table in counter-served rooms**
+A `counter_divider` adjacency puts a dining counter on the kitchen seam, built
+by `architectural_plan.py` and drawn by `render.py` (`plan.counters`). Layer D
+did not know, so it reported "no dining table fits" for rooms whose dining
+function was already present — a false defect, and the catalog's deliberate
+answer for compact plans at that. `_has_dining_counter` now checks
+`Counter.room`/`Counter.facing`; those rooms skip the table and give the
+seating group the WHOLE room rather than half, which is the point of the
+parti. "No dining table" reports 8 → 3, fixtures 941 → 944.
+
 **2026-08-14 — SHARED CODE (`solver/fixtures.py`): the counter no longer
 blocks its own appliances**
 A sink, range or fridge is set INTO the counter run, so the counter is not an

@@ -1149,18 +1149,43 @@ def _place_dining(room, zone: Rect, blockers: List[Rect],
     blockers.append(rect)
 
 
-def _place_public(room, orient, door_walls: set, rep: "FixtureReport") -> None:
+def _has_dining_counter(room, plan) -> bool:
+    """Does this room already eat at a counter rather than a table?
+
+    A `counter_divider` adjacency puts a dining counter on the kitchen seam,
+    and `architectural_plan.py` already builds it and `render.py` already draws
+    it — it lives in `plan.counters`, not in this module. It is the catalog's
+    deliberate answer for compact plans: a great_room near its hard minimum
+    fits a couch and a TV but not a table, so the millwork does the table's job
+    (see `counter_divider`, a LOCKED design). Layer D reported those rooms as
+    "no dining table fits", which was a false defect — the dining function was
+    already there, drawn by another subsystem.
+    """
+    # Counter.room is the kitchen-side room the band sits in; Counter.facing is
+    # the room the stools serve. Either end means this room eats at the counter.
+    for c in (getattr(plan, "counters", None) or ()):
+        if room.id in (getattr(c, "room", None), getattr(c, "facing", None)):
+            return True
+    return False
+
+
+def _place_public(room, orient, door_walls: set, rep: "FixtureReport",
+                  plan=None) -> None:
     cell = room.rect
     sibs = room.cells[1:]
     blockers: List[Rect] = []
+    counter = _has_dining_counter(room, plan)
     if room.type == "dining_room":
-        _place_dining(room, cell, blockers, rep)
+        if not counter:
+            _place_dining(room, cell, blockers, rep)
     elif room.type in ("living_room", "family_room"):
+        _place_seating(room, cell, sibs, door_walls, blockers, rep)
+    elif counter:
+        # Dining is handled by the counter, so the seating group gets the WHOLE
+        # room rather than half of it — which is the point of the counter parti.
         _place_seating(room, cell, sibs, door_walls, blockers, rep)
     else:                                   # great_room — holds BOTH
         a, b = _halves(cell)
-        # Seating takes the half further from the kitchen seam where we can
-        # tell; absent that, the first half. Dining takes the other.
         _place_seating(room, a, sibs, door_walls, blockers, rep)
         _place_dining(room, b, blockers, rep)
 
@@ -1222,7 +1247,7 @@ def place_fixtures(layout, plan) -> FixtureReport:
             elif r.type == "kitchen":
                 _place_kitchen(r, o, rep)
             elif r.type in _PUBLIC:
-                _place_public(r, o, dw, rep)
+                _place_public(r, o, dw, rep, plan)
     for el in (getattr(layout, "elements", None) or ()):
         if getattr(el, "type", "") in _CARPORT:
             _place_carport(el, rep)
