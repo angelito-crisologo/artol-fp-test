@@ -752,18 +752,17 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
 
 ## Open / deferred
 
-- **TWO SWEEP FIXTURES ARE SILENTLY TESTING THE WRONG TOPOLOGY (found
-  2026-08-14, NOT fixed).** `1s_2br_12x10_wd_side_split_bath_hall_ld_ncp_med`
-  and `1s_2br_12x10_wd_side_split_baths_cl_ld_ncp_med` both fall back to their
-  `_gr` sibling with a `topology_fallback` WARNING and still count as sweep
-  passes — the exact silent-substitution trap this file warns about. Cause is
-  the 2026-08-05 front-setback change: at 12×10 the buildable depth is now 5 m
-  and both `_ld` topologies need ≥6, so they were missed by the +1 m depth
-  rebase that fixed the 26 `briefs/test/` fixtures. **Fix is to re-base both to
-  12×11**, which the regenerated minimum-lot table already reports as their
-  true minimum. (The 2s `8x11..._stair_bath_hall` brief also substitutes, but
-  that one is BY DESIGN — it emits a `compact_fallback` suggestion and exists
-  to exercise the auto-switch.)
+- **Silent topology substitution: audited clean 2026-08-14.** All 109 test +
+  sweep fixtures now solve as the topology they DECLARE. The two that did not
+  (`1s_2br_12x10_wd_side_split_bath_hall_ld_ncp_med` and its `cl_ld` twin) were
+  re-based 12x10 -> 12x11: the 2026-08-05 front-setback change left them with
+  5 m of buildable depth against the >=6 their LDK stack needs, so they fell
+  back to their `_gr` sibling and still counted as sweep passes. Their
+  `briefs/test/` canonicals had been rebased at the time; the sweep pair was
+  missed. One fixture still substitutes BY DESIGN —
+  `2s_2br_8x11_nw_side_spine_stair_bath_hall_ncp` emits a `compact_fallback`
+  suggestion and exists to exercise the auto-switch. **Re-run that audit after
+  any setback or room-size change**; `run.py --test` will not tell you.
 - **Layer D of the fixtures work is not started** — no placers for
   living/dining/great/carport, so the public half of every `--furnish` plan is
   empty. This is the most visible gap in the furnished output.

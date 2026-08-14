@@ -1,0 +1,10 @@
+{
+  "intent": "Sweep fixture (MED) for 1s_2br_wd_side_split_bath_hall_ld -- 12x11 m lot, 48 m2 buildable floor (8x6 envelope, buildable depth 6). Published minimum for this topology (its living/dining/kitchen 3-room stack needs buildable depth >= 6; shallower lots route to the gr sibling). Same lot as its briefs/test/ canonical brief. RE-BASED 12x10 -> 12x11 on 2026-08-14: under the 2026-08-05 front setback (2.0 -> 3.0 m) a 12x10 lot yields only 5 m of buildable depth, below the >=6 this topology's LDK stack needs, so the fixture was silently falling back to its _gr sibling and still counting as a sweep PASS — it tested the wrong topology. Its briefs/test/ canonical was rebased at the time; this sweep fixture was missed. The 48 m2 / depth-6 figures quoted above were always the intent and are now true again.",
+  "lot_width": 12.0,
+  "lot_depth": 11.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_ld.json"
+}
