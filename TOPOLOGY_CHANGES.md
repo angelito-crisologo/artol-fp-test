@@ -50,6 +50,40 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+**2026-08-14 — the four WIDE 3BR topologies resolved: 3 shipped, 1 deleted**
+Completes the `1s/3br/wide/` set, unvalidated since 2026-07-18. All four
+declared left+right+rear together, but the signature turned out to be a reason
+to TEST, not a diagnosis — the causes differed and one file had no problem at
+all.
+- **`1s_3br_wd_side_split_baths_cl_hall_gr` — shipped, NO fix needed.** Solves
+  as authored at every size 13x10 to 18x13; it had simply never been run.
+  Canonical 16x12, 83.6 m², 0 errors, 0 warnings, master largest at 13.0.
+- **`1s_3br_wd_split_wings_baths_ds_hall_gr` — shipped.** Was infeasible
+  everywhere, but **not** the anchor trap: the anchors are fine and
+  `front_to_rear_stacks` was the blocker (bisected at 25x18), now null.
+  Canonical 17x12, 91.0 m², 0e 0w. Known weakness in its notes: the hall runs
+  oversized for a circulation node (8.4 at 16x12 → 19.2 at 18x13) because the
+  post-solve passes funnel slack into it, so ~17x12 is the practical ceiling.
+- **`1s_3br_wd_half_spine_baths_ds_hall_lk` — shipped.** The classic trap:
+  left + right + `zone_split`, all three must go. Canonical 17x12, 90.7 m²,
+  0e 0w. Honest caveat recorded: the label says HALF spine but the realized
+  corridor runs nearly the full width, so it reads as a full spine.
+- **`1s_3br_wd_center_spine_baths_ds_hall_gr` — DELETED.** Only ONE lot size
+  (18x13) is feasible after any fix, and it is degenerate: **ensuite 1.2 m²**,
+  kitchen 33.6, great 43.7, master 9.5. A 1.2 m² ensuite is not a bathroom.
+  Same outcome as its squarish namesake, deleted 2026-08-13.
+  - **Fallback repointed:** `split_wings` pointed at it and now points at
+    `half_spine_lk`. Verified no other inbound reference. Note
+    `artol-topologies/data/topologies/` still carries a stale copy — that is a
+    build artifact and the regen will drop it.
+- **This closes the "environment issue" story.** The squarish `half_spine`
+  notes cited this wide sibling's infeasibility as proof of "a reproducible,
+  environment-specific solver issue affecting the spine/hall parti family". The
+  wide sibling is indeed infeasible — from the same in-file mistake. No
+  environment issue ever existed; it was the same authoring error in both.
+- **58 pass / 0 fail** (was 55), 51 sweep pass. The unvalidated-3BR backlog
+  CLAUDE.md tracks drops from 10 to 6.
+
 **2026-08-13 — `1s_3br_sq_center_spine_baths_ds_gr` DELETED**
 Investigated, then removed at user request. Regen note: it never had a brief,
 a baseline or an inbound `fallback_topology`, so nothing else moves — but the

@@ -134,31 +134,12 @@
     }
   ],
   "entry_point": "living",
-  "zone_split": {
-    "axis": "horizontal",
-    "private_side": "rear",
-    "private_rooms": [
-      "br2",
-      "br3",
-      "common",
-      "hall"
-    ],
-    "public_rooms": [
-      "living",
-      "kitchen"
-    ]
-  },
+  "zone_split": null,
   "fallback_topology": null,
   "match_bedroom_widths": true,
   "ensuite_alcove_joins_master": true,
-  "left_anchored": [
-    "living",
-    "kitchen"
-  ],
-  "right_anchored": [
-    "master",
-    "br3"
-  ],
+  "left_anchored": null,
+  "right_anchored": null,
   "rear_anchored": [
     "kitchen",
     "common",
@@ -281,6 +262,22 @@
     "depth >= 7.2 m (3.1 + 0.95 + 3.0 + walls). Carport: NCP base form; on the",
     "14 x 11 test lot use a front-parallel carport in the 1.5 m + street verge or",
     "widen one side setback to 3.0 m and drop shell width to 10.5 m. Mirror when",
-    "brief.carport_side='left'."
+    "brief.carport_side='left'.",
+    "",
+    "STATUS: VERIFIED 2026-08-14. Canonical 17x12 — 90.7 m2, 0 errors, 0 warnings.",
+    "Feasible 14x11 through 18x13; in-band (80-120 m2) from 16x12 up.",
+    "Was INFEASIBLE at every lot size as authored: left_anchored + right_anchored +",
+    "zone_split declared together, the over-constrained-anchors trap CLAUDE.md",
+    "records from 2026-07-19. Bisected at 25x18; all three must go, no smaller",
+    "removal is sufficient. rear_anchored alone now does the shaping.",
+    "This is the sibling whose infeasibility was cited in the SQUARISH half_spine's",
+    "notes as evidence of 'a reproducible, environment-specific solver issue'. It",
+    "is not: the cause is the same in-file mistake in both files.",
+    "HONEST NOTE ON THE PARTI: the label calls the spine a HALF spine, running only",
+    "over the private half. Realized, it runs nearly the full width (8.95 m of a",
+    "13.4 m envelope at 18x13), so it reads as a full spine. The public band and",
+    "private band do sit either side of it as intended. Sides come out mirrored",
+    "from the label's description, which this project does not treat as a distinct",
+    "design."
   ]
 }
