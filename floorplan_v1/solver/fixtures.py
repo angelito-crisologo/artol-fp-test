@@ -153,10 +153,36 @@ class Fixture:
     """
     room: str
     kind: str                     # library id: "bed_queen", "kitchen_sink", ...
-    rect: Rect
+    rect: Rect                    # BOUNDING BOX — see `solids` for the truth
     against: str = ""             # wall it backs onto: N/S/E/W
     cell_idx: int = 0             # which cell of an L-shaped room
     note: str = ""
+    parts: Optional[List[Rect]] = None   # L footprints; None means [rect]
+    mirrored: bool = False        # handed pieces flipped about their centre
+
+    @property
+    def solids(self) -> List[Rect]:
+        """What the fixture ACTUALLY occupies. For an L-sofa the bounding box
+        is a lie — the inner corner of the L is free floor, and the library
+        says outright that is where the coffee table goes. Anything asking
+        "is this space taken" must use this, not `rect`."""
+        return self.parts or [self.rect]
+
+    def move_to(self, rect: Rect) -> None:
+        """Slide the fixture so its bounding box becomes `rect`.
+
+        Use this rather than assigning `rect` directly: a piece with an L
+        footprint carries its own `parts`, and moving only the box leaves them
+        behind. That desync is invisible to anything reading `rect` — the box
+        clears the doorway while the sofa itself is still standing in it — so
+        the two must never be written apart. Translation only; a re-placement
+        that changes the piece's SIZE or orientation has to rebuild `parts`.
+        """
+        dx, dy = rect.x0 - self.rect.x0, rect.y0 - self.rect.y0
+        self.rect = rect
+        if self.parts:
+            self.parts = [Rect(p.x0 + dx, p.y0 + dy, p.x1 + dx, p.y1 + dy)
+                          for p in self.parts]
 
 
 @dataclass
@@ -740,7 +766,12 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
     keep: List[Fixture] = []
     for f in rep.fixtures:
         zs = zones.get(f.room, [])
-        hit = next((z for z in zs if _overlaps(f.rect, z)), None)
+        # On SOLIDS: an L-sofa tucked into a corner can have its bounding box
+        # clip a doorway that its actual limbs stand well clear of, and the
+        # penalty for judging it on the box is severe — the piece is neither a
+        # run nor relocatable, so a false hit ends in deletion.
+        hit = next((z for z in zs
+                    if any(_overlaps(p, z) for p in f.solids)), None)
         if hit is None:
             keep.append(f)
             continue
@@ -754,9 +785,10 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
         # (a lavatory inside a WC, a nightstand inside a bed). Pieces already
         # processed are at their final position; the rest are at their placed
         # one, which is the best information available at this point.
-        others = [o.rect for o in rep.fixtures
+        others = [r for o in rep.fixtures
                   if o.room == f.room and o is not f
-                  and not _may_overlap(f.kind, o.kind)]
+                  and not _may_overlap(f.kind, o.kind)
+                  for r in o.solids]
 
         if f.kind in _RUN_KINDS:
             # No `others` check here on purpose: a counter run is SUPPOSED to
@@ -770,7 +802,7 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
         if cell is not None:
             moved = _shift_along(f, cell, zs + others)
             if moved is not None:
-                f.rect = moved
+                f.move_to(moved)
                 f.note = (f.note + "; shifted clear of a doorway").strip("; ")
                 keep.append(f)
                 continue
@@ -781,7 +813,11 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
         # Restricted to pieces whose meaning does not depend on where they are:
         # a lavatory is a lavatory on any wall of its bath, a nightstand is
         # only a nightstand beside the bed.
-        if room is not None and f.kind in _RELOCATABLE:
+        # `f.parts` bars the way in: this path re-seats a piece by fitting its
+        # BOUNDING BOX on a new wall, which for an L footprint would rotate the
+        # return without rebuilding the parts. No `_RELOCATABLE` kind carries
+        # parts today, so this is a guard rather than a live branch.
+        if room is not None and f.kind in _RELOCATABLE and not f.parts:
             fw, fd = _fixture_wd(f)
             spec = LIB.get(f.kind) if f.kind in LIB else None
             must = bool(spec and spec.must_back_wall)
@@ -883,19 +919,22 @@ def _free_depth(r: Rect, cell: Rect, side: str, blockers: List["Fixture"],
         break
 
     best, who = limit, None
+    # Each blocker is measured on its SOLIDS: an L-sofa's bounding box spans
+    # floor its return does not occupy, and taking that as the obstacle reports
+    # a piece as blocked by empty space.
     for b in blockers:
-        o = b.rect
-        if side in ("N", "S"):
-            cross, near = (o.x0, o.x1), (o.y0 - r.y1 if side == "N"
-                                         else r.y0 - o.y1)
-        else:
-            cross, near = (o.y0, o.y1), (o.x0 - r.x1 if side == "E"
-                                         else r.x0 - o.x1)
-        overlap = min(cross[1], along[1]) - max(cross[0], along[0])
-        if overlap / width <= _BLOCK_FRAC:
-            continue                      # clips the approach; does not take it
-        if -1e-9 <= near < best:
-            best, who = max(0.0, near), b
+        for o in b.solids:
+            if side in ("N", "S"):
+                cross, near = (o.x0, o.x1), (o.y0 - r.y1 if side == "N"
+                                             else r.y0 - o.y1)
+            else:
+                cross, near = (o.y0, o.y1), (o.x0 - r.x1 if side == "E"
+                                             else r.x0 - o.x1)
+            overlap = min(cross[1], along[1]) - max(cross[0], along[0])
+            if overlap / width <= _BLOCK_FRAC:
+                continue                  # clips the approach; does not take it
+            if -1e-9 <= near < best:
+                best, who = max(0.0, near), b
     return best, who, side
 
 
@@ -951,6 +990,13 @@ def check_clearances(rep: "FixtureReport", layout, floors=None) -> None:
         sides = _LOCAL_TO_GLOBAL.get(f.against)
         if sides is None:
             continue                      # free-standing; no back wall to rotate from
+        if f.mirrored:
+            # A mirrored piece has its local +x flipped, so left and right swap.
+            # Without this the L-sofa's "walking past the return" gap is measured
+            # on the side the return is actually ON — into the corner wall — and
+            # every mirrored sofa reports 0.00 m clear against a requirement it
+            # meets comfortably on its open side.
+            sides = dict(sides, left=sides["right"], right=sides["left"])
         others = [o for o in rep.fixtures if o.room == f.room and o is not f]
         for c in spec.clearance:
             if c.side == "back" and spec.must_back_wall:
@@ -1026,6 +1072,18 @@ def _clip_to_clear_floor(rep: "FixtureReport", floors) -> None:
                        min(r.x1, cell.x1), min(r.y1, cell.y1))
         if clipped.x1 - clipped.x0 > 0.05 and clipped.y1 - clipped.y0 > 0.05:
             f.rect = clipped
+            if f.parts:
+                f.parts = [Rect(max(p.x0, cell.x0), max(p.y0, cell.y0),
+                                min(p.x1, cell.x1), min(p.y1, cell.y1))
+                           for p in f.parts]
+                # The box is then whatever the clipped parts span, not the
+                # clipped box: a clip that shaves the side only ONE limb of the
+                # L reaches leaves the two disagreeing, and `rect` is what the
+                # renderer and every box-based check read.
+                f.rect = Rect(min(p.x0 for p in f.parts),
+                              min(p.y0 for p in f.parts),
+                              max(p.x1 for p in f.parts),
+                              max(p.y1 for p in f.parts))
 
 
 # --- Layer D: the public rooms -----------------------------------------------
@@ -1076,13 +1134,179 @@ def _dining_for(area: float):
     return None
 
 
+def _corner_place(spec, cell: Rect, against: str, mirrored: bool):
+    """Seat a CORNER-anchored piece in the corner of `cell`, returning
+    (bounding_box, [parts]) or None.
+
+    The library draws these with the footprint origin at the corner where two
+    walls meet: the BACK wall at local y=0 and the LEFT wall at local x=0. So
+    local +y runs into the room (the `front` direction) and local +x runs
+    along the back wall (the `right` direction) — the same frame the rest of
+    this module already resolves through _LOCAL_TO_GLOBAL. Mirroring a handed
+    piece flips local +x, which swaps which of the two walls is the "left" one
+    and therefore which corner it fits.
+    """
+    sides = _LOCAL_TO_GLOBAL.get(against)
+    if sides is None:
+        return None
+    fdir = sides["front"]
+    rdir = sides["left" if mirrored else "right"]
+    fw, fd = spec.footprint.w, spec.footprint.d
+    # global box: which axis carries the footprint's width vs its depth
+    if fdir in ("N", "S"):
+        bw, bh = fw, fd
+    else:
+        bw, bh = fd, fw
+    if bw > (cell.x1 - cell.x0) + 1e-9 or bh > (cell.y1 - cell.y0) + 1e-9:
+        return None
+    # flush to the corner: back against the wall opposite `front`, left
+    # against the wall opposite `rdir`
+    x0 = cell.x0 if (fdir in ("N", "S") and rdir == "E") or fdir == "E" else cell.x1 - bw
+    y0 = cell.y0 if (fdir in ("E", "W") and rdir == "N") or fdir == "N" else cell.y1 - bh
+    box = Rect(x0, y0, x0 + bw, y0 + bh)
+
+    # unit vectors, and the global point local (0,0) maps to
+    uv = {"N": (0.0, 1.0), "S": (0.0, -1.0), "E": (1.0, 0.0), "W": (-1.0, 0.0)}
+    fx, fy = uv[fdir]
+    rx, ry = uv[rdir]
+    # the origin is the box corner from which +rdir and +fdir both point INTO
+    # the box; exactly one of rx/fx is non-zero, likewise ry/fy
+    ox = box.x0 if (rx + fx) > 0 else (box.x1 if (rx + fx) < 0 else box.x0)
+    oy = box.y0 if (ry + fy) > 0 else (box.y1 if (ry + fy) < 0 else box.y0)
+
+    parts = []
+    for c in (spec.footprint.cells or ()):
+        ax = ox + rx * c.x + fx * c.y
+        ay = oy + ry * c.x + fy * c.y
+        bx = ox + rx * (c.x + c.w) + fx * (c.y + c.d)
+        by = oy + ry * (c.x + c.w) + fy * (c.y + c.d)
+        parts.append(Rect(min(ax, bx), min(ay, by), max(ax, bx), max(ay, by)))
+    if not parts:
+        return None
+    return box, parts
+
+
+def _corner_clearance_ok(spec, cell: Rect, box: Rect, fdir: str,
+                         rdir: str) -> bool:
+    """Does `cell` still hold the piece's own clearances around `box`?
+
+    A corner seat is flush on two sides by construction, so the only room left
+    for the manifest's gaps is in `fdir` and `rdir` — and if the cell cannot
+    give them, this corner cannot host the piece. Skipping this test seats an
+    L-sofa wall-to-wall across a 2.4 m zone with no way past it, which the
+    clearance report then flags on every single one: 43 placed, 43 tight. The
+    library's numbers are the placement rule, not just a report.
+
+    Only front/left/right are testable here. `back` is the wall.
+    """
+    gap = {}
+    for c in spec.clearance:
+        if c.side == "front":
+            gap[fdir] = max(gap.get(fdir, 0.0), c.depth)
+        elif c.side in ("left", "right"):
+            # `rdir` is local +x. The open side of a corner seat is whichever
+            # of left/right is not against the second wall — that is `rdir`,
+            # because the return sits at the origin end.
+            gap[rdir] = max(gap.get(rdir, 0.0), c.depth)
+    room_for = {
+        "N": cell.y1 - box.y1, "S": box.y0 - cell.y0,
+        "E": cell.x1 - box.x1, "W": box.x0 - cell.x0,
+    }
+    return all(room_for[d] >= need - 1e-9 for d, need in gap.items())
+
+
+def _try_corner_sofa(room, zone: Rect, siblings, door_walls: set,
+                     blockers: List[Rect], rep: "FixtureReport",
+                     door_zones=()):
+    """An L-sofa if a real corner will take one. The library is emphatic that
+    this is the piece PH living rooms actually use — it seats more than a
+    3-seat plus armchairs and leaves more floor — so it is tried first and the
+    straight sofa is the fallback, not the default.
+
+    `door_zones` is not the same information as `door_walls` and both are
+    needed: the walls come from `room_a` only, so a corner is refused here on
+    the wall-name test but a doorway recorded from the other room is caught
+    only by the zones. This is the last chance to catch it — an L that lands
+    in a doorway is deleted downstream, not moved.
+    """
+    spec = LIB.get("sofa_l")
+    zones = list(door_zones)
+    best = None
+    for against in _SIDES:
+        if against in door_walls:
+            continue
+        for mirrored in (False, True):
+            got = _corner_place(spec, zone, against, mirrored)
+            if got is None:
+                continue
+            box, parts = got
+            if any(_overlaps(p, b) for p in parts for b in blockers):
+                continue
+            if any(_overlaps(p, z) for p in parts for z in zones):
+                continue
+            sides0 = _LOCAL_TO_GLOBAL[against]
+            if not _corner_clearance_ok(spec, zone, box, sides0["front"],
+                                        sides0["left" if mirrored else "right"]):
+                continue
+            # both walls forming the corner must be REAL walls, not the mouth
+            # of the room's alcove
+            sides = _LOCAL_TO_GLOBAL[against]
+            left = sides["left" if mirrored else "right"]
+            if siblings and not (_backed_by_wall(box, against, siblings)
+                                 and _backed_by_wall(box, _OPPOSITE[left], siblings)):
+                continue
+            best = (box, parts, against, mirrored)
+            break
+        if best:
+            break
+    if best is None:
+        return False
+    box, parts, against, mirrored = best
+    rep.add(Fixture(room.id, "sofa_l", box, against=against, parts=parts,
+                    mirrored=mirrored,
+                    note="L-sofa in the corner; its inner corner is free floor"))
+    blockers.extend(parts)
+    return True
+
+
 def _place_seating(room, zone: Rect, siblings, door_walls: set,
-                   blockers: List[Rect], rep: "FixtureReport") -> None:
+                   blockers: List[Rect], rep: "FixtureReport",
+                   door_zones=()) -> None:
     """Sofa against the best wall of `zone`, coffee table in front of it, TV
     console opposite. The coffee table is the library's `free` anchor: it is
     positioned RELATIVE to the sofa, not to a wall."""
     wall = _longest_free_wall(zone, set(door_walls))
     sibs = list(siblings)
+
+    # Try the L-sofa, but make it EARN the space. It is 2.4 x 1.6 against a
+    # 3-seat's 2.1 x 0.85 — nearly double the depth — so preferring it wherever
+    # a corner exists is a net loss: measured across the suite it placed 25
+    # L-sofas and cost 12 pieces of furniture and 29 extra "did not fit"
+    # reports, because it crowded out the coffee tables, TVs and dining sets
+    # around it. The library's claim that it "seats more and leaves more floor"
+    # holds in a room sized for it, not in a tight half-zone. So both layouts
+    # are costed and the better one wins.
+    trial = FixtureReport()
+    trial_blockers = list(blockers)
+    if _try_corner_sofa(room, zone, sibs, set(door_walls), trial_blockers, trial,
+                        door_zones):
+        f = trial.fixtures[-1]
+        _place_coffee_and_tv(room, zone, sibs, f, f.against, trial_blockers, trial)
+        straight = FixtureReport()
+        straight_blockers = list(blockers)
+        _place_straight_seating(room, zone, sibs, door_walls, straight_blockers,
+                                straight, wall)
+        if len(trial.fixtures) >= len(straight.fixtures):
+            rep.fixtures.extend(trial.fixtures)
+            rep.unfit.extend(trial.unfit)
+            blockers[:] = trial_blockers
+            return
+    _place_straight_seating(room, zone, sibs, door_walls, blockers, rep, wall)
+
+
+def _place_straight_seating(room, zone: Rect, sibs, door_walls: set,
+                            blockers: List[Rect], rep: "FixtureReport",
+                            wall: str) -> None:
     sofa = None
     for fid in ("sofa_3seat", "sofa_2seat"):
         w, d = LIB.size(fid)
@@ -1097,8 +1321,57 @@ def _place_seating(room, zone: Rect, siblings, door_walls: set,
                          f"({zone.x1 - zone.x0:.2f} x {zone.y1 - zone.y0:.2f} m zone)")
         return
 
-    srect, _fid = sofa
+    _place_coffee_and_tv(room, zone, sibs, rep.fixtures[-1], wall, blockers, rep)
+
+
+def _place_coffee_and_tv(room, zone: Rect, sibs, sofa_fx, wall: str,
+                         blockers: List[Rect], rep: "FixtureReport") -> None:
+    """Coffee table in front of the sofa, TV console opposite.
+
+    The coffee table is the library's `free` anchor — it is positioned
+    relative to the SOFA, not to a wall. Against an L-sofa that lands in the
+    inner corner of the L, which is what the manifest says the corner is for.
+    """
     cw, cd = LIB.size("coffee_table")
+    if sofa_fx.parts:
+        # An L-sofa's whole point is that the inner corner of the L is free
+        # floor and the coffee table goes THERE — the manifest says so in as
+        # many words. Putting it in front of the bounding box instead pushes it
+        # out into the room and costs more space than the L saves, which is
+        # exactly what happened: the L placed 32 times and total furniture went
+        # DOWN because coffee tables and TVs stopped fitting.
+        b = sofa_fx.rect
+        for ax, ay in ((b.x1 - cw, b.y1 - cd), (b.x0, b.y1 - cd),
+                       (b.x1 - cw, b.y0), (b.x0, b.y0)):
+            cand = Rect(ax, ay, ax + cw, ay + cd)
+            if any(_overlaps(cand, p) for p in sofa_fx.parts):
+                continue
+            if any(_overlaps(cand, x) for x in blockers if x not in sofa_fx.parts):
+                continue
+            rep.add(Fixture(room.id, "coffee_table", cand, against=wall,
+                            note="in the inner corner of the L"))
+            blockers.append(cand)
+            break
+        tw, td = LIB.size("tv_console")
+        opp = _OPPOSITE[wall]
+        # The console may not stand in the walking gap the sofa needs in front
+        # of its main run. Reserving it as a blocker means a room too shallow
+        # for both simply loses the TV — and losing it drops this layout's
+        # fixture count, so the straight-sofa alternative wins the comparison
+        # in `_place_seating` on its own. Before this the console was placed
+        # anyway and 19 L-sofas were reported tight against their own TV.
+        front = LIB.get("sofa_l").clearance_for("front")
+        reserve = (_strip_behind(sofa_fx.rect, _OPPOSITE[wall], front.depth)
+                   if front else None)
+        tv, _ = _fit_on_wall(zone, opp, tw, td,
+                             blockers + ([reserve] if reserve else []),
+                             siblings=sibs)
+        if tv is not None:
+            rep.add(Fixture(room.id, "tv_console", tv, against=opp,
+                            note="facing the sofa"))
+            blockers.append(tv)
+        return
+    srect = sofa_fx.rect
     gap = 0.45                      # the library's own front clearance
     if wall in ("N", "S"):
         cx = (srect.x0 + srect.x1) / 2.0
@@ -1110,6 +1383,8 @@ def _place_seating(room, zone: Rect, siblings, door_walls: set,
         coffee = Rect(x0, cy - cd / 2, x0 + cw, cy + cd / 2)
     inside = (zone.x0 - 1e-6 <= coffee.x0 and coffee.x1 <= zone.x1 + 1e-6
               and zone.y0 - 1e-6 <= coffee.y0 and coffee.y1 <= zone.y1 + 1e-6)
+    # an L-sofa's return sticks out past its main run, so measure against the
+    # real solids rather than the bounding box
     if inside and not any(_overlaps(coffee, b) for b in blockers):
         rep.add(Fixture(room.id, "coffee_table", coffee, against=wall,
                         note="in front of the sofa"))
@@ -1170,23 +1445,24 @@ def _has_dining_counter(room, plan) -> bool:
 
 
 def _place_public(room, orient, door_walls: set, rep: "FixtureReport",
-                  plan=None) -> None:
+                  plan=None, door_zones=()) -> None:
     cell = room.rect
     sibs = room.cells[1:]
     blockers: List[Rect] = []
     counter = _has_dining_counter(room, plan)
+    zones = list(door_zones)
     if room.type == "dining_room":
         if not counter:
             _place_dining(room, cell, blockers, rep)
     elif room.type in ("living_room", "family_room"):
-        _place_seating(room, cell, sibs, door_walls, blockers, rep)
+        _place_seating(room, cell, sibs, door_walls, blockers, rep, zones)
     elif counter:
         # Dining is handled by the counter, so the seating group gets the WHOLE
         # room rather than half of it — which is the point of the counter parti.
-        _place_seating(room, cell, sibs, door_walls, blockers, rep)
+        _place_seating(room, cell, sibs, door_walls, blockers, rep, zones)
     else:                                   # great_room — holds BOTH
         a, b = _halves(cell)
-        _place_seating(room, a, sibs, door_walls, blockers, rep)
+        _place_seating(room, a, sibs, door_walls, blockers, rep, zones)
         _place_dining(room, b, blockers, rep)
 
 
@@ -1230,6 +1506,26 @@ def place_fixtures(layout, plan) -> FixtureReport:
         if d.room_a != "exterior":
             door_walls.setdefault(d.room_a, set()).add(d.wall)
 
+    # The real clear zones, for the pieces that cannot be rescued afterwards.
+    # `door_walls` above is keyed on `room_a` ONLY, so a room reached through a
+    # door recorded from the other side sees none of it. A piece that can be
+    # trimmed or shifted survives that blindness — `check_door_clearance` fixes
+    # it later — but one that can only be DELETED does not, and the L-sofa is
+    # exactly that: not a run, not relocatable, and its whole meaning is the
+    # corner it sits in. It was landing across those unseen doorways and being
+    # thrown away 28 times, leaving rooms with no seating at all where a
+    # straight sofa would have fitted.
+    door_zones: Dict[str, List[Rect]] = {}
+    rooms_by_id = {r.id: r for r in layout.rooms}
+    for d in getattr(plan, "doors", []):
+        for rid in (d.room_a, d.room_b):
+            r = rooms_by_id.get(rid)
+            if r is None:
+                continue
+            z = _door_zone(d, r)
+            if z is not None:
+                door_zones.setdefault(rid, []).append(z)
+
     by_storey: Dict[int, List[Room]] = {}
     for r in layout.rooms:
         by_storey.setdefault(getattr(r, "storey", 1), []).append(r)
@@ -1247,7 +1543,8 @@ def place_fixtures(layout, plan) -> FixtureReport:
             elif r.type == "kitchen":
                 _place_kitchen(r, o, rep)
             elif r.type in _PUBLIC:
-                _place_public(r, o, dw, rep, plan)
+                _place_public(r, o, dw, rep, plan,
+                              door_zones.get(r.id, ()))
     for el in (getattr(layout, "elements", None) or ()):
         if getattr(el, "type", "") in _CARPORT:
             _place_carport(el, rep)

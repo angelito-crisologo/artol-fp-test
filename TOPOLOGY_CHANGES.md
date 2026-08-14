@@ -52,6 +52,27 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 _Nothing pending — regenerated 2026-08-14._
 
+**2026-08-14 — SHARED CODE (`solver/fixtures.py`, `core/render.py`): the
+`corner` anchor, so the L-sofa can finally be placed**
+Reach is FURNISHING ONLY — no solve, no validation and no baseline moves; the
+furnished drawing is a `--furnish` sidecar, so the catalog's plans are
+unchanged and this needs no regen on its own account. `Fixture` gains `parts`
+and a `solids` property: for an L the bounding box is a lie, and the inner
+corner is free floor where the coffee table goes. Everything asking "is this
+space taken" now reads `solids` — including `check_door_clearance`, which was
+judging the L on its box and deleting a piece that stood clear. `move_to()`
+translates parts with the box, because writing `rect` alone desynced them and
+the box cleared a doorway the sofa was still standing in. The renderer learns
+`mirrored` for the library's handed pieces, and `check_clearances` swaps
+left/right for them — without that, every mirrored L measured "walking past
+the return" into the corner wall it was tucked against. Corner placement is
+gated on the library's own clearances, so the L is seated only where the room
+can actually give it the gaps: 13 placed across the suite, none reported
+tight. Suite-wide counts land exactly where they were before the L existed —
+942 placed / 116 unfit / 233 tight — and all four placement invariants
+(outside cell / backed on air / overlapping / in a doorway) are 0 measured on
+solids.
+
 **2026-08-14 — SHARED CODE (`solver/fixtures.py`): Layer D no longer demands a
 dining table in counter-served rooms**
 A `counter_divider` adjacency puts a dining counter on the kitchen seam, built

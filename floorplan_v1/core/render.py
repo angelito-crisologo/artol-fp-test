@@ -2036,8 +2036,15 @@ def _symbol_body(fixture_id: str) -> str:
     return body
 
 
-def fixture_symbol_svg(kind: str, rect, against: str, layout) -> Optional[str]:
-    """One placed library symbol, or None when there is nothing to draw."""
+def fixture_symbol_svg(kind: str, rect, against: str, layout,
+                       mirrored: bool = False) -> Optional[str]:
+    """One placed library symbol, or None when there is nothing to draw.
+
+    `mirrored` handles the library's `handed` pieces, which it says flip with
+    `scale(-1, 1)` about the footprint centre. Folded into the same transform:
+    local x becomes `origin_x + w - x`, so the pre-rotate step is
+    `translate(ox+w, -oy) scale(-1,1)` in place of `translate(-ox,-oy)`.
+    """
     if not against or against not in _SYMBOL_THETA:
         return None                      # free-standing; no wall to orient from
     try:
@@ -2048,12 +2055,18 @@ def fixture_symbol_svg(kind: str, rect, against: str, layout) -> Optional[str]:
     body = _symbol_body(kind)
     if not body:
         return None
+    # The anchor does NOT change when mirrored: the pre-rotate step below
+    # already flips local x within the footprint, so the piece still occupies
+    # the same global box. Moving the anchor as well double-counts the flip
+    # and slides the symbol a full footprint width off its own rectangle.
     mx, my = _SYMBOL_ANCHOR[against](rect)
     px, py = _to_svg_xy(layout.lot, mx, my)
+    pre = (f'translate({spec.origin_x + spec.footprint.w:.4f},'
+           f'{-spec.origin_y:.4f}) scale(-1,1)' if mirrored
+           else f'translate({-spec.origin_x:.4f},{-spec.origin_y:.4f})')
     return (f'<g transform="translate({px:.3f},{py:.3f}) '
             f'scale({SCALE},{-SCALE}) rotate({_SYMBOL_THETA[against]}) '
-            f'translate({-spec.origin_x:.4f},{-spec.origin_y:.4f})">'
-            f'{body}</g>')
+            f'{pre}">{body}</g>')
 
 
 def fixtures_overlay_svg(fixtures, layout, symbols: bool = True) -> str:
@@ -2073,7 +2086,7 @@ def fixtures_overlay_svg(fixtures, layout, symbols: bool = True) -> str:
         rc = f.rect
         if symbols:
             sym = fixture_symbol_svg(f.kind, rc, getattr(f, "against", ""),
-                                     layout)
+                                     layout, getattr(f, "mirrored", False))
             if sym:
                 out.append(sym)
                 continue
