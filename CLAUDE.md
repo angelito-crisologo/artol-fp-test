@@ -776,9 +776,22 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
   the footprint origin and an L footprint on `Fixture`. Round dining tables are
   likewise placed on their bounding box, so the free corners a circle buys are
   not exploited. Living/dining/great/carport ARE placed as of 2026-08-14.
-- **The 108 unfit / 215 clearance findings from `--furnish` are unseparated**
-  between genuine room-size defects and placement quality. That analysis is
-  what the fixture work was built to enable and it has not been done.
+- **Fit report ANALYSED 2026-08-14 — the headline number was misleading.** Of
+  121 "did not fit" entries, **103 are rooms that HAVE the space and are only
+  blocked by a doorway; just 18 rooms genuinely have nowhere to put the
+  fixture.** So the report was making the catalog look far worse than it is,
+  and anyone quoting the raw count as a catalog defect list would have been
+  wrong. The test that separates them: re-place the fixture ignoring ONLY the
+  door zone — if it then fits, the room is big enough.
+  **The 18 real ones, and these ARE catalog findings:** 9 `common_bath` +
+  1 `ensuite_bath` cannot take a 0.90 m shower at any position, and 8
+  `great_room`s are too small for even the 5.0 m² compact dining table.
+  Worst briefs: `1s_2br_11x10_wd_side_split_baths_cl_gr` (7),
+  `1s_2br_10x11_sq_side_split_baths_cl_hall_ld` (6).
+  **Still open:** the 103 doorway conflicts are placement quality, not room
+  size. The largest single mechanical cause was found and fixed (see the
+  counter note below); what remains is showers, sinks and beds losing to a
+  door swing on their only viable wall.
 - **Compositing our own labels over the Gemini render is still unbuilt.** It is
   the design doc's standing conclusion ("use it for STYLING, supply every FACT
   by composite") and the only remaining fix for invented dimension figures,

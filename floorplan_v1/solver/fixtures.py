@@ -649,6 +649,21 @@ _ALCOVE_EXILE_OK = {"wardrobe", "fridge", "shower_stall"}
 # keeps it in the wet room and reads correctly, where banishing it to a nook
 # would not. Still excludes the position-defined pieces: a nightstand belongs
 # beside the bed and a sink belongs in the counter run, wherever those are.
+# Pairs that are SUPPOSED to overlap. A sink, range or fridge is set INTO the
+# counter run, so the counter is not an obstruction to them — it is what they
+# sit in. Treating it as one is not cosmetic: `check_door_clearance` passed the
+# counter in the blocker list, so EVERY position along the counter wall read as
+# occupied and the appliance was deleted instead of slid along the run. That
+# accounted for 48 of the suite's 140 "did not fit" reports — the single
+# largest category — in kitchens that had room all along.
+_SET_INTO_COUNTER = {"kitchen_sink", "range_electric", "fridge"}
+
+
+def _may_overlap(a_kind: str, b_kind: str) -> bool:
+    return ((a_kind in _SET_INTO_COUNTER and b_kind == "kitchen_counter")
+            or (b_kind in _SET_INTO_COUNTER and a_kind == "kitchen_counter"))
+
+
 _RELOCATABLE = _ALCOVE_EXILE_OK | {"lavatory", "toilet"}
 
 
@@ -739,7 +754,9 @@ def check_door_clearance(rep: "FixtureReport", layout, plan) -> None:
         # (a lavatory inside a WC, a nightstand inside a bed). Pieces already
         # processed are at their final position; the rest are at their placed
         # one, which is the best information available at this point.
-        others = [o.rect for o in rep.fixtures if o.room == f.room and o is not f]
+        others = [o.rect for o in rep.fixtures
+                  if o.room == f.room and o is not f
+                  and not _may_overlap(f.kind, o.kind)]
 
         if f.kind in _RUN_KINDS:
             # No `others` check here on purpose: a counter run is SUPPOSED to

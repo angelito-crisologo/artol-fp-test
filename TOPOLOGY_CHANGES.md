@@ -52,6 +52,16 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 _Nothing pending — regenerated 2026-08-14._
 
+**2026-08-14 — SHARED CODE (`solver/fixtures.py`): the counter no longer
+blocks its own appliances**
+A sink, range or fridge is set INTO the counter run, so the counter is not an
+obstruction to them. `check_door_clearance` passed it in the blocker list
+anyway, so every position along the counter wall read as occupied and the
+appliance was DELETED rather than slid along the run. New `_may_overlap`
+exempts the by-design pairs. Recovered 19 fixtures (922 → 941) and cut unfit
+140 → 121; all four placement invariants still 0. `--furnish` only, 0 baselines
+moved.
+
 **2026-08-14 — SHARED CODE (`solver/fixtures.py`), NO regen needed: Layer D**
 Placers for living / dining / great rooms and the carport. Adds the `center`
 anchor (dining tables, on a zone's middle — the first placement in the module
