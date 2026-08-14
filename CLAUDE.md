@@ -52,11 +52,19 @@ against this renderer** (42 px/m matches `core/render.py::SCALE`; its
   not implement `vector-effect="non-scaling-stroke"`** — stroke widths are
   divided by SCALE *and* the attribute removed; doing either alone is broken in
   one renderer or the other.
-- **D — NOT started.** No placers for living/dining/great/carport, so the
-  public half of every furnished plan is empty. `car` must hook
-  `core/setback_elements.py`, not the room loop — carport and lanai are setback
-  elements here, not rooms. D needs three new anchor strategies (centre, free,
-  corner) plus two-cell and circular footprints on `Fixture`.
+- **D — DONE for living / dining / great / carport (2026-08-14).** Adds the two
+  anchors the bedroom/bath placers never used: `center` (dining tables, placed
+  on a zone's middle, the first placement here not measured from a wall) and
+  `free` (the coffee table, positioned relative to the SOFA). A great_room is
+  split across its longer axis — seating one half, dining the other — because
+  otherwise the table lands in the middle of the sofa. The car is driven off
+  `layout.elements`, not the room loop, since carports are setback elements.
+  **922 fixtures across the suite, all four invariants still 0** (outside cell
+  / backed on air / overlapping / in a doorway).
+  **Still deferred: the `corner` anchor** — `sofa_l` needs two walls meeting at
+  the footprint origin plus an L footprint on `Fixture`; a 3-seat sofa against
+  one wall is the honest fallback until that exists. Round tables are placed on
+  their bounding box, so a circle's free corners are not yet exploited.
 
 **`run.py --furnish`** writes `<name>.furnished.svg` as a SIDECAR beside the
 plain plan and prints the fit report. Off by default, lazy-imported, and no
@@ -763,9 +771,11 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
   `2s_2br_8x11_nw_side_spine_stair_bath_hall_ncp` emits a `compact_fallback`
   suggestion and exists to exercise the auto-switch. **Re-run that audit after
   any setback or room-size change**; `run.py --test` will not tell you.
-- **Layer D of the fixtures work is not started** — no placers for
-  living/dining/great/carport, so the public half of every `--furnish` plan is
-  empty. This is the most visible gap in the furnished output.
+- **Layer D's `corner` anchor is still unbuilt** — `sofa_l` (the piece the
+  library calls the most common PH living-room item) needs two walls meeting at
+  the footprint origin and an L footprint on `Fixture`. Round dining tables are
+  likewise placed on their bounding box, so the free corners a circle buys are
+  not exploited. Living/dining/great/carport ARE placed as of 2026-08-14.
 - **The 108 unfit / 215 clearance findings from `--furnish` are unseparated**
   between genuine room-size defects and placement quality. That analysis is
   what the fixture work was built to enable and it has not been done.

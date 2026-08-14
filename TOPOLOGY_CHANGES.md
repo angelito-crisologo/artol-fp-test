@@ -52,6 +52,18 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 _Nothing pending — regenerated 2026-08-14._
 
+**2026-08-14 — SHARED CODE (`solver/fixtures.py`), NO regen needed: Layer D**
+Placers for living / dining / great rooms and the carport. Adds the `center`
+anchor (dining tables, on a zone's middle — the first placement in the module
+not measured from a wall) and `free` (coffee table, positioned relative to the
+sofa). A great_room splits across its longer axis, seating one half and dining
+the other. The car comes off `layout.elements` rather than the room loop,
+because carports are setback elements, not rooms.
+289 new pieces (49 3-seat sofas, 39 coffee tables, 39 TV consoles, 47 dining
+tables, 5 cars); 633 → 922 fixtures with all four invariants still at 0.
+Nothing in the catalog path calls it — `--furnish` only — so 0 baselines moved
+and no regen is owed. `corner` (sofa_l) is still deferred.
+
 ## Applied history
 
 ### Regenerated 2026-08-14 — 44 topologies / 51 implementations

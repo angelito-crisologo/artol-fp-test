@@ -1011,6 +1011,160 @@ def _clip_to_clear_floor(rep: "FixtureReport", floors) -> None:
             f.rect = clipped
 
 
+# --- Layer D: the public rooms -----------------------------------------------
+#
+# Until now living, dining and great rooms were placed by nothing, so the
+# public half of every furnished plan came out empty while the bedrooms and
+# baths were fully fitted. That reads as an unfinished drawing rather than a
+# sparse one, which is why this matters more than prettier symbols did.
+#
+# The library's public-room pieces need anchors the bedroom/bath placers never
+# used: dining tables are `center` (positioned by their middle, in open floor),
+# coffee tables and armchairs are `free`. Both are handled here. `corner`
+# (sofa_l) is deliberately NOT — it needs two walls meeting at the footprint
+# origin and an L footprint on Fixture, and a 3-seat sofa against one wall is
+# the honest fallback until that exists.
+
+_PUBLIC = {"great_room", "living_room", "dining_room", "family_room"}
+_CARPORT = {"carport", "garage"}
+
+
+def _centred_rect(cell: Rect, w: float, d: float) -> Optional[Rect]:
+    """A w x d rectangle on the centre of `cell`. None if it does not fit."""
+    if w > (cell.x1 - cell.x0) + 1e-9 or d > (cell.y1 - cell.y0) + 1e-9:
+        return None
+    cx, cy = (cell.x0 + cell.x1) / 2.0, (cell.y0 + cell.y1) / 2.0
+    return Rect(cx - w / 2, cy - d / 2, cx + w / 2, cy + d / 2)
+
+
+def _halves(cell: Rect):
+    """Split a cell across its LONGER axis. A great_room holds both a seating
+    group and a dining set, and they need separate floor or the dining table
+    lands in the middle of the sofa."""
+    w, h = cell.x1 - cell.x0, cell.y1 - cell.y0
+    if w >= h:
+        mid = (cell.x0 + cell.x1) / 2.0
+        return Rect(cell.x0, cell.y0, mid, cell.y1), Rect(mid, cell.y0, cell.x1, cell.y1)
+    mid = (cell.y0 + cell.y1) / 2.0
+    return Rect(cell.x0, cell.y0, cell.x1, mid), Rect(cell.x0, mid, cell.x1, cell.y1)
+
+
+def _dining_for(area: float):
+    """Table by the floor actually available, largest first. Sized off the ZONE
+    rather than the whole room: in a great_room the dining set only gets half."""
+    for fid, need in (("dining_6", 11.0), ("dining_4", 7.5),
+                      ("dining_compact_4", 5.0)):
+        if area >= need:
+            return fid
+    return None
+
+
+def _place_seating(room, zone: Rect, siblings, door_walls: set,
+                   blockers: List[Rect], rep: "FixtureReport") -> None:
+    """Sofa against the best wall of `zone`, coffee table in front of it, TV
+    console opposite. The coffee table is the library's `free` anchor: it is
+    positioned RELATIVE to the sofa, not to a wall."""
+    wall = _longest_free_wall(zone, set(door_walls))
+    sibs = list(siblings)
+    sofa = None
+    for fid in ("sofa_3seat", "sofa_2seat"):
+        w, d = LIB.size(fid)
+        cand, _ = _fit_on_wall(zone, wall, w, d, blockers, siblings=sibs)
+        if cand is not None:
+            rep.add(Fixture(room.id, fid, cand, against=wall))
+            blockers.append(cand)
+            sofa = (cand, fid)
+            break
+    if sofa is None:
+        rep.unfit.append(f"{room.id}: no sofa fits on the {wall} side "
+                         f"({zone.x1 - zone.x0:.2f} x {zone.y1 - zone.y0:.2f} m zone)")
+        return
+
+    srect, _fid = sofa
+    cw, cd = LIB.size("coffee_table")
+    gap = 0.45                      # the library's own front clearance
+    if wall in ("N", "S"):
+        cx = (srect.x0 + srect.x1) / 2.0
+        y0 = srect.y0 - gap - cd if wall == "N" else srect.y1 + gap
+        coffee = Rect(cx - cw / 2, y0, cx + cw / 2, y0 + cd)
+    else:
+        cy = (srect.y0 + srect.y1) / 2.0
+        x0 = srect.x0 - gap - cw if wall == "E" else srect.x1 + gap
+        coffee = Rect(x0, cy - cd / 2, x0 + cw, cy + cd / 2)
+    inside = (zone.x0 - 1e-6 <= coffee.x0 and coffee.x1 <= zone.x1 + 1e-6
+              and zone.y0 - 1e-6 <= coffee.y0 and coffee.y1 <= zone.y1 + 1e-6)
+    if inside and not any(_overlaps(coffee, b) for b in blockers):
+        rep.add(Fixture(room.id, "coffee_table", coffee, against=wall,
+                        note="in front of the sofa"))
+        blockers.append(coffee)
+
+    tw, td = LIB.size("tv_console")
+    opp = _OPPOSITE[wall]
+    tv, _ = _fit_on_wall(zone, opp, tw, td, blockers, siblings=sibs)
+    if tv is not None:
+        rep.add(Fixture(room.id, "tv_console", tv, against=opp,
+                        note="facing the sofa"))
+        blockers.append(tv)
+
+
+def _place_dining(room, zone: Rect, blockers: List[Rect],
+                  rep: "FixtureReport") -> None:
+    """Dining table on the centre of `zone` — the library's `center` anchor,
+    the first placement in this module not measured from a wall."""
+    area = (zone.x1 - zone.x0) * (zone.y1 - zone.y0)
+    fid = _dining_for(area)
+    if fid is None:
+        rep.unfit.append(f"{room.id}: no dining table fits — zone is "
+                         f"{area:.1f} m², the smallest table needs 5.0")
+        return
+    w, d = LIB.size(fid)
+    rect = _centred_rect(zone, w, d)
+    if rect is None or any(_overlaps(rect, b) for b in blockers):
+        rep.unfit.append(f"{room.id}: {fid} does not fit clear on the centre "
+                         f"of its zone")
+        return
+    # `against` carries no meaning for a centre-anchored piece, but the
+    # renderer needs an orientation to place the symbol; the zone's long axis
+    # is the natural one.
+    long_x = (zone.x1 - zone.x0) >= (zone.y1 - zone.y0)
+    rep.add(Fixture(room.id, fid, rect, against="S" if long_x else "W",
+                    note="centred in its zone"))
+    blockers.append(rect)
+
+
+def _place_public(room, orient, door_walls: set, rep: "FixtureReport") -> None:
+    cell = room.rect
+    sibs = room.cells[1:]
+    blockers: List[Rect] = []
+    if room.type == "dining_room":
+        _place_dining(room, cell, blockers, rep)
+    elif room.type in ("living_room", "family_room"):
+        _place_seating(room, cell, sibs, door_walls, blockers, rep)
+    else:                                   # great_room — holds BOTH
+        a, b = _halves(cell)
+        # Seating takes the half further from the kitchen seam where we can
+        # tell; absent that, the first half. Dining takes the other.
+        _place_seating(room, a, sibs, door_walls, blockers, rep)
+        _place_dining(room, b, blockers, rep)
+
+
+def _place_carport(element, rep: "FixtureReport") -> None:
+    """A car in the carport. Carports and lanais are SETBACK ELEMENTS in this
+    project, not rooms — they never appear in layout.rooms — so this is driven
+    off layout.elements instead of the room loop."""
+    w, d = LIB.size("car")
+    cell = element.rect
+    ew, eh = cell.x1 - cell.x0, cell.y1 - cell.y0
+    # park along whichever way the bay actually runs
+    rect = _centred_rect(cell, w, d) if eh >= ew else _centred_rect(cell, d, w)
+    if rect is None:
+        rep.unfit.append(f"{element.id}: car ({w:.2f} x {d:.2f} m) does not fit "
+                         f"in a {ew:.2f} x {eh:.2f} m carport")
+        return
+    rep.add(Fixture(element.id, "car", rect,
+                    against="S" if eh >= ew else "W", note="parked"))
+
+
 _BEDROOMS = {"master_bedroom", "bedroom_standard", "maids_room"}
 _BATHS = {"common_bath", "ensuite_bath", "bath_toilet", "powder_room", "maids_bath"}
 
@@ -1050,6 +1204,11 @@ def place_fixtures(layout, plan) -> FixtureReport:
                 _place_bath(r, o, rep)
             elif r.type == "kitchen":
                 _place_kitchen(r, o, rep)
+            elif r.type in _PUBLIC:
+                _place_public(r, o, dw, rep)
+    for el in (getattr(layout, "elements", None) or ()):
+        if getattr(el, "type", "") in _CARPORT:
+            _place_carport(el, rep)
     check_door_clearance(rep, layout, plan)
     _clip_to_clear_floor(rep, floors)
     check_clearances(rep, layout, floors)
