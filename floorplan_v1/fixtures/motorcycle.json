@@ -1,0 +1,40 @@
+{
+  "id": "motorcycle",
+  "label": "Motorcycle",
+  "tier": 3,
+  "category": "outdoor",
+  "svg": "motorcycle.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.75,
+    "d": 2.0,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.75,
+    "h": 2.0
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "left",
+      "depth": 0.45,
+      "reason": "getting on and off"
+    }
+  ],
+  "rooms": [
+    "carport",
+    "porch",
+    "service_area"
+  ],
+  "notes": "Often shares the carport with the car on tight lots."
+}

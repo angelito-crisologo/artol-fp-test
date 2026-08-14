@@ -1,0 +1,16 @@
+{
+  "intent": "3BR / 2 bath WIDE HALF-SPINE with a living-kitchen (lk) public band, canonical smoke test, no carport. 17x12 lot gives a 13x7 envelope; the solve lands 90.7 m\u00b2 at 0 errors and 0 warnings, mid-band. A spine corridor separates the private band (br2, br3, common) from the public band (living, kitchen) with master and its ensuite off the spine's other side. Was INFEASIBLE at every lot size as authored \u2014 left_anchored + right_anchored + zone_split declared together, the over-constrained-anchors trap; all three must go, no smaller removal is sufficient, and rear_anchored alone now does the shaping. This is the sibling whose infeasibility was cited in the SQUARISH half_spine's notes as proof of 'a reproducible, environment-specific solver issue'; it is nothing of the kind, just the same in-file mistake in both files. Honest caveat: the label calls this a HALF spine but the realized corridor runs nearly the full width, so it reads as a full spine. Feasible 14x11 through 18x13; in-band from 16x12 up.",
+  "lot_width": 17.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "spine corridor between the private and public bands",
+    "living + kitchen as one open public band",
+    "master with ensuite off the spine",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/3br/wide/1s_3br_wd_half_spine_baths_ds_hall_lk.json"
+}

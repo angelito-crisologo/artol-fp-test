@@ -1,0 +1,16 @@
+{
+  "intent": "3BR / 2 bath bedroom-lobby-hub MINIMUM-boundary smoke test, no carport. 11x12.25 lot gives a 7x7.75 envelope = 54.25 m² floor — the tightest squarish (1:1-ish) lot found feasible for this topology (bisected 2026-08-06: 11x11 infeasible, 11x12.25 compliant). br2+br3 pair on one hub wall, master alone on a second, common bath on a third, hub open to the great_room on the fourth; ensuite off master. Kitchen shares a wet_core wall with the common bath. No zone_split (private rooms wrap the hub on multiple sides rather than forming a column) and left_anchored/right_anchored are both null by design — this brief exercises that the topology still solves without them at its tightest known-feasible size.",
+  "lot_width": 11.0,
+  "lot_depth": 12.25,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "distributed baths (ensuite + common)",
+    "central bedroom-lobby hub, no separate hallway run",
+    "open-plan great room + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/3br/squarish/1s_3br_sq_bedroom_lobby_hub_baths_ds_hall_gr.json"
+}

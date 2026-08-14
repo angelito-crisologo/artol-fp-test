@@ -1,0 +1,41 @@
+{
+  "id": "lavatory_pedestal",
+  "label": "Lavatory (pedestal)",
+  "tier": 2,
+  "category": "bath",
+  "svg": "lavatory_pedestal.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.48,
+    "d": 0.42,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.48,
+    "h": 0.42
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.55,
+      "reason": "standing at the basin"
+    }
+  ],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath",
+    "bath_toilet",
+    "powder_room"
+  ],
+  "notes": "Use where the bath is too tight for a counter run."
+}

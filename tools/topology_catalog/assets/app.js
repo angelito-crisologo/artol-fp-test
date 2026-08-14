@@ -122,4 +122,45 @@
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
   });
+
+  // ---- implementation tabs (size-gated sibling pair on one detail page) ----
+  // A topology with two implementations (Default = gated/preferred-size,
+  // Fallback = compact sibling below the buildable-area gate) renders both
+  // bodies; this swaps which one is visible.
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('.impl-tab') : null;
+    if (!btn) return;
+    var wrap = btn.closest('.route-detail');
+    if (!wrap) return;
+    var want = btn.getAttribute('data-impl');
+    wrap.querySelectorAll('.impl-tab').forEach(function (b) {
+      var on = b.getAttribute('data-impl') === want;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    wrap.querySelectorAll('.impl-panel').forEach(function (pnl) {
+      pnl.hidden = pnl.getAttribute('data-impl') !== want;
+    });
+  });
+
+
+  // ---- gallery card implementation tabs ----
+  // The card is one big link; tabs are overlaid on the media, so swallow the
+  // click rather than letting it navigate.
+  document.addEventListener('click', function (ev) {
+    var tab = ev.target.closest ? ev.target.closest('.thumb-tab') : null;
+    if (!tab) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    var card = tab.closest('.thumb-card');
+    if (!card) return;
+    var want = tab.getAttribute('data-plan');
+    card.querySelectorAll('.thumb-tab').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-plan') === want);
+    });
+    card.querySelectorAll('.thumb-media [data-plan]').forEach(function (el) {
+      el.hidden = el.getAttribute('data-plan') !== want;
+    });
+  }, true);
+
 })();

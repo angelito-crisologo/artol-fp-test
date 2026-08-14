@@ -79,13 +79,23 @@
   "zone_split": {
     "axis": "vertical",
     "private_side": "left",
-    "private_rooms": ["bedroom", "bath"],
-    "public_rooms": ["living", "dining", "kitchen"]
+    "private_rooms": [
+      "bedroom",
+      "bath"
+    ],
+    "public_rooms": [
+      "living",
+      "dining",
+      "kitchen"
+    ]
   },
   "private_area_floor": false,
   "match_bedroom_widths": false,
   "match_widths": [
-    ["bedroom", "bath"]
+    [
+      "bedroom",
+      "bath"
+    ]
   ],
   "left_anchored": [
     "bedroom",
@@ -99,8 +109,15 @@
     "kitchen"
   ],
   "front_to_rear_stacks": [
-    ["bedroom", "bath"],
-    ["living", "dining", "kitchen"]
+    [
+      "bedroom",
+      "bath"
+    ],
+    [
+      "living",
+      "dining",
+      "kitchen"
+    ]
   ],
   "lot_adjustment_profiles": [
     {
@@ -162,5 +179,7 @@
     "public column's rooms vary in width rather than over-constraining a 3-way",
     "match) -- only right_anchored on kitchen, not living/dining, for the same",
     "over-constrained-anchors reason documented across this catalog's 3BR fixes."
-  ]
+  ],
+  "fallback_topology": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json",
+  "fallback_below_buildable_sqm": 42.0
 }

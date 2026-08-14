@@ -25,9 +25,16 @@ class Brief:
     # PD 1096 / IRR Rule VII residential occupancy class. Drives setback
     # minimums (W-H11) and firewall legality (W-H10: R-1 cannot have a
     # firewall on any side; R-2 may have one on a single side; R-3 may
-    # have multiple). Defaults to R-1 (single-detached) — the project's
-    # primary target.
-    occupancy_class: str = "R-1"
+    # have multiple).
+    #
+    # Defaults to R-2 (medium-density) as of 2026-08-05 — that is this
+    # project's target market, and it is what sets the 3.0 m front setback.
+    # R-1 (low-density single-detached) carries a stricter 4.5 m front and
+    # permits no firewall on any side; declare it explicitly when wanted.
+    # The authoritative per-class table is
+    # core/validator.py::SETBACK_MIN_BY_OCCUPANCY, which now drives BOTH
+    # lot construction and validation.
+    occupancy_class: str = "R-2"
     # When True, the runner swaps the placements of master_bedroom and
     # bedroom_standard before passing the topology to the solver. Use this
     # to flip from the topology's canonical "master at front" layout to a
@@ -44,6 +51,15 @@ class Brief:
     # default wall to stay solid. Invalid or geometrically un-honorable
     # overrides fall back to the topology's default host.
     door_host: Optional[Dict[str, str]] = None
+
+    # Optional per-side override of buildable-shell capping (see
+    # SHELL_CAPPING_DESIGN.md §2). When the lot is bigger than the topology's
+    # program needs, the runner absorbs the surplus into the setbacks (front
+    # up to 4.5 m, rear takes the rest of the depth, sides split the width).
+    # Pin any subset of {front, rear, left, right} here to place the shell
+    # precisely instead. A full explicit `setbacks` dict above disables
+    # capping entirely and wins over this.
+    shell_inflation: Optional[Dict[str, float]] = None
 
     # ------------------------------------------------------------------ #
     # Bedroom program                                                       #
@@ -108,6 +124,17 @@ class Brief:
     # bath_token in the topology name will be "bath_pwd" (single common bath +
     # powder room) rather than "bath".
     powder_room: bool = False
+
+    # Tri-state override for a DIFFERENT thing: whether a topology's GF T&B
+    # is a powder room sited in a non-straight stair's leftover "notch" area
+    # (see Topology.notch_powder_room_id) rather than a full common_bath in
+    # its normal rear-band position. None (default) = auto-decide from the
+    # topology's own compactness threshold (notch_powder_room_below_buildable_sqm);
+    # True/False explicitly force it either way. Only meaningful for
+    # topologies that declare notch_powder_room_id — ignored otherwise.
+    # Unlike `powder_room` above (an ADDITIONAL room, opt-in), this REPLACES
+    # the existing GF bath's type/position; the two are independent knobs.
+    gf_powder_room: Optional[bool] = None
 
     @property
     def lot_area(self) -> float:

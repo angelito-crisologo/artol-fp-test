@@ -1,0 +1,41 @@
+{
+  "id": "altar",
+  "label": "Altar / prayer nook",
+  "tier": 2,
+  "category": "living",
+  "svg": "altar.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.9,
+    "d": 0.4,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.9,
+    "h": 0.4
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "kneeling room"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "foyer",
+    "master_bedroom"
+  ],
+  "notes": "Common in PH homes and usually on a quiet wall away from the TV."
+}

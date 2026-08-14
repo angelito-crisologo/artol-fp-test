@@ -88,8 +88,14 @@
   "ldk_horizontal": true,
   "match_bedroom_widths": false,
   "match_widths": [
-    ["bedroom", "dining"],
-    ["kitchen", "bath"]
+    [
+      "bedroom",
+      "dining"
+    ],
+    [
+      "kitchen",
+      "bath"
+    ]
   ],
   "left_anchored": [
     "living",
@@ -106,8 +112,16 @@
     "bath"
   ],
   "front_to_rear_stacks": [
-    ["living", "dining", "bedroom"],
-    ["living", "kitchen", "bath"]
+    [
+      "living",
+      "dining",
+      "bedroom"
+    ],
+    [
+      "living",
+      "kitchen",
+      "bath"
+    ]
   ],
   "lot_adjustment_profiles": [],
   "setback_elements": [
@@ -157,5 +171,7 @@
     "",
     "No lot_adjustment_profiles yet -- untuned, pending real feasibility",
     "testing at its intended med/max sizes (9x11, 10x12)."
-  ]
+  ],
+  "fallback_topology": "1s/1br/narrow/1s_1br_nw_front_back_split_bath_gr.json",
+  "fallback_below_buildable_sqm": 35.0
 }

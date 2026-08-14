@@ -1,0 +1,55 @@
+{
+  "id": "dining_compact_2",
+  "label": "Compact dining table, 2-seat",
+  "tier": 2,
+  "category": "dining",
+  "svg": "dining_compact_2.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.75,
+    "d": 0.75,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.87,
+    "h": 1.87
+  },
+  "origin": {
+    "x": 0.56,
+    "y": 0.56
+  },
+  "anchor": "center",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "pulling a chair out"
+    },
+    {
+      "side": "back",
+      "depth": 0.75,
+      "reason": "pulling a chair out"
+    },
+    {
+      "side": "left",
+      "depth": 0.75,
+      "reason": "pulling a chair out"
+    },
+    {
+      "side": "right",
+      "depth": 0.75,
+      "reason": "pulling a chair out"
+    }
+  ],
+  "rooms": [
+    "dining_room",
+    "great_room",
+    "kitchen"
+  ],
+  "notes": "A 0.75 m square seating 2 \u2014 the set for a dining zone that is a gap between rooms rather than a room. Square rather than rectangular on purpose: it takes the same floor from either direction, so it drops into a leftover space without the plan having to decide which way the dining runs. Pair it with counter_peninsula where the kitchen edge does the dividing."
+}

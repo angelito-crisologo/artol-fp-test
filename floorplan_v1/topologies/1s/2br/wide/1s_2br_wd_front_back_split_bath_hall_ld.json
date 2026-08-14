@@ -133,7 +133,6 @@
   ],
   "ldk_horizontal": true,
   "kitchen_rear_pin": false,
-  "claim_dead_strips": true,
   "left_anchored": [
     "master",
     "living"

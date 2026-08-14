@@ -1,0 +1,39 @@
+{
+  "id": "fridge",
+  "label": "Refrigerator",
+  "tier": 1,
+  "category": "kitchen",
+  "svg": "fridge.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.7,
+    "d": 0.7,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.7,
+    "h": 1.4
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": true,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "door swing plus standing room"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dirty_kitchen"
+  ],
+  "notes": "Dashed arc is the door swing, drawn outside the footprint the same way a door swing is. Handed \u2014 mirror for a left-hinge."
+}

@@ -1,0 +1,40 @@
+{
+  "id": "sofa_2seat",
+  "label": "Sofa, 2-seat",
+  "tier": 1,
+  "category": "living",
+  "svg": "sofa_2seat.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.5,
+    "d": 0.85,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.5,
+    "h": 0.85
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "walking past the coffee table"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room"
+  ],
+  "notes": ""
+}

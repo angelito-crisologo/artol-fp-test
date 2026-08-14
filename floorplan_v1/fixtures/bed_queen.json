@@ -1,0 +1,44 @@
+{
+  "id": "bed_queen",
+  "label": "Queen bed",
+  "tier": 1,
+  "category": "bedroom",
+  "svg": "bed_queen.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.52,
+    "d": 2.03,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.52,
+    "h": 2.03
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "getting in and out of bed"
+    },
+    {
+      "side": "right",
+      "depth": 0.6,
+      "reason": "circulation down one long side"
+    }
+  ],
+  "rooms": [
+    "master_bedroom",
+    "bedroom_standard"
+  ],
+  "notes": "Mattress footprint. Head of bed is at y=0 \u2014 it must sit against the head wall, not a window wall. The turned-back sheet and its peeled corner sit just below the pillows, so which end is the head stays obvious even where the plan is too small to label."
+}

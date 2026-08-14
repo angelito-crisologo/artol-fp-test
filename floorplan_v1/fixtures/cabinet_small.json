@@ -1,0 +1,40 @@
+{
+  "id": "cabinet_small",
+  "label": "Small cabinet",
+  "tier": 2,
+  "category": "bedroom",
+  "svg": "cabinet_small.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.6,
+    "d": 0.5,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.6,
+    "h": 0.5
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.45,
+      "reason": "door swing"
+    }
+  ],
+  "rooms": [
+    "maids_room",
+    "storage",
+    "study"
+  ],
+  "notes": "Maid's room and utility storage where a full wardrobe will not fit."
+}

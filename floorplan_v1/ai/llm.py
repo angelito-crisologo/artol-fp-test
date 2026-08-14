@@ -95,16 +95,29 @@ class ClaudeLLM:
                             build_few_shot_messages, build_brief_message,
                             last_example_tool_use_id)
 
-        messages = list(build_few_shot_messages())          # exemplars first
+        # exemplars first — chosen from the catalog for THIS brief
+        messages = list(build_few_shot_messages(brief))
+        # which exemplars got picked — surfaced in `reason` below so the run
+        # log shows they track the brief instead of being a fixed pair
+        exemplars = [b["id"].replace("toolu_example_", "")
+                     for m in messages if m["role"] == "assistant"
+                     for b in m["content"] if b.get("type") == "tool_use"]
+
         # the live brief becomes the final user turn — but the previous turn
         # was an assistant tool_use (the last exemplar), so we must pair it
-        # with a tool_result block before the brief text.
-        messages.append({"role": "user", "content": [
-            {"type": "tool_result",
-             "tool_use_id": last_example_tool_use_id(),
-             "content": "Accepted."},
-            {"type": "text", "text": build_brief_message(brief, error_feedback)},
-        ]})
+        # with a tool_result block before the brief text. Read the id off the
+        # messages we just built so it always belongs to this brief's exemplars.
+        brief_block = {"type": "text",
+                       "text": build_brief_message(brief, error_feedback)}
+        last_id = last_example_tool_use_id(messages)
+        if last_id is None:      # no exemplars at all — nothing to pair with
+            messages.append({"role": "user", "content": [brief_block]})
+        else:
+            messages.append({"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": last_id,
+                 "content": "Accepted."},
+                brief_block,
+            ]})
 
         kwargs = {}
         if self.temperature is not None:
@@ -127,7 +140,8 @@ class ClaudeLLM:
                 t_tag = f"/T={self.temperature}" if self.temperature is not None else ""
                 reason = (f"[claude/{self.model}{t_tag}] {resp.stop_reason}; "
                           f"tokens: in={resp.usage.input_tokens} "
-                          f"out={resp.usage.output_tokens}")
+                          f"out={resp.usage.output_tokens}; "
+                          f"exemplars: {', '.join(exemplars) or '(none)'}")
                 return topo_dict, reason
         raise RuntimeError(f"Claude response had no submit_topology tool_use; "
                            f"stop_reason={resp.stop_reason}")

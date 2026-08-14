@@ -19,9 +19,9 @@ Coordinate convention (matches model.py):
   - Front of lot = SOUTH = smaller y
 """
 from dataclasses import dataclass, field, replace as dc_replace
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
-from model import Layout, Rect, Room
+from model import Layout, Rect, Room, make_outside_probe, probe_point
 from topology import Topology
 from fixture_orientation import derive_orientations, RoomOrientation
 
@@ -205,6 +205,12 @@ class Window:
     width_m: float
     height_m: float = 1.2   # typical PH window head height
     sill_height_m: float = 0.9
+    # WHICH cell of an L-shaped room this window sits on: index into
+    # Room.cells (0 = rect, 1 = rect2/alcove). `position_m` is measured
+    # along THAT cell's wall. Defaults to 0, so every pre-existing window
+    # is unaffected. Needed because a room's exterior contact can come via
+    # its alcove after a dead-strip claim — see _place_windows.
+    cell_index: int = 0
 
 
 @dataclass
@@ -260,6 +266,14 @@ class ArchPlan:
     windows: List[Window]                   = field(default_factory=list)
     open_plan_edges: List[OpenPlanEdge]     = field(default_factory=list)
     counters: List[Counter]                 = field(default_factory=list)
+    # Per-room wall-function hints (bed head / kitchen sink / bath wet +
+    # shower walls) from solver/fixture_orientation.py. Used internally to
+    # bias window placement, and RETAINED here because it is the furniture
+    # intent a downstream renderer needs — fixture_orientation's own
+    # docstring notes it stops short of placing furniture rectangles.
+    # Before 2026-08-06 this was computed inside architecturalize() and
+    # thrown away.
+    orientations: Dict[str, "RoomOrientation"] = field(default_factory=dict)
 
 
 # ----------------------------------------------------------------------------
@@ -321,12 +335,38 @@ def _shared_edge(a: Rect, b: Rect, eps: float = 1e-3
     return None
 
 
+# Set per-floor by architecturalize(); see core.model.make_outside_probe.
+# A module global rather than a threaded parameter because _touches_exterior
+# is called from five functions with unrelated signatures, and the pipeline
+# runs one floor at a time, sequentially.
+_OUTSIDE_PROBE = None
+
+
 def _touches_exterior(rect: Rect, env: Rect, side: str, eps: float = 1e-3) -> bool:
-    if side == "N": return abs(rect.y1 - env.y1) <= eps
-    if side == "S": return abs(rect.y0 - env.y0) <= eps
-    if side == "E": return abs(rect.x1 - env.x1) <= eps
-    if side == "W": return abs(rect.x0 - env.x0) <= eps
-    return False
+    """Is this wall an EXTERIOR wall — i.e. does the space beyond it reach
+    the outside?
+
+    Until 2026-08-06 this asked only "does the wall coordinate lie on the
+    envelope edge", which disagreed with core/render.py: a wall that is
+    exterior only because it faces an UNCLAIMED PERIMETER STRIP was drawn at
+    exterior weight but got no window and could host no door. The building
+    footprint is the union of room cells (Layout.footprint_area has always
+    summed room areas), so such a wall genuinely is the building outline.
+
+    Both now consult the same probe (core.model.make_outside_probe). The
+    envelope-edge test is retained as the fallback for callers that run
+    before the probe is built, and as a fast positive.
+    """
+    if side == "N":   on_env = abs(rect.y1 - env.y1) <= eps
+    elif side == "S": on_env = abs(rect.y0 - env.y0) <= eps
+    elif side == "E": on_env = abs(rect.x1 - env.x1) <= eps
+    elif side == "W": on_env = abs(rect.x0 - env.x0) <= eps
+    else:             return False
+    if on_env:
+        return True
+    if _OUTSIDE_PROBE is None:
+        return False
+    return _OUTSIDE_PROBE(*probe_point(rect, side))
 
 
 def _wall_length(rect: Rect, side: str) -> float:
@@ -700,9 +740,31 @@ def _open_plan_edges_for_adjacency(adj, layout: Layout) -> List[OpenPlanEdge]:
     room_b = next((r for r in layout.rooms if r.id == adj.b), None)
     if room_a is None or room_b is None:
         return []
+    cells_a, cells_b = room_a.cells, room_b.cells
+    # A turning stair's boarding/arrival edge is open only across the
+    # actual tread leg (leg1 boards on the GF flight, leg2 arrives on the
+    # upper stairwell) — the REST of that same wall may belong to a
+    # solver-pinned bath (Topology.notch_powder_room_id) or a claimed
+    # alcove (solver/snap_gaps.py::claim_stair_notch) with its own separate
+    # wall, which this edge must not erase. Clip the stair-side cell to
+    # just that leg instead of the room's full (overlap-including) rect.
+    if adj.kind in ("stair_boarding", "stair_arrival"):
+        stair_room = room_a if room_a.type == "stairs" else (
+            room_b if room_b.type == "stairs" else None)
+        if stair_room is not None and getattr(
+                stair_room, "stair_type", "straight") == "l_landing":
+            from model import l_landing_cells
+            ll = l_landing_cells(stair_room.rect, stair_room.stair_board_wall,
+                                 stair_room.stair_arrive_wall)
+            if ll is not None:
+                leg = ll["leg1"] if stair_room.storey == 1 else ll["leg2"]
+                if stair_room is room_a:
+                    cells_a = [leg]
+                else:
+                    cells_b = [leg]
     out = []
-    for ca in room_a.cells:
-        for cb in room_b.cells:
+    for ca in cells_a:
+        for cb in cells_b:
             edge = _shared_edge(ca, cb)
             if edge is None:
                 continue
@@ -823,24 +885,32 @@ def _windows_for_room(room: Room, env: Rect, bath: bool,
     # wall; bedroom window NOT on the head wall; bath window NOT on the
     # wet/shower wall). Hints are SOFT — if the only available exterior wall
     # is the "wrong" one, we still place a window there for §808 compliance.
-    candidates: List[tuple] = []      # (priority, side)
-    for side in SIDES:
-        if side in firewall_sides:
-            continue
-        if not _touches_exterior(room.rect, env, side):
-            continue
-        priority = 0.0
-        if orientation is not None:
-            if orientation.sink_wall == side:    priority += 5.0   # kitchen
-            if orientation.head_wall == side:    priority -= 3.0   # bedroom
-            if orientation.wet_wall == side:     priority -= 4.0   # bath
-            if orientation.shower_wall == side:  priority -= 2.0   # bath
-        # Mild tie-breaker by wall length — prefer the longer wall.
-        priority += _wall_length(room.rect, side) * 0.01
-        candidates.append((priority, side))
-    candidates.sort(reverse=True)
-    for _, side in candidates:
-        wall_len = _wall_length(room.rect, side)
+    # Consider EVERY cell, not just room.rect. An L-shaped room's exterior
+    # contact often comes via its alcove (rect2) — a dead-strip claim can
+    # extend a previously-interior room out to the envelope. Looking only at
+    # rect meant the validator saw an exterior wall and demanded a window
+    # while this function saw none and placed nothing, producing a hard
+    # "window area 0.00" failure (observed on 2s_3br_nw_side_spine_stair_
+    # baths_ds_gr, where bath1's alcove reached the north envelope edge).
+    candidates: List[tuple] = []      # (priority, side, cell)
+    for cell in room.cells:
+        for side in SIDES:
+            if side in firewall_sides:
+                continue
+            if not _touches_exterior(cell, env, side):
+                continue
+            priority = 0.0
+            if orientation is not None:
+                if orientation.sink_wall == side:    priority += 5.0   # kitchen
+                if orientation.head_wall == side:    priority -= 3.0   # bedroom
+                if orientation.wet_wall == side:     priority -= 4.0   # bath
+                if orientation.shower_wall == side:  priority -= 2.0   # bath
+            # Mild tie-breaker by wall length — prefer the longer wall.
+            priority += _wall_length(cell, side) * 0.01
+            candidates.append((priority, side, cell))
+    candidates.sort(key=lambda t: -t[0])
+    for _, side, cell in candidates:
+        wall_len = _wall_length(cell, side)
         free = _free_segments(wall_len, door_segments.get(side, []))
         if not free:
             continue
@@ -868,6 +938,7 @@ def _windows_for_room(room: Room, env: Rect, bath: bool,
             width_m=round(w, 3),
             height_m=defaults.get("height", 1.2),
             sill_height_m=defaults.get("sill", 0.9),
+            cell_index=room.cells.index(cell),
         ))
     return out
 
@@ -1258,6 +1329,22 @@ def architecturalize(layout: Layout, topology: Topology,
     False, suppresses every counter_divider band + stools this topology
     declares. Render-only — cannot conjure a counter on an edge the topology
     didn't design for (that edge's min_shared_wall_m may be too short)."""
+    # One shared definition of "outside" for this floor — the renderer uses
+    # the same rule, so wall weight, window placement and exterior doors can
+    # no longer disagree about which walls face the lot. See
+    # core.model.make_outside_probe.
+    global _OUTSIDE_PROBE
+    _env = layout.lot.envelope()
+    # Only THIS floor's cells. A multi-storey layout carries both storeys'
+    # rooms, and the upper floor's footprint must not mask the lower one's
+    # perimeter gaps (or vice versa).
+    _storeys = {getattr(r, "storey", 1) for r in layout.rooms}
+    _storey = min(_storeys) if len(_storeys) == 1 else None
+    _obstacles = [c for r in layout.rooms
+                  if _storey is None or getattr(r, "storey", 1) == _storey
+                  for c in r.cells]
+    _OUTSIDE_PROBE = make_outside_probe(_env, _obstacles)
+
     plan = ArchPlan(layout=layout, topology=topology)
     env = layout.lot.envelope()
 
@@ -1457,6 +1544,7 @@ def architecturalize(layout: Layout, topology: Topology,
     for (room_id, side) in door_segments_by_room.keys():
         door_walls_by_room.setdefault(room_id, set()).add(side)
     orientations = derive_orientations(layout, env, door_walls_by_room)
+    plan.orientations = orientations
 
     # Pass 3: windows for habitable + bath + kitchen on remaining exterior
     # walls, skipping any firewall sides (lot setback = 0).
@@ -1479,6 +1567,12 @@ def architecturalize(layout: Layout, topology: Topology,
             r, env, bath_style, door_segments, firewall_sides,
             orientation=orientations.get(r.id)))
 
+    # Clear the per-floor probe. Leaving it set made a brief's output depend
+    # on which brief ran before it — the full-suite result for
+    # 2s_3br_9x13_nw_side_spine_stair_baths_ds_gr diverged from running it
+    # alone. Any _touches_exterior call outside this function now falls back
+    # to the deterministic envelope-edge test.
+    _OUTSIDE_PROBE = None
     return plan
 
 

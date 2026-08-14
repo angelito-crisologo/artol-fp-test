@@ -101,6 +101,14 @@ SPECS = {
     # solves; see CLAUDE.md session handoff). cl_ld's fixtures are hand-
     # picked (min/med/max + near-square pairs at 10.5x10.5/11x11/12x12),
     # deliberately not in SPECS, same pattern as the notes above.
+    "2s_2br_sq_l_landing_stair_bath_gr": {
+        "topology_path": "2s/2br/squarish/2s_2br_sq_l_landing_stair_bath_gr.json",
+        "folder": "2s/2br/squarish/2s_2br_sq_l_landing_stair_bath_gr",
+        "bedroom_count": 2,
+        "ratios": [
+            ("", 1.00, 8.0, 16.0, 0.5, "squarish", True),
+        ],
+    },
 }
 
 

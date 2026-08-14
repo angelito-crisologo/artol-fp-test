@@ -1,0 +1,51 @@
+{
+  "id": "toilet",
+  "label": "Water closet",
+  "tier": 1,
+  "category": "bath",
+  "svg": "toilet.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.4,
+    "d": 0.7,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.4,
+    "h": 0.7
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "standing / approach"
+    },
+    {
+      "side": "left",
+      "depth": 0.1,
+      "reason": "clear of the adjacent wall"
+    },
+    {
+      "side": "right",
+      "depth": 0.1,
+      "reason": "clear of the adjacent wall"
+    }
+  ],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath",
+    "bath_toilet",
+    "powder_room"
+  ],
+  "notes": "Tank against the wall at y=0. Needs a plumbing wall behind it \u2014 this is the fixture that decides which wall is wet."
+}

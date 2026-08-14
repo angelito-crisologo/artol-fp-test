@@ -1,0 +1,40 @@
+{
+  "id": "stove_gas_2burner",
+  "label": "Gas stove (2 burner)",
+  "tier": 2,
+  "category": "kitchen",
+  "svg": "stove_gas_2burner.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.6,
+    "d": 0.35,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.6,
+    "h": 0.35
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "standing to cook"
+    }
+  ],
+  "rooms": [
+    "dirty_kitchen",
+    "kitchen",
+    "service_area"
+  ],
+  "notes": "The dirty-kitchen workhorse. Pair with lpg_tank."
+}

@@ -137,7 +137,6 @@
   },
   "fallback_topology": "1s/2br/wide/1s_2br_wd_side_split_bath_hall_gr.json",
   "match_bedroom_widths": false,
-  "claim_dead_strips": true,
   "left_anchored": [
     "master",
     "standard"
@@ -260,5 +259,6 @@
     "Realized-geometry cleanup only; never affects feasibility.",
     "",
     "Carport / wet-stack / mirroring all unchanged from the gr sibling."
-  ]
+  ],
+  "fallback_below_buildable_sqm": 40.0
 }

@@ -1,0 +1,40 @@
+{
+  "id": "bar_stool",
+  "label": "Bar stool",
+  "tier": 2,
+  "category": "dining",
+  "svg": "bar_stool.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.36,
+    "d": 0.36,
+    "shape": "circle",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.36,
+    "h": 0.36
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "back",
+      "depth": 0.45,
+      "reason": "pushing back and standing up"
+    }
+  ],
+  "rooms": [
+    "kitchen",
+    "dining_room",
+    "great_room"
+  ],
+  "notes": "For placing stools individually where the peninsula symbol's own three do not suit."
+}

@@ -1,0 +1,18 @@
+{
+  "intent": "2-STOREY 2BR / 2 bath squarish L-LANDING-stair smoke test on the canonical 9.5x9.5 lot, no carport. 5.5x5.5 envelope per floor -- the catalog's first non-straight stair type: same hall-less room program as 2s_2br_sq_rear_stair_bath_gr, but the stair turns 90 degrees at a quarter landing (boards off the great room's south wall, arrives into hall2's east wall) instead of running straight. Verified true floor 9.2x9.2; this canonical brief sits just above it. Kitchen needs mechanical_vent -- the wider ~2.1-3.6 m near-square stair footprint compresses its window wall versus the straight-stair sibling.",
+  "lot_width": 9.5,
+  "lot_depth": 9.5,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "both bedrooms upstairs, side-by-side, street-facing windows",
+    "hall-less ground floor -- great room is the circulation",
+    "L-shaped landing stair in the rear corner, boards off the great room, turns 90 degrees to arrive at the landing hall",
+    "one T&B per floor",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "2s/2br/squarish/2s_2br_sq_l_landing_stair_bath_gr.json",
+  "dining_counter": false
+}

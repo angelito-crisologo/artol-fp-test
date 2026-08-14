@@ -179,5 +179,7 @@
     "public column's rooms vary in width rather than over-constraining a 3-way",
     "match) -- only right_anchored on kitchen, not living/dining, for the same",
     "over-constrained-anchors reason documented across this catalog's 3BR fixes."
-  ]
+  ],
+  "fallback_topology": "1s/1br/squarish/1s_1br_sq_side_split_bath_gr.json",
+  "fallback_below_buildable_sqm": 42.0
 }

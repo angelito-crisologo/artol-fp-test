@@ -1,0 +1,45 @@
+{
+  "id": "drying_area",
+  "label": "Drying line / area",
+  "tier": 2,
+  "category": "service",
+  "svg": "drying_area.svg",
+  "units": "m",
+  "footprint": {
+    "w": 2.4,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 2.4,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 1.5,
+    "max": 4.0,
+    "repeat_unit": 0.3,
+    "how": "extend the lines between the two end posts"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "reaching the line"
+    }
+  ],
+  "rooms": [
+    "service_area",
+    "lanai"
+  ],
+  "notes": "Drawn dashed because it is a zone, not an object. Wants sun and cross-ventilation \u2014 check it is not boxed in."
+}

@@ -1,0 +1,45 @@
+{
+  "id": "wic_unit",
+  "label": "Walk-in closet unit",
+  "tier": 2,
+  "category": "bedroom",
+  "svg": "wic_unit.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.2,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.2,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "width",
+    "min": 0.6,
+    "max": 3.0,
+    "repeat_unit": 0.3,
+    "how": "extend the run"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "standing between two facing runs"
+    }
+  ],
+  "rooms": [
+    "wic",
+    "master_bedroom"
+  ],
+  "notes": "Two facing runs need 0.90 m between them, which is what sets the minimum WIC width at about 2.10 m."
+}

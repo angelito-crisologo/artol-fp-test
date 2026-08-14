@@ -1,0 +1,2465 @@
+{
+  "library": "PH floor-plan fixtures",
+  "version": "0.1.0",
+  "units": "m",
+  "convention": {
+    "local_space": "metres, y increases INTO the room",
+    "back_wall": "the wall the fixture touches is at y = 0",
+    "origin": "back-left corner of the footprint, given in viewBox coords",
+    "facing": "+y",
+    "rotation": "orthogonal only \u2014 N=0, E=90, S=180, W=270 degrees",
+    "mirror": "scale(-1,1) about the footprint centre for handed pieces",
+    "footprint_shape": "rect, circle or L. Where circle, w == d is the diameter and the corners of that square are free floor. Where L, footprint.cells gives the rectangles actually occupied and w/d are only the bounding box",
+    "anchor": "wall_back (one wall behind), corner (two walls meeting at the origin), free, or center"
+  },
+  "count": 55,
+  "fixtures": [
+    {
+      "id": "lavatory",
+      "label": "Lavatory (counter basin)",
+      "tier": 1,
+      "category": "bath",
+      "svg": "lavatory.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.55,
+        "d": 0.45,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.55,
+        "h": 0.45
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.55,
+          "reason": "standing at the basin"
+        }
+      ],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath",
+        "bath_toilet",
+        "powder_room"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "shower_stall",
+      "label": "Shower stall",
+      "tier": 1,
+      "category": "bath",
+      "svg": "shower_stall.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 0.9,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.9,
+        "h": 0.9
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "stepping in"
+        }
+      ],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath"
+      ],
+      "notes": "0.90 m square is the PH mid-market minimum. Many mid-market baths have no stall at all \u2014 see tabo_set and floor_drain."
+    },
+    {
+      "id": "toilet",
+      "label": "Water closet",
+      "tier": 1,
+      "category": "bath",
+      "svg": "toilet.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.4,
+        "d": 0.7,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.4,
+        "h": 0.7
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "standing / approach"
+        },
+        {
+          "side": "left",
+          "depth": 0.1,
+          "reason": "clear of the adjacent wall"
+        },
+        {
+          "side": "right",
+          "depth": 0.1,
+          "reason": "clear of the adjacent wall"
+        }
+      ],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath",
+        "bath_toilet",
+        "powder_room"
+      ],
+      "notes": "Tank against the wall at y=0. Needs a plumbing wall behind it \u2014 this is the fixture that decides which wall is wet."
+    },
+    {
+      "id": "bed_double",
+      "label": "Double bed",
+      "tier": 1,
+      "category": "bedroom",
+      "svg": "bed_double.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.37,
+        "d": 1.9,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.37,
+        "h": 1.9
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "getting in and out of bed"
+        },
+        {
+          "side": "right",
+          "depth": 0.6,
+          "reason": "circulation down one long side"
+        }
+      ],
+      "rooms": [
+        "master_bedroom",
+        "bedroom_standard"
+      ],
+      "notes": "Mattress footprint. Head of bed is at y=0 \u2014 it must sit against the head wall, not a window wall. The turned-back sheet and its peeled corner sit just below the pillows, so which end is the head stays obvious even where the plan is too small to label."
+    },
+    {
+      "id": "bed_king",
+      "label": "King bed",
+      "tier": 1,
+      "category": "bedroom",
+      "svg": "bed_king.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.83,
+        "d": 2.03,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.83,
+        "h": 2.03
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "getting in and out of bed"
+        },
+        {
+          "side": "right",
+          "depth": 0.6,
+          "reason": "circulation down one long side"
+        }
+      ],
+      "rooms": [
+        "master_bedroom",
+        "bedroom_standard"
+      ],
+      "notes": "Mattress footprint. Head of bed is at y=0 \u2014 it must sit against the head wall, not a window wall. The turned-back sheet and its peeled corner sit just below the pillows, so which end is the head stays obvious even where the plan is too small to label."
+    },
+    {
+      "id": "bed_queen",
+      "label": "Queen bed",
+      "tier": 1,
+      "category": "bedroom",
+      "svg": "bed_queen.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.52,
+        "d": 2.03,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.52,
+        "h": 2.03
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "getting in and out of bed"
+        },
+        {
+          "side": "right",
+          "depth": 0.6,
+          "reason": "circulation down one long side"
+        }
+      ],
+      "rooms": [
+        "master_bedroom",
+        "bedroom_standard"
+      ],
+      "notes": "Mattress footprint. Head of bed is at y=0 \u2014 it must sit against the head wall, not a window wall. The turned-back sheet and its peeled corner sit just below the pillows, so which end is the head stays obvious even where the plan is too small to label."
+    },
+    {
+      "id": "bed_single",
+      "label": "Single bed",
+      "tier": 1,
+      "category": "bedroom",
+      "svg": "bed_single.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.91,
+        "d": 1.9,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.91,
+        "h": 1.9
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "getting in and out of bed"
+        },
+        {
+          "side": "right",
+          "depth": 0.6,
+          "reason": "circulation down one long side"
+        }
+      ],
+      "rooms": [
+        "master_bedroom",
+        "bedroom_standard",
+        "maids_room"
+      ],
+      "notes": "Mattress footprint. Head of bed is at y=0 \u2014 it must sit against the head wall, not a window wall. The turned-back sheet and its peeled corner sit just below the pillows, so which end is the head stays obvious even where the plan is too small to label."
+    },
+    {
+      "id": "nightstand",
+      "label": "Nightstand",
+      "tier": 1,
+      "category": "bedroom",
+      "svg": "nightstand.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.45,
+        "d": 0.4,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.45,
+        "h": 0.4
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.3,
+          "reason": "reach the drawer"
+        }
+      ],
+      "rooms": [
+        "master_bedroom",
+        "bedroom_standard"
+      ],
+      "notes": "Sits on the head wall beside the bed. Optional \u2014 drop it before reporting a bedroom as too small."
+    },
+    {
+      "id": "wardrobe",
+      "label": "Wardrobe / closet",
+      "tier": 1,
+      "category": "bedroom",
+      "svg": "wardrobe.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.2,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.2,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 0.9,
+        "max": 2.4,
+        "repeat_unit": 0.6,
+        "how": "add or remove 0.60 m door leaves; keep the end panels"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "door leaf swing plus standing room"
+        }
+      ],
+      "rooms": [
+        "master_bedroom",
+        "bedroom_standard",
+        "maids_room"
+      ],
+      "notes": "Dashed line is the hanging rod. Draw at a multiple of 0.60 m."
+    },
+    {
+      "id": "stair_straight",
+      "label": "Stair, straight flight",
+      "tier": 1,
+      "category": "circulation",
+      "svg": "stair_straight.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 3.0,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.9,
+        "h": 3.0
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "depth",
+        "min": 2.4,
+        "max": 4.2,
+        "repeat_unit": 0.25,
+        "how": "add or remove treads at 0.25 m going"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "landing at the foot of the flight"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "landing at the head of the flight"
+        }
+      ],
+      "rooms": [
+        "stairs",
+        "hallway"
+      ],
+      "notes": "0.90 m clear width, 0.25 m going. The arrow points UP."
+    },
+    {
+      "id": "counter_dining_divider",
+      "label": "Dining counter divider",
+      "tier": 1,
+      "category": "dining",
+      "svg": "counter_dining_divider.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.1,
+        "d": 0.9,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.1,
+        "h": 1.42
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 1.5,
+        "max": 3.0,
+        "repeat_unit": 0.3,
+        "how": "extend the run; one seat per 0.60 m of length"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 1.05,
+          "reason": "chair pulled out, plus room to pass behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "working at the counter from the kitchen side"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dining_room",
+        "great_room",
+        "living_room"
+      ],
+      "notes": "The divider that doubles as the dining table \u2014 one piece of millwork doing the wall's job and the table's job, which is how a compact PH plan gets a dining area without spending a room on it. 0.60 m of base cabinet plus a 0.30 m unsupported OVERHANG, marked by the dashed line across it. That overhang is the whole difference from counter_peninsula: without knee room you are perching at a snack bar, not sitting at a table. 0.38 m is more comfortable if the plan can spare it. Seats go on the living side only \u2014 the kitchen side stays working counter."
+    },
+    {
+      "id": "counter_peninsula",
+      "label": "Peninsula counter (mini-bar)",
+      "tier": 1,
+      "category": "dining",
+      "svg": "counter_peninsula.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.8,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.8,
+        "h": 1.12
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 1.2,
+        "max": 2.7,
+        "repeat_unit": 0.3,
+        "how": "extend the run; stools space out to suit, one per 0.60 m"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 1.05,
+          "reason": "stool pulled out, plus room to pass behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "working at the counter from the kitchen side"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dining_room",
+        "great_room",
+        "living_room"
+      ],
+      "notes": "The most common divider in the precedent set \u2014 26 of 79 records separate kitchen from dining or living with a counter and stools and NOTHING else, and PH vendor plans often label it MINI-BAR outright. Footprint is the counter; the stools are drawn beyond it because that is where they are, which shows the real cost: 0.60 m of counter but about 1.65 m of floor. One end normally meets the kitchen counter or a wall \u2014 it is a peninsula, not an island. At 0.60 m deep there is no knee room, so this is a perch: use counter_dining_divider where the counter has to serve as the dining table."
+    },
+    {
+      "id": "dining_4",
+      "label": "Dining table, 4-seat",
+      "tier": 1,
+      "category": "dining",
+      "svg": "dining_4.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.4,
+        "d": 0.85,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.52,
+        "h": 1.97
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "left",
+          "depth": 0.75,
+          "reason": "getting past the end of the table"
+        },
+        {
+          "side": "right",
+          "depth": 0.75,
+          "reason": "getting past the end of the table"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "Footprint is the TABLE. The chairs drawn outside it sit in the clearance zone \u2014 that is deliberate, and it is why a dining room needs roughly 0.90 m clear on the long sides."
+    },
+    {
+      "id": "dining_6",
+      "label": "Dining table, 6-seat",
+      "tier": 1,
+      "category": "dining",
+      "svg": "dining_6.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.8,
+        "d": 0.95,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.92,
+        "h": 2.07
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "left",
+          "depth": 0.75,
+          "reason": "getting past the end of the table"
+        },
+        {
+          "side": "right",
+          "depth": 0.75,
+          "reason": "getting past the end of the table"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "Footprint is the TABLE. The chairs drawn outside it sit in the clearance zone \u2014 that is deliberate, and it is why a dining room needs roughly 0.90 m clear on the long sides."
+    },
+    {
+      "id": "dining_compact_4",
+      "label": "Compact dining table, 4-seat",
+      "tier": 1,
+      "category": "dining",
+      "svg": "dining_compact_4.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 0.9,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.02,
+        "h": 2.02
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        },
+        {
+          "side": "back",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        },
+        {
+          "side": "left",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        },
+        {
+          "side": "right",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "A 0.90 m square seating 4 \u2014 the set for a dining zone that is a gap between rooms rather than a room. Square rather than rectangular on purpose: it takes the same floor from either direction, so it drops into a leftover space without the plan having to decide which way the dining runs. Pair it with counter_peninsula where the kitchen edge does the dividing."
+    },
+    {
+      "id": "dining_round_4",
+      "label": "Round dining table, 4-seat",
+      "tier": 1,
+      "category": "dining",
+      "svg": "dining_round_4.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.05,
+        "d": 1.05,
+        "shape": "circle",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.17,
+        "h": 2.17
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "left",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "right",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "Footprint is the TABLE \u2014 a 1.05 m circle, so the corners of its bounding square are free floor. That is the round table's real advantage on a squarish dining room: same seats, less width, and no one on a corner."
+    },
+    {
+      "id": "dining_round_6",
+      "label": "Round dining table, 6-seat",
+      "tier": 1,
+      "category": "dining",
+      "svg": "dining_round_6.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.35,
+        "d": 1.35,
+        "shape": "circle",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.47,
+        "h": 2.47
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "left",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "right",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "Footprint is the TABLE \u2014 a 1.35 m circle, so the corners of its bounding square are free floor. That is the round table's real advantage on a squarish dining room: same seats, less width, and no one on a corner. Dashed inner circle is a 0.70 m lazy susan."
+    },
+    {
+      "id": "fridge",
+      "label": "Refrigerator",
+      "tier": 1,
+      "category": "kitchen",
+      "svg": "fridge.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.7,
+        "d": 0.7,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.7,
+        "h": 1.4
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": true,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "door swing plus standing room"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dirty_kitchen"
+      ],
+      "notes": "Dashed arc is the door swing, drawn outside the footprint the same way a door swing is. Handed \u2014 mirror for a left-hinge."
+    },
+    {
+      "id": "kitchen_counter",
+      "label": "Kitchen counter run",
+      "tier": 1,
+      "category": "kitchen",
+      "svg": "kitchen_counter.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.4,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.4,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 0.9,
+        "max": 6.0,
+        "repeat_unit": 0.3,
+        "how": "extend the run; the nosing line and overhead-cabinet dashed line stretch with it"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "working at the counter with a door behind you"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dirty_kitchen"
+      ],
+      "notes": "Dashed line is the overhead cabinet. Trim rather than delete when it meets a doorway."
+    },
+    {
+      "id": "kitchen_counter_l",
+      "label": "Kitchen counter, L-shaped",
+      "tier": 1,
+      "category": "kitchen",
+      "svg": "kitchen_counter_l.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.4,
+        "d": 1.8,
+        "shape": "L",
+        "cells": [
+          {
+            "x": 0.0,
+            "y": 0.0,
+            "w": 2.4,
+            "d": 0.6
+          },
+          {
+            "x": 0.0,
+            "y": 0.6,
+            "w": 0.6,
+            "d": 1.2
+          }
+        ]
+      },
+      "viewbox": {
+        "w": 2.4,
+        "h": 1.8
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "corner",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": true,
+      "stretch": {
+        "axis": "both",
+        "min": 0.9,
+        "max": 6.0,
+        "repeat_unit": 0.3,
+        "how": "each leg extends independently from the corner, which stays fixed at the origin"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "working at the counter with a door behind you"
+        },
+        {
+          "side": "right",
+          "depth": 0.9,
+          "reason": "working at the return leg"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dirty_kitchen"
+      ],
+      "notes": "The most common PH kitchen form \u2014 29 of the 79 precedent records describe the counter as an L, against 2 galley and 2 single-wall. Wants a CORNER, two walls meeting at the origin. `w`/`d` are the bounding box; `cells` gives the two legs. The dashed square at the corner is the blind cabinet, reachable from one leg only \u2014 so put the sink on one leg and the range on the other rather than either side of the corner. Handed: mirror for the other hand."
+    },
+    {
+      "id": "kitchen_sink",
+      "label": "Kitchen sink (double bowl)",
+      "tier": 1,
+      "category": "kitchen",
+      "svg": "kitchen_sink.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.8,
+        "d": 0.55,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.8,
+        "h": 0.55
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "standing to wash up"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dirty_kitchen"
+      ],
+      "notes": "Sits IN the counter run \u2014 overlap with kitchen_counter is expected, not a collision."
+    },
+    {
+      "id": "range_electric",
+      "label": "Range / cooktop (4 burner)",
+      "tier": 1,
+      "category": "kitchen",
+      "svg": "range_electric.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.6,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.6,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "standing to cook"
+        },
+        {
+          "side": "left",
+          "depth": 0.3,
+          "reason": "landing space beside the burners"
+        }
+      ],
+      "rooms": [
+        "kitchen"
+      ],
+      "notes": "Sits in the counter run like the sink."
+    },
+    {
+      "id": "armchair",
+      "label": "Armchair",
+      "tier": 1,
+      "category": "living",
+      "svg": "armchair.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.8,
+        "d": 0.85,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.8,
+        "h": 0.85
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "getting in and out"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "coffee_table",
+      "label": "Coffee table",
+      "tier": 1,
+      "category": "living",
+      "svg": "coffee_table.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.1,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.1,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.45,
+          "reason": "leg room from the sofa"
+        },
+        {
+          "side": "back",
+          "depth": 0.45,
+          "reason": "leg room from the sofa"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room"
+      ],
+      "notes": "Free-standing: sits about 0.40 m off the sofa front, not on a wall."
+    },
+    {
+      "id": "sofa_2seat",
+      "label": "Sofa, 2-seat",
+      "tier": 1,
+      "category": "living",
+      "svg": "sofa_2seat.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.5,
+        "d": 0.85,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.5,
+        "h": 0.85
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "walking past the coffee table"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "sofa_3seat",
+      "label": "Sofa, 3-seat",
+      "tier": 1,
+      "category": "living",
+      "svg": "sofa_3seat.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.1,
+        "d": 0.85,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.1,
+        "h": 0.85
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "walking past the coffee table"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "sofa_l",
+      "label": "Sofa, L-shaped (sectional)",
+      "tier": 1,
+      "category": "living",
+      "svg": "sofa_l.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.4,
+        "d": 1.6,
+        "shape": "L",
+        "cells": [
+          {
+            "x": 0.0,
+            "y": 0.0,
+            "w": 2.4,
+            "d": 0.85
+          },
+          {
+            "x": 0.0,
+            "y": 0.85,
+            "w": 0.85,
+            "d": 0.75
+          }
+        ]
+      },
+      "viewbox": {
+        "w": 2.4,
+        "h": 1.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "corner",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": true,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "walking past the main run"
+        },
+        {
+          "side": "right",
+          "depth": 0.75,
+          "reason": "walking past the return"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room"
+      ],
+      "notes": "Wants a CORNER \u2014 two walls meeting at the origin \u2014 not one wall. `w` and `d` are only the bounding box; `cells` gives what is actually occupied, and the inner corner of the L is free floor, which is where the coffee table goes. Handed: mirror to put the return on the other side. On a small PH living room this seats more than a 3-seat plus armchairs and leaves more floor, which is why it is everywhere."
+    },
+    {
+      "id": "tv_console",
+      "label": "TV console (empty)",
+      "tier": 1,
+      "category": "living",
+      "svg": "tv_console.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.4,
+        "d": 0.4,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.4,
+        "h": 0.4
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "circulation in front"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room"
+      ],
+      "notes": "The stand on its own. Use tv_on_console for the usual case."
+    },
+    {
+      "id": "tv_on_console",
+      "label": "TV on console",
+      "tier": 1,
+      "category": "living",
+      "svg": "tv_on_console.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.4,
+        "d": 0.4,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.4,
+        "h": 0.4
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "circulation in front"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room",
+        "master_bedroom"
+      ],
+      "notes": "Footprint is the CONSOLE \u2014 the set sits on top and adds no floor area. The thin bar is the screen seen from above; the small tab behind it is the pedestal foot, which is what distinguishes this from tv_wall_mounted at a glance. Put it on the wall the sofa faces."
+    },
+    {
+      "id": "car",
+      "label": "Car",
+      "tier": 1,
+      "category": "outdoor",
+      "svg": "car.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.8,
+        "d": 4.5,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.8,
+        "h": 4.5
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "left",
+          "depth": 0.6,
+          "reason": "opening the driver's door"
+        },
+        {
+          "side": "right",
+          "depth": 0.45,
+          "reason": "opening the passenger door"
+        },
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "walking round the front"
+        }
+      ],
+      "rooms": [
+        "carport",
+        "garage"
+      ],
+      "notes": "Sedan / small SUV. A carport that fits the box but not the door clearance is the classic PH plan failure \u2014 that is what the clearance entries are for."
+    },
+    {
+      "id": "floor_drain",
+      "label": "Floor drain",
+      "tier": 2,
+      "category": "bath",
+      "svg": "floor_drain.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.15,
+        "d": 0.15,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.15,
+        "h": 0.15
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath",
+        "bath_toilet",
+        "powder_room",
+        "service_area",
+        "dirty_kitchen",
+        "lanai"
+      ],
+      "notes": "Every wet room needs one. Set at the low point of the floor slope."
+    },
+    {
+      "id": "lavatory_pedestal",
+      "label": "Lavatory (pedestal)",
+      "tier": 2,
+      "category": "bath",
+      "svg": "lavatory_pedestal.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.48,
+        "d": 0.42,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.48,
+        "h": 0.42
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.55,
+          "reason": "standing at the basin"
+        }
+      ],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath",
+        "bath_toilet",
+        "powder_room"
+      ],
+      "notes": "Use where the bath is too tight for a counter run."
+    },
+    {
+      "id": "tabo_set",
+      "label": "Tabo and pail set",
+      "tier": 2,
+      "category": "bath",
+      "svg": "tabo_set.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.45,
+        "d": 0.45,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.45,
+        "h": 0.45
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "standing to bathe"
+        }
+      ],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath",
+        "bath_toilet",
+        "powder_room"
+      ],
+      "notes": "The wet-corner alternative to a shower stall. A bath that cannot take a 0.90 m stall is not automatically undersized \u2014 a great many PH mid-market baths are designed around this instead."
+    },
+    {
+      "id": "water_heater",
+      "label": "Water heater (wall)",
+      "tier": 2,
+      "category": "bath",
+      "svg": "water_heater.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.35,
+        "d": 0.25,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.35,
+        "h": 0.25
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [],
+      "rooms": [
+        "common_bath",
+        "ensuite_bath"
+      ],
+      "notes": "Wall-mounted, no floor area. Draw over the shower or basin wall."
+    },
+    {
+      "id": "cabinet_small",
+      "label": "Small cabinet",
+      "tier": 2,
+      "category": "bedroom",
+      "svg": "cabinet_small.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.6,
+        "d": 0.5,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.6,
+        "h": 0.5
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.45,
+          "reason": "door swing"
+        }
+      ],
+      "rooms": [
+        "maids_room",
+        "storage",
+        "study"
+      ],
+      "notes": "Maid's room and utility storage where a full wardrobe will not fit."
+    },
+    {
+      "id": "wic_unit",
+      "label": "Walk-in closet unit",
+      "tier": 2,
+      "category": "bedroom",
+      "svg": "wic_unit.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.2,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.2,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 0.6,
+        "max": 3.0,
+        "repeat_unit": 0.3,
+        "how": "extend the run"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "standing between two facing runs"
+        }
+      ],
+      "rooms": [
+        "wic",
+        "master_bedroom"
+      ],
+      "notes": "Two facing runs need 0.90 m between them, which is what sets the minimum WIC width at about 2.10 m."
+    },
+    {
+      "id": "bar_stool",
+      "label": "Bar stool",
+      "tier": 2,
+      "category": "dining",
+      "svg": "bar_stool.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.36,
+        "d": 0.36,
+        "shape": "circle",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.36,
+        "h": 0.36
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "back",
+          "depth": 0.45,
+          "reason": "pushing back and standing up"
+        }
+      ],
+      "rooms": [
+        "kitchen",
+        "dining_room",
+        "great_room"
+      ],
+      "notes": "For placing stools individually where the peninsula symbol's own three do not suit."
+    },
+    {
+      "id": "dining_8",
+      "label": "Dining table, 8-seat",
+      "tier": 2,
+      "category": "dining",
+      "svg": "dining_8.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.2,
+        "d": 1.0,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 3.32,
+        "h": 2.12
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "left",
+          "depth": 0.75,
+          "reason": "getting past the end of the table"
+        },
+        {
+          "side": "right",
+          "depth": 0.75,
+          "reason": "getting past the end of the table"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "Footprint is the TABLE. The chairs drawn outside it sit in the clearance zone \u2014 that is deliberate, and it is why a dining room needs roughly 0.90 m clear on the long sides."
+    },
+    {
+      "id": "dining_compact_2",
+      "label": "Compact dining table, 2-seat",
+      "tier": 2,
+      "category": "dining",
+      "svg": "dining_compact_2.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.75,
+        "d": 0.75,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.87,
+        "h": 1.87
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        },
+        {
+          "side": "back",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        },
+        {
+          "side": "left",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        },
+        {
+          "side": "right",
+          "depth": 0.75,
+          "reason": "pulling a chair out"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "A 0.75 m square seating 2 \u2014 the set for a dining zone that is a gap between rooms rather than a room. Square rather than rectangular on purpose: it takes the same floor from either direction, so it drops into a leftover space without the plan having to decide which way the dining runs. Pair it with counter_peninsula where the kitchen edge does the dividing."
+    },
+    {
+      "id": "dining_round_8",
+      "label": "Round dining table, 8-seat",
+      "tier": 2,
+      "category": "dining",
+      "svg": "dining_round_8.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.55,
+        "d": 1.55,
+        "shape": "circle",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.67,
+        "h": 2.67
+      },
+      "origin": {
+        "x": 0.56,
+        "y": 0.56
+      },
+      "anchor": "center",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "back",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "left",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        },
+        {
+          "side": "right",
+          "depth": 0.9,
+          "reason": "pulling a chair out and walking behind it"
+        }
+      ],
+      "rooms": [
+        "dining_room",
+        "great_room",
+        "kitchen"
+      ],
+      "notes": "Footprint is the TABLE \u2014 a 1.55 m circle, so the corners of its bounding square are free floor. That is the round table's real advantage on a squarish dining room: same seats, less width, and no one on a corner. Dashed inner circle is a 0.90 m lazy susan."
+    },
+    {
+      "id": "shoe_cabinet",
+      "label": "Shoe cabinet",
+      "tier": 2,
+      "category": "entry",
+      "svg": "shoe_cabinet.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 0.35,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.9,
+        "h": 0.35
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "standing to take shoes off"
+        }
+      ],
+      "rooms": [
+        "foyer",
+        "porch",
+        "hallway"
+      ],
+      "notes": "Near-universal just inside a PH front door."
+    },
+    {
+      "id": "stove_gas_2burner",
+      "label": "Gas stove (2 burner)",
+      "tier": 2,
+      "category": "kitchen",
+      "svg": "stove_gas_2burner.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.6,
+        "d": 0.35,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.6,
+        "h": 0.35
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "standing to cook"
+        }
+      ],
+      "rooms": [
+        "dirty_kitchen",
+        "kitchen",
+        "service_area"
+      ],
+      "notes": "The dirty-kitchen workhorse. Pair with lpg_tank."
+    },
+    {
+      "id": "altar",
+      "label": "Altar / prayer nook",
+      "tier": 2,
+      "category": "living",
+      "svg": "altar.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 0.4,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.9,
+        "h": 0.4
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "kneeling room"
+        }
+      ],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "foyer",
+        "master_bedroom"
+      ],
+      "notes": "Common in PH homes and usually on a quiet wall away from the TV."
+    },
+    {
+      "id": "tv_wall_mounted",
+      "label": "Wall-mounted TV",
+      "tier": 2,
+      "category": "living",
+      "svg": "tv_wall_mounted.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.2,
+        "d": 0.1,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.2,
+        "h": 0.14
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [],
+      "rooms": [
+        "living_room",
+        "great_room",
+        "family_room",
+        "master_bedroom"
+      ],
+      "notes": "A wall mark only. Draw on the wall the sofa faces; no floor area."
+    },
+    {
+      "id": "drying_area",
+      "label": "Drying line / area",
+      "tier": 2,
+      "category": "service",
+      "svg": "drying_area.svg",
+      "units": "m",
+      "footprint": {
+        "w": 2.4,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 2.4,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 1.5,
+        "max": 4.0,
+        "repeat_unit": 0.3,
+        "how": "extend the lines between the two end posts"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "reaching the line"
+        }
+      ],
+      "rooms": [
+        "service_area",
+        "lanai"
+      ],
+      "notes": "Drawn dashed because it is a zone, not an object. Wants sun and cross-ventilation \u2014 check it is not boxed in."
+    },
+    {
+      "id": "laundry_sink",
+      "label": "Laundry sink (banggerahan)",
+      "tier": 2,
+      "category": "service",
+      "svg": "laundry_sink.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.6,
+        "d": 0.5,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.6,
+        "h": 0.5
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "standing to hand-wash"
+        }
+      ],
+      "rooms": [
+        "service_area",
+        "dirty_kitchen"
+      ],
+      "notes": "Deep concrete or granite sink. Pairs with the washing machine on the same wet wall."
+    },
+    {
+      "id": "lpg_tank",
+      "label": "LPG cylinder (11 kg)",
+      "tier": 2,
+      "category": "service",
+      "svg": "lpg_tank.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.32,
+        "d": 0.32,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.32,
+        "h": 0.32
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.3,
+          "reason": "swapping the cylinder"
+        }
+      ],
+      "rooms": [
+        "dirty_kitchen",
+        "service_area"
+      ],
+      "notes": "Keep it ventilated and out of an enclosed cabinet \u2014 this is a real safety call, not decoration."
+    },
+    {
+      "id": "open_shelving",
+      "label": "Open shelving",
+      "tier": 2,
+      "category": "service",
+      "svg": "open_shelving.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 0.35,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.9,
+        "h": 0.35
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": {
+        "axis": "width",
+        "min": 0.6,
+        "max": 2.4,
+        "repeat_unit": 0.3,
+        "how": "extend the run"
+      },
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "reaching the shelves"
+        }
+      ],
+      "rooms": [
+        "dirty_kitchen",
+        "service_area",
+        "storage"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "storage_shelving",
+      "label": "Storage shelving",
+      "tier": 2,
+      "category": "service",
+      "svg": "storage_shelving.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.9,
+        "d": 0.45,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.9,
+        "h": 0.45
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "reaching the shelves"
+        }
+      ],
+      "rooms": [
+        "storage",
+        "service_area"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "washing_machine",
+      "label": "Washing machine",
+      "tier": 2,
+      "category": "service",
+      "svg": "washing_machine.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.6,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.6,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "loading"
+        }
+      ],
+      "rooms": [
+        "service_area",
+        "dirty_kitchen"
+      ],
+      "notes": "Needs a floor drain and a tap. Top-loaders are the norm \u2014 the drum circle reads either way."
+    },
+    {
+      "id": "water_tank",
+      "label": "Water tank (1000 L)",
+      "tier": 2,
+      "category": "service",
+      "svg": "water_tank.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.1,
+        "d": 1.1,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.1,
+        "h": 1.1
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.45,
+          "reason": "access for cleaning and the pump"
+        }
+      ],
+      "rooms": [
+        "service_area",
+        "lanai",
+        "carport"
+      ],
+      "notes": "Poly tank, roughly 1.1 m diameter. Overhead or ground-level with a pressure pump \u2014 the plan mark is the same."
+    },
+    {
+      "id": "chair_task",
+      "label": "Task chair",
+      "tier": 2,
+      "category": "study",
+      "svg": "chair_task.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.55,
+        "d": 0.55,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.55,
+        "h": 0.55
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "back",
+          "depth": 0.4,
+          "reason": "pushing back from the desk"
+        }
+      ],
+      "rooms": [
+        "study",
+        "bedroom_standard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "desk",
+      "label": "Desk",
+      "tier": 2,
+      "category": "study",
+      "svg": "desk.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.2,
+        "d": 0.6,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.2,
+        "h": 0.6
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": false,
+      "handed": true,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.75,
+          "reason": "chair pull-out"
+        }
+      ],
+      "rooms": [
+        "study",
+        "bedroom_standard",
+        "master_bedroom"
+      ],
+      "notes": "Handed \u2014 drawer pedestal mirrors."
+    },
+    {
+      "id": "bathtub",
+      "label": "Bathtub",
+      "tier": 3,
+      "category": "bath",
+      "svg": "bathtub.svg",
+      "units": "m",
+      "footprint": {
+        "w": 1.7,
+        "d": 0.75,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 1.7,
+        "h": 0.75
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "wall_back",
+      "must_back_wall": true,
+      "needs_plumbing_wall": true,
+      "handed": true,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "front",
+          "depth": 0.6,
+          "reason": "stepping in"
+        }
+      ],
+      "rooms": [
+        "ensuite_bath"
+      ],
+      "notes": "Uncommon below the upper-mid bracket. Handed: tap end mirrors."
+    },
+    {
+      "id": "motorcycle",
+      "label": "Motorcycle",
+      "tier": 3,
+      "category": "outdoor",
+      "svg": "motorcycle.svg",
+      "units": "m",
+      "footprint": {
+        "w": 0.75,
+        "d": 2.0,
+        "shape": "rect",
+        "cells": null
+      },
+      "viewbox": {
+        "w": 0.75,
+        "h": 2.0
+      },
+      "origin": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "anchor": "free",
+      "must_back_wall": false,
+      "needs_plumbing_wall": false,
+      "handed": false,
+      "stretch": null,
+      "clearance": [
+        {
+          "side": "left",
+          "depth": 0.45,
+          "reason": "getting on and off"
+        }
+      ],
+      "rooms": [
+        "carport",
+        "porch",
+        "service_area"
+      ],
+      "notes": "Often shares the carport with the car on tight lots."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "intent": "Sweep fixture (MAX r085) for 1s_1br_sq_side_split_bath_ld at a near-square ratio of 0.85 -- 11.9x14 m lot, 71.1 m2 buildable floor. Discovered empirically by sweep_discover.py; re-run that script to refresh if the solver or this topology changes.",
+  "lot_width": 11.9,
+  "lot_depth": 14.0,
+  "bedroom_count": 1,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-1",
+  "topology": "1s/1br/squarish/1s_1br_sq_side_split_bath_ld.json"
+}

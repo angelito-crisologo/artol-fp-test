@@ -313,6 +313,65 @@ def build_record(rel_path, abs_path, raw, brief_candidates):
     return rec
 
 
+# ---------- sibling grouping (size-gated implementations of one topology) ----------
+
+def _merged_name(a, b):
+    """Common prefix of two sibling ids, with the differing suffix stripped.
+
+    `1s_1br_sq_side_split_bath_ld` + `..._gr` -> `1s_1br_sq_side_split_bath`
+    `2s_2br_nw_side_spine_stair_bath_hall` + `..._bath` -> the shorter of the two."""
+    pa, pb = a.split("_"), b.split("_")
+    keep = []
+    for x, y in zip(pa, pb):
+        if x != y:
+            break
+        keep.append(x)
+    return "_".join(keep) or min(a, b, key=len)
+
+
+def group_siblings(records):
+    """Collapse size-gated sibling files into one catalog entry.
+
+    Two topology FILES linked by `fallback_below_buildable_sqm` are two
+    IMPLEMENTATIONS of a single design — the gated one (typically `_ld`) for
+    lots that can afford it, the compact one (`_gr`, or the hall-less variant)
+    below the threshold. The runner picks between them automatically, so the
+    catalog should present one topology, not two. Grouping is keyed on that
+    fallback link rather than on an `_ld`/`_gr` name suffix, so it also covers
+    the hall / hall-less pair, which is the same relationship under a
+    different name.
+
+    The PRIMARY is the gated file (the preferred-size design); the compact
+    sibling rides along as a secondary implementation. Each keeps its own
+    rendered plan — only the catalog entry is merged."""
+    by_id = {r["id"]: r for r in records}
+    secondary = {}
+    for r in records:
+        raw = r["raw"]
+        gate = raw.get("fallback_below_buildable_sqm")
+        fb = raw.get("fallback_topology")
+        if not gate or not fb:
+            continue
+        sib_id = os.path.basename(fb)[:-5] if fb.endswith(".json") else fb
+        if sib_id in by_id:
+            secondary[sib_id] = (r["id"], gate)
+
+    merged = []
+    for r in records:
+        if r["id"] in secondary:
+            continue                       # folded into its primary below
+        r["impls"] = [r]
+        r["gate_sqm"] = None
+        for sid, (pid, gate) in secondary.items():
+            if pid == r["id"]:
+                r["impls"] = [r, by_id[sid]]
+                r["gate_sqm"] = gate
+                r["group_name"] = _merged_name(r["id"], sid)
+        r.setdefault("group_name", r["id"])
+        merged.append(r)
+    return merged
+
+
 # ---------- HTML fragments ----------
 
 def code_panel_html(panel_id, filename, obj, download_href):
@@ -524,21 +583,67 @@ def render_output_subsheet(rec):
     )
 
 
-def render_detail_page(rec, index, total):
-    pill = ('<span class="pill pass">Verified</span>' if rec["verified"]
-           else '<span class="pill warn">Not regression-tested</span>')
+def _impl_body(rec):
+    """The stacked subsheets for ONE implementation."""
     body = [render_definition_subsheet(rec)]
     if rec["verified"]:
         body.append(render_brief_subsheet(rec))
         body.append(render_output_subsheet(rec))
     else:
         body.insert(0, render_notice(rec))
+    return "".join(body)
+
+
+def render_impl_tabs(rec):
+    """Tabbed body for a topology with two size-gated implementations.
+
+    The gated file (`_ld`, or the hall variant) is the DEFAULT — what the
+    runner uses whenever the lot can afford it. The compact sibling is the
+    FALLBACK, selected automatically below the threshold. Both are the same
+    topology, so they share one detail page."""
+    impls = rec["impls"]
+    gate = rec.get("gate_sqm")
+    group = rec.get("group_name", rec["id"])
+    tabs, panels = [], []
+    for i, im in enumerate(impls):
+        suffix = im["id"][len(group):].lstrip("_") or "base"
+        if i == 0:
+            label = "Default"
+            sub = f"lot &ge; {fmt_num(gate)} m&sup2; buildable" if gate else "primary"
+        else:
+            label = "Fallback"
+            sub = f"lot &lt; {fmt_num(gate)} m&sup2; buildable" if gate else "compact sibling"
+        active = " is-active" if i == 0 else ""
+        tabs.append(
+            f'<button class="impl-tab{active}" type="button" data-impl="{im["id"]}" '
+            f'aria-selected="{"true" if i == 0 else "false"}">'
+            f'<span class="impl-tab-label">{label}</span>'
+            f'<span class="impl-tab-id mono">{esc(suffix)}</span>'
+            f'<span class="impl-tab-sub">{sub}</span></button>')
+        hidden = "" if i == 0 else " hidden"
+        panels.append(
+            f'<div class="impl-panel" data-impl="{im["id"]}"{hidden}>{_impl_body(im)}</div>')
+    note = ""
+    if gate:
+        note = (f'<p class="impl-note">Two implementations of one topology; the runner '
+                f'picks automatically. <strong>Default</strong> above the '
+                f'{fmt_num(gate)} m&sup2; buildable-area gate, <strong>Fallback</strong> '
+                f'below it — design intent, not an infeasibility fallback.</p>')
+    return (f'<div class="impl-switch" role="tablist" aria-label="Implementations">'
+            f'{"".join(tabs)}</div>{note}{"".join(panels)}')
+
+
+def render_detail_page(rec, index, total):
+    pill = ('<span class="pill pass">Verified</span>' if rec["verified"]
+           else '<span class="pill warn">Not regression-tested</span>')
+    impls = rec.get("impls") or [rec]
+    body = [render_impl_tabs(rec)] if len(impls) > 1 else [_impl_body(rec)]
     return (
         f'<section class="route-detail" id="page-{rec["id"]}" data-topology="{rec["id"]}" hidden>'
         f'<a class="back-link" href="#/">← Back to catalog</a>\n'
         '<div class="entry-head">\n'
         f'  <span class="entry-num">No. {index:02d} / {total}</span>\n'
-        f'  <h2>{esc(rec["id"])}</h2>\n'
+        f'  <h2>{esc(rec.get("group_name", rec["id"]))}</h2>\n'
         f'  {pill}\n'
         '</div>\n'
         f'<div class="doc-sub"><span class="mono">{esc(rec["id"])}</span> · {rec["storey_label"]} · '
@@ -550,6 +655,49 @@ def render_detail_page(rec, index, total):
 
 
 def render_thumb_card(rec):
+    impls = rec.get("impls") or [rec]
+    if len(impls) > 1:
+        # Size-gated siblings: ONE topology, two implementations. The card
+        # shows one plan at a time with the gated/preferred design (`_ld`,
+        # or the hall variant) as the default tab. Tabs are overlaid on the
+        # media so the whole card stays a single link — a nested <button>
+        # inside the <a> would be invalid HTML.
+        group = rec.get("group_name", rec["id"])
+        imgs, tabs = [], []
+        for i, im in enumerate(impls):
+            suffix = im["id"][len(group):].lstrip("_") or "base"
+            hidden = "" if i == 0 else " hidden"
+            if im["verified"]:
+                imgs.append(f'<img src="plans/{im["id"]}.svg" data-plan="{im["id"]}"'
+                            f'{hidden} alt="Floor plan: {esc(im["id"])}" loading="lazy">')
+            else:
+                imgs.append(f'<div class="thumb-noplan" data-plan="{im["id"]}"{hidden}>'
+                            f'<span class="thumb-empty-glyph" aria-hidden="true">&#9634;</span>'
+                            f'<span class="thumb-empty-text">Not tested</span></div>')
+            tabs.append(f'<button class="thumb-tab{" is-active" if i == 0 else ""}" '
+                        f'type="button" data-plan="{im["id"]}" '
+                        f'title="{esc(im["id"])}">{esc(suffix)}</button>')
+        n_ok = sum(1 for im in impls if im["verified"])
+        pill = ('<span class="pill pass sm">Verified</span>' if n_ok == len(impls)
+                else f'<span class="pill warn sm">{n_ok}/{len(impls)} verified</span>')
+        gate = rec.get("gate_sqm")
+        gate_tag = (f'<span class="thumb-tag">gate {fmt_num(gate)} m&sup2;</span>'
+                    if gate else '<span class="thumb-tag">2 impls</span>')
+        tag2 = '<span class="thumb-tag">2-storey</span>' if rec["is_multi"] else ""
+        return (
+            f'<div class="thumb-card is-tabbed" data-topology="{rec["id"]}" '
+            f'data-shape="{rec["shape"]}">\n'
+            f'  <a class="thumb-hit" href="#/topology/{rec["id"]}">\n'
+            f'    <div class="thumb-media">{"".join(imgs)}</div>\n'
+            '    <div class="thumb-info">\n'
+            f'      <div class="thumb-name">{esc(group)}</div>\n'
+            f'      <div class="thumb-meta">{rec["shape_label"]}{tag2}{gate_tag}{pill}</div>\n'
+            '    </div>\n'
+            '  </a>\n'
+            f'  <div class="thumb-tabs" role="tablist" aria-label="Implementation">'
+            f'{"".join(tabs)}</div>\n'
+            '</div>'
+        )
     if rec["verified"]:
         media = (f'<div class="thumb-media"><img src="plans/{rec["id"]}.svg" '
                 f'alt="Floor plan: {esc(rec["id"])}" loading="lazy"></div>')
@@ -575,7 +723,9 @@ def render_thumb_card(rec):
 def render_accordion(groups):
     out = []
     for i, (bedroom_count, recs) in enumerate(groups):
-        n_verified = sum(1 for r in recs if r["verified"])
+        _flat = [im for r in recs for im in (r.get("impls") or [r])]
+        n_verified = sum(1 for im in _flat if im["verified"])
+        n_impl = len(_flat)
         shape_counts = {}
         for r in recs:
             shape_counts[r["shape"]] = shape_counts.get(r["shape"], 0) + 1
@@ -596,7 +746,8 @@ def render_accordion(groups):
             '    </button>\n'
             f'    <div class="acc-filter" role="group" aria-label="Filter {bedroom_count} bedroom '
             f'topologies by shape">{"".join(pills)}</div>\n'
-            f'    <span class="acc-count">{len(recs)} topologies · {n_verified} verified</span>\n'
+            f'    <span class="acc-count">{len(recs)} topologies · {n_impl} impls · '
+            f'{n_verified} verified</span>\n'
             '  </div>\n'
             f'  <div class="acc-panel">\n    <div class="thumb-grid">{cards}</div>\n  </div>\n'
             '</div>'
@@ -605,9 +756,11 @@ def render_accordion(groups):
 
 
 def render_page(all_recs):
-    total = len(all_recs)
-    n_verified = sum(1 for r in all_recs if r["verified"])
-    n_unverified = total - n_verified
+    total = len(all_recs)                       # merged/"real" topologies
+    n_impls = sum(len(r.get("impls") or [r]) for r in all_recs)
+    flat = [im for r in all_recs for im in (r.get("impls") or [r])]
+    n_verified = sum(1 for im in flat if im["verified"])
+    n_unverified = n_impls - n_verified
 
     groups = []
     seen = []
@@ -628,6 +781,8 @@ def render_page(all_recs):
         "brief, and solved output.</p>\n"
         '      <div class="stat-row">\n'
         f'        <div><div class="stat-label">Topologies</div><div class="stat-value">{total}</div></div>\n'
+        f'        <div><div class="stat-label">Implementations</div>'
+        f'<div class="stat-value">{n_impls}</div></div>\n'
         f'        <div><div class="stat-label">Verified</div><div class="stat-value">{n_verified}</div></div>\n'
         f'        <div><div class="stat-label">Not yet tested</div>'
         f'<div class="stat-value sv-warn">{n_unverified}</div></div>\n'
@@ -693,7 +848,21 @@ def main():
     records.sort(key=lambda r: (r["bedroom_count"], SHAPE_ORDER.get(r["shape"], 9),
                                 2 if r["is_multi"] else 1, r["id"]))
 
-    html_doc = render_page(records)
+    # Collapse size-gated sibling FILES into single catalog entries. Each
+    # implementation keeps its own rendered plan (written above); only the
+    # gallery entry merges.
+    entries = group_siblings(records)
+    n_merged = sum(1 for e in entries if len(e.get("impls") or [e]) > 1)
+    print(f"\ngrouped {len(records)} topology files into {len(entries)} catalog "
+          f"entries ({n_merged} with 2 size-gated implementations)")
+    for e in entries:
+        if len(e.get("impls") or [e]) > 1:
+            print(f"    {e['group_name']}  <- " +
+                  " + ".join(im["id"][len(e["group_name"]):].lstrip("_") or "base"
+                             for im in e["impls"]) +
+                  f"   gate {e['gate_sqm']} m2")
+
+    html_doc = render_page(entries)
     with open(os.path.join(_SITE, "index.html"), "w", encoding="utf-8") as f:
         f.write(html_doc)
 
@@ -703,7 +872,8 @@ def main():
 
     n_verified = sum(1 for r in records if r["verified"])
     dt = time.time() - t0
-    print(f"\ndone in {dt:.0f}s — {len(records)} topologies, {n_verified} verified, "
+    print(f"\ndone in {dt:.0f}s — {len(entries)} topologies "
+         f"({len(records)} implementations), {n_verified} verified, "
          f"{len(records) - n_verified} not yet tested")
     print(f"wrote {os.path.join(_SITE, 'index.html')}")
 

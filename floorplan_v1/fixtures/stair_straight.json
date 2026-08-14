@@ -1,0 +1,50 @@
+{
+  "id": "stair_straight",
+  "label": "Stair, straight flight",
+  "tier": 1,
+  "category": "circulation",
+  "svg": "stair_straight.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.9,
+    "d": 3.0,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.9,
+    "h": 3.0
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": {
+    "axis": "depth",
+    "min": 2.4,
+    "max": 4.2,
+    "repeat_unit": 0.25,
+    "how": "add or remove treads at 0.25 m going"
+  },
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "landing at the foot of the flight"
+    },
+    {
+      "side": "back",
+      "depth": 0.9,
+      "reason": "landing at the head of the flight"
+    }
+  ],
+  "rooms": [
+    "stairs",
+    "hallway"
+  ],
+  "notes": "0.90 m clear width, 0.25 m going. The arrow points UP."
+}

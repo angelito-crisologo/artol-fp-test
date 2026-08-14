@@ -1,0 +1,39 @@
+{
+  "id": "chair_task",
+  "label": "Task chair",
+  "tier": 2,
+  "category": "study",
+  "svg": "chair_task.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.55,
+    "d": 0.55,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.55,
+    "h": 0.55
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "back",
+      "depth": 0.4,
+      "reason": "pushing back from the desk"
+    }
+  ],
+  "rooms": [
+    "study",
+    "bedroom_standard"
+  ],
+  "notes": ""
+}

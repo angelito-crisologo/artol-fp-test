@@ -1,0 +1,15 @@
+{
+  "intent": "2-bedroom home for a couple on a squarish lot. Two baths — ensuite off the master, plus a common T&B reachable from the public side. Bedrooms on one side, living/dining/kitchen on the other, with the kitchen at the rear.",
+  "lot_width": 13.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "num_baths": 2,
+  "must_haves": [
+    "master ensuite",
+    "common bath accessible from the public side",
+    "separate living + dining + kitchen",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2"
+}

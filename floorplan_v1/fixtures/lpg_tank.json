@@ -1,0 +1,39 @@
+{
+  "id": "lpg_tank",
+  "label": "LPG cylinder (11 kg)",
+  "tier": 2,
+  "category": "service",
+  "svg": "lpg_tank.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.32,
+    "d": 0.32,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.32,
+    "h": 0.32
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.3,
+      "reason": "swapping the cylinder"
+    }
+  ],
+  "rooms": [
+    "dirty_kitchen",
+    "service_area"
+  ],
+  "notes": "Keep it ventilated and out of an enclosed cabinet \u2014 this is a real safety call, not decoration."
+}

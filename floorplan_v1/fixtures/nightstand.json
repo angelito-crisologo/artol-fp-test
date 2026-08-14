@@ -1,0 +1,39 @@
+{
+  "id": "nightstand",
+  "label": "Nightstand",
+  "tier": 1,
+  "category": "bedroom",
+  "svg": "nightstand.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.45,
+    "d": 0.4,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.45,
+    "h": 0.4
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.3,
+      "reason": "reach the drawer"
+    }
+  ],
+  "rooms": [
+    "master_bedroom",
+    "bedroom_standard"
+  ],
+  "notes": "Sits on the head wall beside the bed. Optional \u2014 drop it before reporting a bedroom as too small."
+}

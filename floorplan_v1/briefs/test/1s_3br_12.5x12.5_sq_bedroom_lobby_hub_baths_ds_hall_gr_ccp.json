@@ -1,0 +1,18 @@
+{
+  "intent": "3BR / 2 bath bedroom-lobby-hub with claimed carport on the right — smallest ccp lot at which the LOBBY PARTI ACTUALLY HOLDS, which is one notch above the raw ccp feasibility floor. The floor itself is 12x12 (bisected 2026-08-06: 11.75x11.75 and 11.75x12 both infeasible), but 12x12 solves degenerate: hub 4.25x1.00 m (aspect 4.25 — a 1 m corridor with five doors opening into it) and ensuite 1.25x5.00 m (aspect 4.00), at zero warnings, because the compact profile's hallway min_least_dim_m of 0.95 lets a corridor pass as the lobby. Re-based to 12.5x12.5 on 2026-08-05, where the parti reads correctly: hub 2.50x1.95 m (aspect 1.28) and a square 1.95x1.95 m ensuite. Exercises the front-right building_void carport cut against this topology's null left/right anchors.",
+  "lot_width": 12.5,
+  "lot_depth": 12.5,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "carport_side": "right",
+  "carport_type": "ccp",
+  "must_haves": [
+    "distributed baths (ensuite + common)",
+    "central bedroom-lobby hub, no separate hallway run",
+    "open-plan great room + kitchen",
+    "claimed carport right"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/3br/squarish/1s_3br_sq_bedroom_lobby_hub_baths_ds_hall_gr.json"
+}

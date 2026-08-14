@@ -26,6 +26,16 @@ class RoomSpec:
     # other; adjacencies are legal only between same-storey rooms except
     # kind='stair_vertical'. See MULTISTOREY_V2_DESIGN.md.
     storey: int = 1
+    # For type=="stairs" only: which of the 6 catalog stair plan-types this
+    # room represents (see docs/reference stair-types research). Render-only
+    # by default ("straight" draws the existing tread+arrow glyph); a
+    # non-straight value also changes which sizing numbers the topology
+    # should pin via lot_adjustment_profiles (min_least_dim_m etc. — there is
+    # no separate stair-type sizing table, the existing per-topology
+    # adjustment mechanism already covers it) and signals the solver to
+    # honor a declared `stair_wall` on this stair's boarding/arrival
+    # adjacencies instead of the solver-chosen straight-run ascent axis.
+    stair_type: str = "straight"
 
 
 @dataclass
@@ -78,6 +88,19 @@ class Adjacency:
     # aisle). Set to the living-side room id to keep the kitchen's full
     # width and let the band + stools live in the living/great room instead.
     counter_side: Optional[str] = None
+    # --- fixed stair boarding/arrival wall (non-straight stair types) --------
+    # For a kind='stair_boarding' or 'stair_arrival' adjacency on a stair
+    # whose RoomSpec.stair_type != "straight": which wall of the STAIR room
+    # (N/S/E/W; N=rear/high-y, S=front/low-y, E=right/high-x, W=left/low-x)
+    # the neighbor must reach. A turning stair's boarding and arrival walls
+    # are typically perpendicular (e.g. S then E for a 90-degree turn) or,
+    # for a U-turn, the same wall at different x/y offsets — neither case
+    # fits the straight-stair ascent-axis model (which always treats one
+    # axis as "the two ends" and the perpendicular axis as "flanks"), so a
+    # turning stair's walls are author-declared here instead of solver-
+    # chosen. None (default) preserves the existing solver-chosen ascent-
+    # axis behavior — required for every straight stair, ignored otherwise.
+    stair_wall: Optional[str] = None
 
 
 @dataclass
@@ -174,6 +197,15 @@ class Topology:
     # single bedroom + its bath.
     match_widths: List[List[str]] = field(default_factory=list)
 
+    # Generic pairwise DEPTH-matching (y-axis): list of [room_id_a, room_id_b]
+    # pairs. The solver constrains depth(room_id_a) == depth(room_id_b) for
+    # each pair. Same rationale as match_widths, rotated 90 degrees — use
+    # this when two specific rooms need matching depths for a clean shared
+    # wall or aligned front/rear seam (e.g. two rear-band rooms whose front
+    # edges should line up). Independent of match_widths — a pair can be
+    # width-matched, depth-matched, or both.
+    match_depths: List[List[str]] = field(default_factory=list)
+
     # When False, the solver skips the private/public zone-ratio block
     # entirely (both the hard "private total >= public total" floor and the
     # soft 55/45 bias). The default True preserves the catalog-wide PH
@@ -252,18 +284,6 @@ class Topology:
     # wing.
     bedroom_band_fills_width: bool = False
 
-    # When True, the single-storey realize path runs claim_dead_strips as a
-    # final post-process: any strictly-rectangular unclaimed interior strip
-    # (>= 0.05 m²) is handed to an adjacent room as its rect2 alcove, making
-    # that room L-shaped. Default False keeps the catalog-wide single-storey
-    # baselines frozen (claim_dead_strips was built for the multi-storey
-    # pipeline and is always-on there). Opt in on a topology whose ragged
-    # room widths at tight lot sizes leave dead pockets a normal edge-snap
-    # can't reach — e.g. the wide side-split cl topologies, where the private
-    # sub-columns tile cleanly at generous widths but not at their compact
-    # minimum. Purely a realized-geometry cleanup; never affects solver
-    # feasibility.
-    claim_dead_strips: bool = False
 
     # When True the topology caps the ensuite at preferred-high area
     # (4.5 m²) and lets the strip east of ensuite within the bedroom column
@@ -338,6 +358,20 @@ class Topology:
     # infeasibility fallback's warning.
     fallback_below_buildable_sqm: Optional[float] = None
 
+    # Room id (must have type in {"common_bath", "powder_room"}) that, on a
+    # non-straight stair, can be REPLACED by a powder room sited directly in
+    # the stair's leftover "notch" area (the unused corner of its bounding
+    # box, opposite the landing — see core.model.l_landing_cells) instead of
+    # its normal adjacency-placed position in the room program. None (the
+    # default) means this topology doesn't offer the option at all.
+    notch_powder_room_id: Optional[str] = None
+    # Buildable-area-per-floor threshold (m²) below which brief.gf_powder_room
+    # defaults to True when not explicitly set (same "compact means below X"
+    # convention as fallback_below_buildable_sqm, just gating a room-type/
+    # position swap instead of a whole-topology fallback). Ignored if
+    # notch_powder_room_id is None.
+    notch_powder_room_below_buildable_sqm: Optional[float] = None
+
     def room(self, room_id: str) -> RoomSpec:
         for r in self.rooms:
             if r.id == room_id:
@@ -376,6 +410,7 @@ def load_topology(path: str) -> Topology:
         match_bedroom_widths=bool(d.get("match_bedroom_widths", False)),
         match_bath_widths=bool(d.get("match_bath_widths", False)),
         match_widths=list(d.get("match_widths", [])),
+        match_depths=list(d.get("match_depths", [])),
         private_area_floor=bool(d.get("private_area_floor", True)),
         zone_ratio_private_floor_pct=float(d.get("zone_ratio_private_floor_pct", 50.0)),
         zone_ratio_private_target_pct=float(d.get("zone_ratio_private_target_pct", 55.0)),
@@ -385,7 +420,6 @@ def load_topology(path: str) -> Topology:
         kitchen_side_pin=bool(d.get("kitchen_side_pin", True)),
         aspect_overrides=dict(d.get("aspect_overrides", {})),
         bedroom_band_fills_width=bool(d.get("bedroom_band_fills_width", False)),
-        claim_dead_strips=bool(d.get("claim_dead_strips", False)),
         ensuite_alcove_joins_master=bool(d.get("ensuite_alcove_joins_master", False)),
         ldk_horizontal=bool(d.get("ldk_horizontal", False)),
         front_to_rear_stacks=list(d.get("front_to_rear_stacks", []) or []),
@@ -396,6 +430,8 @@ def load_topology(path: str) -> Topology:
         building_voids=voids,
         fallback_topology=d.get("fallback_topology"),
         fallback_below_buildable_sqm=d.get("fallback_below_buildable_sqm"),
+        notch_powder_room_id=d.get("notch_powder_room_id"),
+        notch_powder_room_below_buildable_sqm=d.get("notch_powder_room_below_buildable_sqm"),
     )
 
 
@@ -540,6 +576,7 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,
         match_widths=t.match_widths,
+        match_depths=t.match_depths,
         private_area_floor=t.private_area_floor,
         zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
@@ -549,7 +586,6 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
-        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=new_stacks,
@@ -560,6 +596,8 @@ def swap_master_standard_in_topology(t: Topology) -> Topology:
         building_voids=list(t.building_voids),
         fallback_topology=t.fallback_topology,
         fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
+        notch_powder_room_id=t.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=t.notch_powder_room_below_buildable_sqm,
     )
 
 
@@ -646,6 +684,7 @@ def apply_no_master_transform(t: Topology) -> Topology:
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,
         match_widths=t.match_widths,
+        match_depths=t.match_depths,
         private_area_floor=t.private_area_floor,
         zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
@@ -655,7 +694,6 @@ def apply_no_master_transform(t: Topology) -> Topology:
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
-        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=False,  # ensuite is gone
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=new_stacks,
@@ -666,6 +704,8 @@ def apply_no_master_transform(t: Topology) -> Topology:
         building_voids=list(t.building_voids or []),
         fallback_topology=t.fallback_topology,
         fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
+        notch_powder_room_id=t.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=t.notch_powder_room_below_buildable_sqm,
     )
 
 
@@ -712,6 +752,7 @@ def mirror_topology_x(t: Topology) -> Topology:
         match_bedroom_widths=t.match_bedroom_widths,
         match_bath_widths=t.match_bath_widths,
         match_widths=t.match_widths,
+        match_depths=t.match_depths,
         private_area_floor=t.private_area_floor,
         zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
@@ -721,7 +762,6 @@ def mirror_topology_x(t: Topology) -> Topology:
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
-        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=list(t.front_to_rear_stacks),
@@ -733,6 +773,8 @@ def mirror_topology_x(t: Topology) -> Topology:
         building_voids=mirrored_voids,
         fallback_topology=t.fallback_topology,
         fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
+        notch_powder_room_id=t.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=t.notch_powder_room_below_buildable_sqm,
     )
 
 
@@ -772,6 +814,8 @@ def storey_view(t: Topology, s: int) -> Topology:
         match_bath_widths=t.match_bath_widths,
         match_widths=[p for p in t.match_widths
                       if len(p) == 2 and p[0] in keep_ids and p[1] in keep_ids],
+        match_depths=[p for p in t.match_depths
+                      if len(p) == 2 and p[0] in keep_ids and p[1] in keep_ids],
         private_area_floor=t.private_area_floor,
         zone_ratio_private_floor_pct=t.zone_ratio_private_floor_pct,
         zone_ratio_private_target_pct=t.zone_ratio_private_target_pct,
@@ -781,7 +825,6 @@ def storey_view(t: Topology, s: int) -> Topology:
         kitchen_side_pin=t.kitchen_side_pin,
         aspect_overrides=dict(t.aspect_overrides),
         bedroom_band_fills_width=t.bedroom_band_fills_width,
-        claim_dead_strips=t.claim_dead_strips,
         ensuite_alcove_joins_master=t.ensuite_alcove_joins_master,
         ldk_horizontal=t.ldk_horizontal,
         front_to_rear_stacks=[[rid for rid in stack if rid in keep_ids]
@@ -794,4 +837,6 @@ def storey_view(t: Topology, s: int) -> Topology:
         building_voids=list(t.building_voids),
         fallback_topology=t.fallback_topology,
         fallback_below_buildable_sqm=t.fallback_below_buildable_sqm,
+        notch_powder_room_id=t.notch_powder_room_id,
+        notch_powder_room_below_buildable_sqm=t.notch_powder_room_below_buildable_sqm,
     )

@@ -1,0 +1,43 @@
+{
+  "id": "range_electric",
+  "label": "Range / cooktop (4 burner)",
+  "tier": 1,
+  "category": "kitchen",
+  "svg": "range_electric.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.6,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.6,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "standing to cook"
+    },
+    {
+      "side": "left",
+      "depth": 0.3,
+      "reason": "landing space beside the burners"
+    }
+  ],
+  "rooms": [
+    "kitchen"
+  ],
+  "notes": "Sits in the counter run like the sink."
+}

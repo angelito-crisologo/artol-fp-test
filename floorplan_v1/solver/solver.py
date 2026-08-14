@@ -35,6 +35,78 @@ from topology import Topology                     # noqa: E402  (solver)
 
 GRID_CM = 5                                       # 5 cm grid resolution
 
+# ---- GRADED-PREFERRED PROTOTYPE (experimental, OFF by default) ----
+# The objective's preferred-low bonus is normally a single step: a room either
+# clears its soft target and collects BIG*w, or collects nothing. That cliff
+# means a room which CANNOT reach its target has no incentive to get close, so
+# the solver strips its area to push some other room over ITS cliff — measured
+# 2026-08-05 as bedrooms collapsing to the 6 sqm legal floor, and (when the
+# kitchen target was raised) kitchens falling from 6.1 to 3.4 sqm.
+#
+# With ARTOL_GRADED_PREF=1 the bonus is paid linearly over 0..preferred-low
+# instead, plus a small residual step so exactly meeting the target still wins
+# over just missing it. Reaching the target is worth the same as before, so
+# rooms that already met it are unaffected; only rooms that were being written
+# off change behaviour.
+#
+# ADOPTED 2026-08-05 — default ON. Set ARTOL_GRADED_PREF=0 to get the old
+# all-or-nothing step back for comparison.
+GRADED_PREF = os.environ.get("ARTOL_GRADED_PREF", "1") not in ("0", "false")
+# Residual cliff = BIG//GRADED_STEP_DIV. Smaller divisor = stronger pull to
+# land exactly ON the target (closer to old behaviour); larger = flatter, more
+# willing to leave a room just short. Tunable while the prototype is being
+# evaluated.
+GRADED_STEP_DIV = int(os.environ.get("ARTOL_GRADED_STEP_DIV", "8") or 8)
+
+# Credit SHAPE between 0 and preferred-low.
+#   "linear" — one straight ramp. One slope has to do two jobs at once (stop
+#     collapse near the hard floor, stop drift near the target), so tuning
+#     GRADED_STEP_DIV just trades one against the other.
+#   "concave" — two segments meeting at a knee: steep from the floor up to
+#     KNEE_POS of the target (where it has already earned KNEE_VAL of the
+#     credit), shallow from there to the target. Square metres near the legal
+#     minimum are worth more than square metres near the target, which is what
+#     the geometry actually reflects.
+# A concave piecewise-linear function is the pointwise MINIMUM of its segment
+# lines, so it needs no extra machinery: bound the credit var by both lines and
+# let the maximizer push it to the lower one.
+# "concave" adopted as the default 2026-08-05: re-measured at the post-setback,
+# post-capping, kitchen-7.0 state it cut rooms pinned at their hard minimum
+# from 20 to 12 for -0.6 m2 of total area (linear: 13 @ -1.7 m2).
+GRADED_SHAPE = os.environ.get("ARTOL_GRADED_SHAPE", "concave").strip().lower()
+
+
+def _frac(env, dn, dd):
+    """Parse an 'N/D' env override into a fraction, defaulting to dn/dd."""
+    raw = os.environ.get(env, "")
+    if "/" in raw:
+        n, _, d = raw.partition("/")
+        try:
+            return int(n), int(d)
+        except ValueError:
+            pass
+    return dn, dd
+
+
+KNEE_POS_N, KNEE_POS_D = _frac("ARTOL_KNEE_POS", 1, 2)   # knee position
+KNEE_VAL_N, KNEE_VAL_D = _frac("ARTOL_KNEE_VAL", 4, 5)   # credit earned there
+
+# WHERE the knee position is measured from:
+#   "band" — a fraction of the USABLE band [hard-minimum .. preferred-low].
+#   "zero" — a fraction of preferred-low, ignoring the hard minimum.
+# "zero" puts the knee far too low whenever the hard minimum is a large share
+# of the target: for a kitchen (hard 3.0, target 8.0) a 1/2 knee lands at
+# 4.0 m2, only 1 m2 above the legal floor, so the credit flattens almost
+# immediately and the solver stops pushing. Measured 2026-08-05 on
+# 1s_3br_13.5x14.5_sq_hall_core: the kitchen parked at 4.50 having already
+# banked 82.5% of the credit, where the linear ramp had carried it to 5.80.
+# NOTE the default is "zero", not "band". Band anchoring won when this was
+# first measured (2 m front setback, kitchen target 8.0, no shell capping);
+# re-measured against the shipped 2026-08-05 state, ZERO wins — 12 rooms at
+# hard-min vs band's 13, and -0.6 m2 total area vs band's -5.0. Re-measure
+# before changing it; this preference has already flipped once.
+GRADED_KNEE_ANCHOR = os.environ.get("ARTOL_KNEE_ANCHOR", "zero").strip().lower()
+
 
 class AdjustmentError(ValueError):
     """User-side error in the brief's `adjustments` block — distinct from any
@@ -146,7 +218,8 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
           time_limit_s: float = 30.0, verbose: bool = True,
           adjustments: Dict[str, Dict[str, float]] = None,
           deterministic: bool = False,
-          kitchen_side: str = "right") -> Layout:
+          kitchen_side: str = "right",
+          gf_powder_room: bool = False) -> Layout:
     """Solve `topology` into a `Layout` on `lot`. `adjustments` is an optional
     per-room-type override of size constraints:
 
@@ -160,7 +233,13 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     even when its area is within bounds. `max_least_dim_m` caps the SHORTER
     side, `min_greatest_dim_m` floors the longer side — these two together
     let you force an elongated shape if you want one. If multiple rooms share
-    a type, the override applies to all of them."""
+    a type, the override applies to all of them.
+
+    `gf_powder_room`: when True and `topology.notch_powder_room_id` is set,
+    that room's rect is pinned (via new equality constraints, not excluded
+    from the model) to exactly the notch of its same-storey non-straight
+    stair — see the "notch powder room" block below and
+    core.model.l_landing_cells for the geometry this mirrors."""
     adjustments = adjustments or {}
 
     # Loud-fail on adjustment keys that don't match any room in the topology.
@@ -189,6 +268,8 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
     xiv, yiv = {}, {}                   # IntervalVars for AddNoOverlap2D
     area = {}                           # area = w * h  (in grid-unit^2)
     meets_pref = {}                     # BoolVar: area >= preferred-low (soft floor)
+    pref_progress = {}                  # IntVar: min(area, preferred-low) — GRADED_PREF only
+    graded_floor  = {}                  # hard-minimum area in grid units — GRADED_PREF only
     has_pref = {}                       # whether room has a preferred range
     pref_low_u2 = {}
 
@@ -350,6 +431,19 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         model.Add(area[r.id] <  pref_low_u2[r.id]).OnlyEnforceIf(mp.Not())
         meets_pref[r.id] = mp
 
+        # GRADED-PREFERRED PROTOTYPE (opt-in, see GRADED_PREF below).
+        # progress = min(area, preferred-low) — how far the room got toward its
+        # soft target, capped at the target. Lets the objective pay partial
+        # credit instead of the all-or-nothing `mp` step, so a room that CANNOT
+        # reach its target still has a reason to get as close as it can rather
+        # than being stripped back to the hard minimum.
+        if GRADED_PREF and pref_low_u2[r.id] > 0:
+            pl = pref_low_u2[r.id]
+            graded_floor[r.id] = min_area_u2
+            prog = model.NewIntVar(0, pl, f"prog_{r.id}")
+            model.AddMinEquality(prog, [area[r.id], model.NewConstant(pl)])
+            pref_progress[r.id] = prog
+
         # Soft "chunky" preference: BoolVar that both w and h >= the per-type
         # CHUNKY_LEAST_M threshold. Pulls every applicable room toward natural
         # proportions (a master bedroom prefers >= 2.7 m on its short side,
@@ -401,17 +495,61 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         void_xiv.append(vxi)
         void_yiv.append(vyi)
 
+    # ---------- notch powder room: resolve WHICH room/stair pair (pure
+    # topology inspection, no CP-SAT variables) is allowed to overlap in the
+    # no-overlap block below. The room is pinned into the stair's own
+    # bounding rect (see the constraint-adding block further down), so it
+    # must be exempted from that specific pair's no-overlap check — every
+    # OTHER pair still applies normally. ----------
+    notch_room_id = topology.notch_powder_room_id if gf_powder_room else None
+    notch_stair_room = None
+    notch_board_wall = notch_arrive_wall = None
+    if notch_room_id:
+        notch_room_spec = next((r for r in topology.rooms if r.id == notch_room_id), None)
+        notch_stair_room = next((r for r in topology.rooms
+                                 if r.type == "stairs" and notch_room_spec is not None
+                                 and r.storey == notch_room_spec.storey
+                                 and r.stair_type != "straight"), None)
+        if notch_stair_room is not None:
+            linked_ids = {notch_stair_room.id}
+            for adj in topology.adjacencies:
+                if adj.kind == "stair_vertical" and notch_stair_room.id in (adj.a, adj.b):
+                    linked_ids.add(adj.b if adj.a == notch_stair_room.id else adj.a)
+            for adj in topology.adjacencies:
+                if adj.kind not in ("stair_boarding", "stair_arrival") or not adj.stair_wall:
+                    continue
+                if not linked_ids & {adj.a, adj.b}:
+                    continue
+                if adj.kind == "stair_boarding":
+                    notch_board_wall = adj.stair_wall.upper()
+                else:
+                    notch_arrive_wall = adj.stair_wall.upper()
+    notch_pinned = (notch_stair_room is not None and notch_board_wall
+                   and notch_arrive_wall and notch_board_wall != notch_arrive_wall)
+
     # ---------- no overlap among rooms (+ building voids) ----------
     # Multi-storey: one no-overlap group PER STOREY — rooms on different
     # floors share the x/y plane and may freely coincide in plan. Building
     # voids join every group (conservative: the upper shell does not
     # cantilever over a carport notch — design decision D5). For the 1s
     # catalog this reduces to exactly the old single global constraint.
+    # When a notch powder room is pinned, its rect is a deliberate subset of
+    # its stair's own rect — that ONE pair is exempted from mutual overlap by
+    # splitting the group into two overlapping calls (each missing one side
+    # of the pair); every other pair is still covered by both calls.
     storey_of_room = {r.id: r.storey for r in topology.rooms}
     for s in range(1, topology.storeys + 1):
         s_ids = [rid for rid in xiv if storey_of_room.get(rid, 1) == s]
-        model.AddNoOverlap2D([xiv[rid] for rid in s_ids] + void_xiv,
-                             [yiv[rid] for rid in s_ids] + void_yiv)
+        if notch_pinned and notch_stair_room.id in s_ids and notch_room_id in s_ids:
+            group_a = [rid for rid in s_ids if rid != notch_room_id]
+            group_b = [rid for rid in s_ids if rid != notch_stair_room.id]
+            model.AddNoOverlap2D([xiv[rid] for rid in group_a] + void_xiv,
+                                 [yiv[rid] for rid in group_a] + void_yiv)
+            model.AddNoOverlap2D([xiv[rid] for rid in group_b] + void_xiv,
+                                 [yiv[rid] for rid in group_b] + void_yiv)
+        else:
+            model.AddNoOverlap2D([xiv[rid] for rid in s_ids] + void_xiv,
+                                 [yiv[rid] for rid in s_ids] + void_yiv)
 
     # ---------- window access: each habitable room touches the envelope boundary ----------
     for r in topology.rooms:
@@ -587,6 +725,16 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         a_id, b_id = pair
         if a_id in rw and b_id in rw:
             model.Add(rw[a_id] == rw[b_id])
+
+    # ---------- match depths (generic id-pair, y-axis) ----------
+    # Same rationale as match_widths, rotated 90 degrees: constrains
+    # depth(a) == depth(b) for any topology-local id pair.
+    for pair in topology.match_depths:
+        if len(pair) != 2:
+            continue
+        a_id, b_id = pair
+        if a_id in rh and b_id in rh:
+            model.Add(rh[a_id] == rh[b_id])
 
     # ---------- bedroom-band fills bedroom width ----------
     # Force the rooms in the middle band (any room sandwiched between master
@@ -843,7 +991,25 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         # required-end) literal combination.
         if adj.kind in ("stair_boarding", "stair_arrival"):
             S = a if a in stairs_type_ids else b
-            if S in stair_asc:
+            if adj.stair_wall:
+                # Non-straight stair (turning type): the author fixes WHICH
+                # wall of S this neighbor reaches, rather than the solver
+                # picking an ascent axis. Force the one orientation variable
+                # that corresponds to that wall — this also implies the
+                # shared-wall geometry above, no separate flank/end-cap
+                # distinction needed (there's no "run axis" to be a flank
+                # along; a turning stair's boarding/arrival walls are just
+                # two (possibly perpendicular) sides of its bounding box).
+                s_is_a = (S == a)
+                wall_var = {
+                    "N": (hr if s_is_a else hf),
+                    "S": (hf if s_is_a else hr),
+                    "E": (vr if s_is_a else vl),
+                    "W": (vl if s_is_a else vr),
+                }.get(adj.stair_wall.upper())
+                if wall_var is not None:
+                    model.Add(wall_var == 1)
+            elif S in stair_asc:
                 asc, rv = stair_asc[S], stair_rv[S]
                 end_low = asc if adj.kind == "stair_boarding" else asc.Not()
                 end_high = end_low.Not()
@@ -873,6 +1039,65 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
                 model.Add(left_hr <= rx[S] + Z).OnlyEnforceIf([hr, rh_, end_low])
                 model.Add(right_hr >= rx_end[S] - Z).OnlyEnforceIf([hr, rh_, end_high])
 
+    # ---------- notch powder room (pins a room's rect to an L-landing
+    # stair's own leftover notch, per Topology.notch_powder_room_id) ----------
+    # The room stays a completely NORMAL room everywhere else in this model
+    # (area objective, zone balance, its own declared adjacencies to great/
+    # kitchen etc. all still apply) — only its rx/ry/rw/rh get pinned to the
+    # stair's own notch via new equality constraints, mirroring
+    # core.model.l_landing_cells exactly (board_wall/arrive_wall are author-
+    # declared strings, known here at model-build time, so the branch choice
+    # itself is plain Python — only the arithmetic needs CP-SAT variables,
+    # since the stair's own width/height are still decisions). If the
+    # notch's geometry doesn't actually satisfy the room's OTHER declared
+    # adjacencies (e.g. it doesn't really touch its declared bath_door
+    # neighbor), the model goes correctly infeasible rather than silently
+    # producing a wrong layout.
+    # board_wall/arrive_wall/notch_pinned/notch_stair_room already resolved
+    # above (before the no-overlap block, which needs to know the pinned
+    # pair to exempt it). Re-bind local names for the arithmetic below.
+    if notch_room_id and notch_room_id in rx:
+        stair_room = notch_stair_room
+        board_wall, arrive_wall = notch_board_wall, notch_arrive_wall
+        if notch_pinned:
+            S, N = stair_room.id, notch_room_id
+            min_dim = model.NewIntVar(0, max(EW, EH), f"notch_mindim_{N}")
+            model.AddMinEquality(min_dim, [rw[S], rh[S]])
+            leg_w = model.NewIntVar(0, max(EW, EH), f"notch_legw_{N}")
+            model.AddDivisionEquality(leg_w, min_dim, 3)
+            board_travels_y = board_wall in ("N", "S")
+            leg1_wall = "W" if arrive_wall == "E" else ("E" if arrive_wall == "W"
+                       else ("S" if arrive_wall == "N" else "N"))
+            if board_travels_y:
+                # leg1 (from board wall) hugs leg1_wall; leg2 spans the
+                # remaining width at the far band; notch = leg2's x-range x
+                # leg1's y-range (the quadrant opposite the landing).
+                if leg1_wall == "W":
+                    model.Add(rx[N] == rx[S] + leg_w)
+                    model.Add(rx_end[N] == rx_end[S])
+                else:
+                    model.Add(rx[N] == rx[S])
+                    model.Add(rx_end[N] == rx_end[S] - leg_w)
+                if board_wall == "S":
+                    model.Add(ry[N] == ry[S])
+                    model.Add(ry_end[N] == ry_end[S] - leg_w)
+                else:
+                    model.Add(ry[N] == ry[S] + leg_w)
+                    model.Add(ry_end[N] == ry_end[S])
+            else:
+                if leg1_wall == "S":
+                    model.Add(ry[N] == ry[S] + leg_w)
+                    model.Add(ry_end[N] == ry_end[S])
+                else:
+                    model.Add(ry[N] == ry[S])
+                    model.Add(ry_end[N] == ry_end[S] - leg_w)
+                if board_wall == "W":
+                    model.Add(rx[N] == rx[S])
+                    model.Add(rx_end[N] == rx_end[S] - leg_w)
+                else:
+                    model.Add(rx[N] == rx[S] + leg_w)
+                    model.Add(rx_end[N] == rx_end[S])
+
     # ---------- objective ----------
     # Three tiers:
     #  (1) BIG bonus for each room that meets its preferred-low (soft floor)
@@ -884,7 +1109,42 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         w = PRIORITY_WEIGHTS.get(r.size_priority, 1)
         terms.append(area[r.id] * w)
         if has_pref[r.id]:
-            terms.append(meets_pref[r.id] * BIG * w)
+            if GRADED_PREF and r.id in pref_progress:
+                # Graded: pay BIG*w over 0..preferred-low, so a room reaching
+                # its target scores the SAME as the old cliff, but one stuck
+                # short scores proportionally instead of nothing. A residual
+                # step (BIG//GRADED_STEP_DIV) keeps exactly meeting the target
+                # strictly better than just missing it.
+                pl = max(pref_low_u2[r.id], 1)
+                total = BIG * w
+                prog = pref_progress[r.id]
+                floor_u2 = graded_floor.get(r.id, 0)
+                if GRADED_SHAPE == "concave" and pl > floor_u2:
+                    # Knee at (kx, knee_val * total). Anchoring kx inside the
+                    # usable band keeps the steep segment covering the range
+                    # the room can actually move through.
+                    if GRADED_KNEE_ANCHOR == "band":
+                        kx = floor_u2 + (pl - floor_u2) * KNEE_POS_N // KNEE_POS_D
+                    else:
+                        kx = pl * KNEE_POS_N // KNEE_POS_D
+                    kx = max(1, min(kx, pl - 1))
+                    vn, vd = KNEE_VAL_N, KNEE_VAL_D
+                    # credit <= each segment line; the maximizer settles on the
+                    # lower one, which IS the concave curve. Coefficients stay
+                    # whole, so no integer-division rounding in the slopes.
+                    credit = model.NewIntVar(0, total, f"credit_{r.id}")
+                    # steep segment: (0,0) -> (kx, vn/vd * total)
+                    model.Add(credit * (vd * kx) <= vn * total * prog)
+                    # shallow segment: (kx, vn/vd * total) -> (pl, total)
+                    model.Add(credit * (vd * (pl - kx))
+                              <= total * vd * (pl - kx)
+                              + (vd - vn) * total * (prog - pl))
+                    terms.append(credit)
+                else:
+                    terms.append(prog * ((total) // pl))
+                terms.append(meets_pref[r.id] * (BIG // GRADED_STEP_DIV) * w)
+            else:
+                terms.append(meets_pref[r.id] * BIG * w)
         # Chunky-proportion bonus: scaled by room priority so high-priority
         # rooms (master, LDK) get a stronger pull to chunky shapes than
         # service rooms. BIG//4 is the bath-baseline; multiplying by the
@@ -1007,6 +1267,32 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         raise RuntimeError(f"no feasible layout (status={solver.StatusName(status)})")
 
     # ---------- extract solution -> Layout ----------
+    # Non-straight stairs: resolve each stair id's declared boarding/arrival
+    # wall from its stair_boarding/stair_arrival adjacencies (author-fixed,
+    # not solver-chosen — see the stair_wall handling above), for the
+    # renderer's turn glyph.
+    stair_board_wall_of, stair_arrive_wall_of = {}, {}
+    for adj in topology.adjacencies:
+        if adj.kind not in ("stair_boarding", "stair_arrival") or not adj.stair_wall:
+            continue
+        sid = adj.a if adj.a in stairs_type_ids else adj.b
+        target = stair_board_wall_of if adj.kind == "stair_boarding" else stair_arrive_wall_of
+        target[sid] = adj.stair_wall.upper()
+    # Boarding lives on the GF flight's adjacency, arrival on the upper
+    # stairwell's — but a stair_vertical pair is the SAME physical turn on
+    # both floors, so propagate both walls across the link. Without this,
+    # only one of the two ids ever has both values, and the render glyph
+    # (which needs board+arrive together to draw the turn) falls back to
+    # the plain straight-stair glyph on whichever floor is missing one.
+    for adj in topology.adjacencies:
+        if adj.kind != "stair_vertical":
+            continue
+        for x, y in ((adj.a, adj.b), (adj.b, adj.a)):
+            if x in stair_board_wall_of and y not in stair_board_wall_of:
+                stair_board_wall_of[y] = stair_board_wall_of[x]
+            if x in stair_arrive_wall_of and y not in stair_arrive_wall_of:
+                stair_arrive_wall_of[y] = stair_arrive_wall_of[x]
+
     rooms = []
     for r in topology.rooms:
         x0 = _m(solver.Value(rx[r.id]))
@@ -1019,17 +1305,38 @@ def solve(topology: Topology, lot: Lot, rules: Rules,
         # travel arrow. asc=True means the bottom sits at the LOW coordinate
         # end of the run axis; rv=True means the run is vertical (along y).
         stair_up = None
-        if r.id in stair_asc:
+        # stair_asc/stair_rv exist (unconstrained) for EVERY stair_vertical
+        # pair regardless of stair_type — they're only meaningful for a
+        # straight run, whose boarding/arrival ends are the solver's own
+        # ascent-axis choice. A turning stair (l_landing, etc.) has its
+        # board/arrive walls author-fixed instead (Adjacency.stair_wall) and
+        # never constrains these vars, so reading them would produce an
+        # arbitrary direction — skip, leaving stair_up None as for any
+        # other non-stair room.
+        if r.id in stair_asc and getattr(r, "stair_type", "straight") == "straight":
             asc = solver.Value(stair_asc[r.id]) == 1
             rv = solver.Value(stair_rv[r.id]) == 1
             if rv:
                 stair_up = (0.0, 1.0 if asc else -1.0)
             else:
                 stair_up = (1.0 if asc else -1.0, 0.0)
-        rooms.append(Room(r.id, r.type, Rect(x0, y0, x1, y1), r.zone,
-                          mechanical_vent=getattr(r, "mechanical_vent", False),
+        # A notch-pinned room becomes a powder_room (not whatever type it's
+        # declared as in the topology JSON, typically common_bath — the
+        # notch is only ever big enough for a half-bath, see the stair-
+        # types research) and is unconditionally mechanically vented: the
+        # notch has no exterior wall at all, boxed in by the stair's own
+        # two legs plus whichever rooms border it.
+        is_notch_room = notch_pinned and r.id == notch_room_id
+        room_type = "powder_room" if is_notch_room else r.type
+        mech_vent = True if is_notch_room else getattr(r, "mechanical_vent", False)
+        rooms.append(Room(r.id, room_type, Rect(x0, y0, x1, y1), r.zone,
+                          mechanical_vent=mech_vent,
                           storey=getattr(r, "storey", 1),
-                          stair_up=stair_up))
+                          stair_type=getattr(r, "stair_type", "straight"),
+                          stair_board_wall=stair_board_wall_of.get(r.id),
+                          stair_arrive_wall=stair_arrive_wall_of.get(r.id),
+                          stair_up=stair_up,
+                          notch_pin_of=stair_room.id if is_notch_room else None))
 
     # ---------- carport placement ----------
     # If the topology declares a building_void with consumed_by="carport",

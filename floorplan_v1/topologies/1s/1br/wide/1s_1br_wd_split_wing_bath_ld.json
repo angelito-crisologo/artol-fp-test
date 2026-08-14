@@ -92,8 +92,14 @@
   },
   "match_bedroom_widths": false,
   "match_widths": [
-    ["bath", "kitchen"],
-    ["living", "dining"]
+    [
+      "bath",
+      "kitchen"
+    ],
+    [
+      "living",
+      "dining"
+    ]
   ],
   "left_anchored": [
     "bath",
@@ -107,8 +113,14 @@
     "dining"
   ],
   "front_to_rear_stacks": [
-    ["bath", "kitchen"],
-    ["living", "dining"]
+    [
+      "bath",
+      "kitchen"
+    ],
+    [
+      "living",
+      "dining"
+    ]
   ],
   "lot_adjustment_profiles": [],
   "setback_elements": [
@@ -154,5 +166,7 @@
     "is applied unconditionally rather than size-gated).",
     "",
     "No lot_adjustment_profiles yet -- untuned, both sizes solve clean without."
-  ]
+  ],
+  "fallback_topology": "1s/1br/wide/1s_1br_wd_split_wing_bath_gr.json",
+  "fallback_below_buildable_sqm": 27.9
 }

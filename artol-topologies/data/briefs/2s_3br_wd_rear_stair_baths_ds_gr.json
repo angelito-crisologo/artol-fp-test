@@ -14,13 +14,7 @@
     "no carport"
   ],
   "avoid": [],
-  "occupancy_class": "R-1",
-  "setbacks": {
-    "front": 2.0,
-    "rear": 2.0,
-    "left": 2.0,
-    "right": 2.0
-  },
+  "occupancy_class": "R-2",
   "topology": "2s/3br/wide/2s_3br_wd_rear_stair_baths_ds_gr.json",
   "dining_counter": false
 }

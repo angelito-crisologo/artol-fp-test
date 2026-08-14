@@ -1,0 +1,45 @@
+{
+  "id": "coffee_table",
+  "label": "Coffee table",
+  "tier": 1,
+  "category": "living",
+  "svg": "coffee_table.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.1,
+    "d": 0.6,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.1,
+    "h": 0.6
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "free",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.45,
+      "reason": "leg room from the sofa"
+    },
+    {
+      "side": "back",
+      "depth": 0.45,
+      "reason": "leg room from the sofa"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room"
+  ],
+  "notes": "Free-standing: sits about 0.40 m off the sofa front, not on a wall."
+}

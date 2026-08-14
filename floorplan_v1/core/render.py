@@ -8,9 +8,11 @@ Two top-level entry points:
   - archplan_to_svg(plan)         — adds doors + windows from an ArchPlan
 """
 import html
+import bisect
 import math
+import re
 from typing import List, Optional
-from model import Layout, Rect
+from model import Layout, Rect, make_outside_probe
 
 SCALE = 42          # px per metre
 MARGIN = 46         # px
@@ -172,8 +174,16 @@ def _emit_centered_text_block(cx, cy, label_lines, label_font,
     return "".join(parts)
 
 
+# Bath-type rooms that can be a solver-pinned notch room (see
+# Room.notch_pin_of) — these get FULL partition walls against the stair's
+# legs (Pass D in _compute_walls), unlike a non-bath room absorbing the
+# same notch as an open alcove via claim_stair_notch (thin rail instead —
+# see _notch_alcove_rail_svg).
+_NOTCH_BATH_TYPES = ("common_bath", "ensuite_bath", "bath_toilet", "powder_room")
+
+
 def _fill(room) -> str:
-    if room.type in ("common_bath", "ensuite_bath", "bath_toilet", "powder_room"):
+    if room.type in _NOTCH_BATH_TYPES:
         return "#ead1dc"
     if room.zone == "circulation":
         return ZONE_FILL["circulation"]
@@ -313,8 +323,15 @@ def layout_to_svg(layout: Layout) -> str:
                            label=LABELS.get(e.type, e.type),
                            sub=f"{e.rect.w:.1f}×{e.rect.h:.1f} m"))
 
-    # footprint rooms (may be composite / L-shaped -> draw each cell, label once)
-    for r in layout.rooms:
+    # footprint rooms (may be composite / L-shaped -> draw each cell, label once).
+    # A notch-pinned room's rect deliberately overlaps its stair's own rect
+    # (see Room.notch_pin_of / Topology.notch_powder_room_id and
+    # solver/snap_gaps.py::claim_stair_notch) — draw it LAST (stable sort)
+    # so its fill/label/stroke sit on top of the stair's, instead of the
+    # stair's own fill silently painting over it.
+    rooms_ordered = sorted(
+        layout.rooms, key=lambda r: 1 if getattr(r, "notch_pin_of", None) else 0)
+    for r in rooms_ordered:
         fill = _fill(r)
         cells = r.cells
         composite = len(cells) > 1
@@ -327,7 +344,12 @@ def layout_to_svg(layout: Layout) -> str:
             s.append(_rect_svg(lot, c, fill, no_stroke=composite))
         # Stairs: draw the tread lines + UP/DN travel arrow instead of the
         # generic centered label (the arrow direction comes from the solver's
-        # ascent decision, stored on room.stair_up).
+        # ascent decision, stored on room.stair_up). Non-straight stair
+        # types (l_landing, etc.) get their own turn glyph instead, keyed
+        # off room.stair_type — see solver/topology.py RoomSpec.stair_type.
+        if r.type == "stairs" and getattr(r, "stair_type", "straight") == "l_landing":
+            s.append(_l_landing_glyph(lot, r))
+            continue
         if r.type == "stairs" and getattr(r, "stair_up", None):
             s.append(_stair_glyph(lot, r))
             continue
@@ -436,6 +458,100 @@ def _stair_glyph(lot, room) -> str:
     return "".join(out)
 
 
+def _tread_lines_svg(lot, x0, y0, x1, y1, vertical) -> str:
+    """Light tread lines across a rectangular stair leg, perpendicular to
+    the direction of travel (vertical=True means treads stack top-to-bottom
+    i.e. travel is along y; False means travel is along x). Shared helper
+    for both the straight-stair glyph and the turning-stair leg strips."""
+    out = []
+    TREAD_M = 0.28
+    n = max(2, int(round((y1 - y0 if vertical else x1 - x0) / TREAD_M)))
+    for i in range(1, n):
+        if vertical:
+            yy = y0 + i * (y1 - y0) / n
+            xa, ya = _to_svg_xy(lot, x0, yy)
+            xb, _ = _to_svg_xy(lot, x1, yy)
+            out.append(f'<line x1="{xa:.1f}" y1="{ya:.1f}" x2="{xb:.1f}" '
+                       f'y2="{ya:.1f}" stroke="#9a9a9a" stroke-width="0.6"/>')
+        else:
+            xx = x0 + i * (x1 - x0) / n
+            xa, ya = _to_svg_xy(lot, xx, y0)
+            _, yb = _to_svg_xy(lot, xx, y1)
+            out.append(f'<line x1="{xa:.1f}" y1="{ya:.1f}" x2="{xa:.1f}" '
+                       f'y2="{yb:.1f}" stroke="#9a9a9a" stroke-width="0.6"/>')
+    return "".join(out)
+
+
+def _l_landing_glyph(lot, room) -> str:
+    """L-shaped stair with a quarter landing: leg 1 runs from the boarding
+    wall to a square landing in the corner, leg 2 continues perpendicular
+    from the landing to the arrival wall. Unlike the straight stair's
+    solver-chosen stair_up, a turning stair's entry/exit walls are author-
+    declared (room.stair_board_wall / stair_arrive_wall — see
+    Adjacency.stair_wall) since they aren't a single solver-chosen ascent
+    axis. Falls back to the plain straight glyph if either wall is unset
+    (shouldn't happen for a properly-authored l_landing stair). Geometry
+    (leg1/leg2/landing/notch) comes from the shared core.model.l_landing_cells
+    helper — also used by the solver's notch-derivation/claim logic, so the
+    render always matches what was actually reserved or reclaimed."""
+    from model import l_landing_cells
+    board = getattr(room, "stair_board_wall", None)
+    arrive = getattr(room, "stair_arrive_wall", None)
+    cells = l_landing_cells(room.rect, board, arrive)
+    if cells is None:
+        return _stair_glyph(lot, room)
+    leg1, leg2, landing = cells["leg1"], cells["leg2"], cells["landing"]
+    board_travels_y = board in ("N", "S")
+    out = [
+        _tread_lines_svg(lot, leg1.x0, leg1.y0, leg1.x1, leg1.y1, board_travels_y),
+        _tread_lines_svg(lot, leg2.x0, leg2.y0, leg2.x1, leg2.y1, not board_travels_y),
+    ]
+    arrow_from = ((leg1.x0 + leg1.x1) / 2, (leg1.y0 + leg1.y1) / 2)
+    arrow_bend = ((landing.x0 + landing.x1) / 2, (landing.y0 + landing.y1) / 2)
+    arrow_to = ((leg2.x0 + leg2.x1) / 2, (leg2.y0 + leg2.y1) / 2)
+    # Landing outline — a plain square, no tread lines (it's a flat platform).
+    p0 = _to_svg_xy(lot, landing.x0, landing.y0)
+    p1 = _to_svg_xy(lot, landing.x1, landing.y1)
+    lxs0, lxs1 = sorted((p0[0], p1[0]))
+    lys0, lys1 = sorted((p0[1], p1[1]))
+    out.append(f'<rect x="{lxs0:.1f}" y="{lys0:.1f}" width="{lxs1-lxs0:.1f}" '
+               f'height="{lys1-lys0:.1f}" fill="none" stroke="#9a9a9a" '
+               f'stroke-width="0.8"/>')
+    # Travel arrow: leg1 midpoint -> landing -> leg2 midpoint, bent through
+    # the landing (an L-shaped path following the actual walking line)
+    # instead of a single diagonal cutting across the turn. Reversed on
+    # upper floors (descending) same as the straight glyph.
+    descend = room.storey > 1
+    pts = [arrow_from, arrow_bend, arrow_to]
+    if descend:
+        pts = list(reversed(pts))
+    svg_pts = [_to_svg_xy(lot, *p) for p in pts]
+    path_d = " ".join(
+        f'{"M" if i == 0 else "L"} {x:.1f} {y:.1f}'
+        for i, (x, y) in enumerate(svg_pts))
+    out.append(f'<path d="{path_d}" fill="none" stroke="#333" '
+               f'stroke-width="2" stroke-linecap="round" '
+               f'stroke-linejoin="round"/>')
+    (ax, ay), (bx, by) = svg_pts[-2], svg_pts[-1]
+    ang = math.atan2(by - ay, bx - ax)
+    for da in (math.radians(148), math.radians(-148)):
+        hx, hy = bx + 7.0 * math.cos(ang + da), by + 7.0 * math.sin(ang + da)
+        out.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{hx:.1f}" '
+                   f'y2="{hy:.1f}" stroke="#333" stroke-width="2" '
+                   f'stroke-linecap="round"/>')
+    label = "DN" if descend else "UP"
+    (tx, ty) = svg_pts[0]
+    (nx, ny) = svg_pts[1]
+    seg = math.hypot(nx - tx, ny - ty) or 1.0
+    ux, uy = (nx - tx) / seg, (ny - ty) / seg
+    lx_, ly_ = tx - ux * 9.0, ty - uy * 9.0
+    out.append(f'<text x="{lx_:.1f}" y="{ly_:.1f}" text-anchor="middle" '
+               f'dominant-baseline="middle" font-family="Arial" font-size="9" '
+               f'font-weight="bold" fill="#333" stroke="white" '
+               f'stroke-width="2.5" paint-order="stroke">{label}</text>')
+    return "".join(out)
+
+
 def _opp_side(side: str) -> str:
     return {"N": "S", "S": "N", "E": "W", "W": "E"}[side]
 
@@ -450,7 +566,25 @@ LOT_FILL = "#fbfbf7"
 ERASE_HALF_PX = 5
 
 
-def _door_svg(door, layout) -> str:
+# Door-emphasis colour, used ONLY when archplan_to_svg(door_emphasis=True).
+# See that function's docstring for why this exists and why it is opt-in.
+#
+# This was a saturated magenta, on the reasoning that the marking had to be
+# unmissable. It was — and the image model copied it straight into its output,
+# so every render came back with bright pink doors. Telling it not to did not
+# work: the generated prompt said "No magenta or pink anywhere in your output"
+# and it produced pink doors anyway, which is the standing finding that this
+# model follows the picture and ignores prohibitions.
+#
+# The emphasis never needed colour. It also triples the line WEIGHT (2.2-3.4 px
+# against thin grey arcs), and that is what actually makes a 0.7 m door tucked
+# into a corner findable at raster scale. So the marker is now near-black: still
+# unmissable in the source, and indistinguishable from correct architectural
+# linework if the model copies it, which it will.
+_DOOR_HL = "#1a1a1a"
+
+
+def _door_svg(door, layout, emphasis: bool = False) -> str:
     """Render a door symbol: an opening erased into the wall, a perpendicular
     door panel line, and a quarter-arc swing. The wall side stored on the
     Door is relative to room_a (or room_b if room_a == 'exterior')."""
@@ -563,6 +697,23 @@ def _door_svg(door, layout) -> str:
         f'{sweep} {lxs:.1f} {lys:.1f}" fill="none" stroke="#999" '
         f'stroke-width="0.7" stroke-dasharray="2 2"/>',
     ]
+    if emphasis:
+        # A 0.7 m door tucked 0.15 m into a corner, drawn as a thin grey arc
+        # beside a window, is genuinely hard to SEE at the raster scale the
+        # image model receives — and across four runs the model followed the
+        # image far more reliably than the prose. So make the opening
+        # unmissable rather than describing it harder.
+        parts.append(
+            f'<path d="M {txs:.1f} {tys:.1f} A {radius:.1f} {radius:.1f} 0 0 '
+            f'{sweep} {lxs:.1f} {lys:.1f}" fill="none" stroke="{_DOOR_HL}" '
+            f'stroke-width="2.2" opacity="0.9"/>')
+        parts.append(
+            f'<line x1="{hxs:.1f}" y1="{hys:.1f}" x2="{txs:.1f}" y2="{tys:.1f}" '
+            f'stroke="{_DOOR_HL}" stroke-width="3.0"/>')
+        # The opening itself, marked across the wall line.
+        parts.append(
+            f'<line x1="{nxs:.1f}" y1="{nys:.1f}" x2="{fxs:.1f}" y2="{fys:.1f}" '
+            f'stroke="{_DOOR_HL}" stroke-width="3.4" opacity="0.85"/>')
     return "".join(parts)
 
 
@@ -622,7 +773,11 @@ def _window_svg(window, layout) -> str:
     room = next((r for r in layout.rooms if r.id == window.room), None)
     if room is None:
         return ""
-    rect, wall, pos, w = room.rect, window.wall, window.position_m, window.width_m
+    # An L-shaped room's window may sit on its alcove cell, not its main
+    # rect — position_m is measured along THAT cell's wall.
+    cells = room.cells
+    idx = min(getattr(window, "cell_index", 0), len(cells) - 1)
+    rect, wall, pos, w = cells[idx], window.wall, window.position_m, window.width_m
 
     if wall == "N":
         a = (rect.x0 + pos, rect.y1)
@@ -683,6 +838,13 @@ def _window_svg(window, layout) -> str:
 WALL_THICKNESS_INTERIOR = 0.10   # m — interior partition (drywall or thin CHB)
 WALL_THICKNESS_EXTERIOR = 0.20   # m — exterior CHB + finish
 WALL_FILL = "#555"               # gray fill for walls
+
+# Stair rail: the boarding/arrival open-plan edge (stairs <-> its GF/2F
+# circulation neighbor) is otherwise fully invisible like an LDK seam. A
+# thin rail line marks the run's flanking side, with a gap this wide left
+# at the correct end so the actual entrance (where you step on/off the
+# flight) reads clearly. See _stair_rail_svg.
+STAIR_OPENING_M = 0.9
 
 # Setback elements (carport, dirty kitchen, etc.) are drawn with a dashed
 # 1.5 px stroke; the stroke is centred on the rect perimeter and overhangs
@@ -789,18 +951,43 @@ def _compute_walls(plan):
     # coverage. This way the boundary between great's rect and great's
     # rect2 isn't drawn as an exterior wall.
     #
-    # An uncovered side is EXTERIOR ONLY when it sits ON the envelope
-    # boundary (the cell wall is part of the building outline meeting the
-    # lot setback). When the uncovered side is INSIDE the envelope — i.e.,
-    # an interior gap between rooms that no room happens to cover — it
-    # should be drawn at INTERIOR thickness, because visually it's still
-    # an interior partition between two parts of the building interior,
-    # not a wall facing the lot exterior. Without this distinction, walls
-    # bounding a small gap between rooms render at exterior thickness and
-    # look inconsistent with the surrounding interior walls (e.g., T&B
-    # south wall east of hall when the rear band rooms have slightly
-    # different depths).
+    # An uncovered side is EXTERIOR when the empty space it faces REACHES
+    # THE OUTSIDE — either because the wall sits on the envelope boundary,
+    # or because the unowned region beyond it connects to that boundary.
+    #
+    # The second case matters because the building footprint is the union of
+    # room cells, NOT the envelope rectangle (Layout.footprint_area already
+    # sums room areas, so occupancy math has always agreed). A perimeter
+    # strip that no room claims is therefore OUTSIDE the building, and the
+    # wall facing it is a real exterior wall — the footprint is simply not
+    # rectangular there. Before 2026-08-05 this was tested as "does the wall
+    # coordinate lie on the envelope edge", which drew such walls at
+    # interior thickness and made the outline read as a missing wall (seen
+    # on a 20x20 solve of 1s_2br_sq_side_split_bath_ld, where the bedroom's
+    # south face sat 0.52 m inside the envelope behind an unclaimed strip).
+    #
+    # A gap fully ENCLOSED by rooms is a different thing — a courtyard or
+    # light well — and keeps INTERIOR thickness, so walls bounding a small
+    # inter-room gap still look consistent with their neighbours (e.g. T&B
+    # south wall east of hall when rear-band rooms differ slightly in depth).
     void_rects_only = [vr for _vid, vr, _c in voids]
+
+    # Same probe the architectural plan uses, so wall weight, windows and
+    # exterior doors cannot disagree about which walls face the lot.
+    _occ = [oc for (_or, oc) in all_cells] + void_rects_only
+    _probe = make_outside_probe(env, _occ)
+
+    def _faces_outside(side, coord, s_, e_):
+        """True when the empty space just beyond this wall segment reaches
+        the lot exterior (so the segment is part of the building outline)."""
+        mid = (s_ + e_) / 2.0
+        step = env_eps * 10
+        if side == "N":   px, py = mid, coord + step
+        elif side == "S": px, py = mid, coord - step
+        elif side == "E": px, py = coord + step, mid
+        else:             px, py = coord - step, mid
+        return _probe(px, py)
+
     for r in rooms:
         for c in r.cells:
             other_cells = [oc for (_or, oc) in all_cells if oc is not c]
@@ -811,19 +998,39 @@ def _compute_walls(plan):
                 elif side == "S": coord = c.y0
                 elif side == "E": coord = c.x1
                 else:             coord = c.x0
-                # Determine whether this wall edge sits on the envelope
-                # boundary (true exterior) or is inside (interior gap).
-                if side == "N":
-                    on_env = abs(coord - env.y1) <= env_eps
-                elif side == "S":
-                    on_env = abs(coord - env.y0) <= env_eps
-                elif side == "E":
-                    on_env = abs(coord - env.x1) <= env_eps
-                else:   # "W"
-                    on_env = abs(coord - env.x0) <= env_eps
-                thickness = WALL_THICKNESS_EXTERIOR if on_env else WALL_THICKNESS_INTERIOR
                 for s_, e_ in uncovered:
+                    thickness = (WALL_THICKNESS_EXTERIOR
+                                 if _faces_outside(side, coord, s_, e_)
+                                 else WALL_THICKNESS_INTERIOR)
                     walls.append(_wall_rect(side, coord, s_, e_, thickness))
+
+    # Pass D — notch-pinned BATH rooms: partition walls against the stair's
+    # own leg1/leg2 (see core.model.l_landing_cells). The room and its stair
+    # are exempted from Passes A/B's shared-edge detection since their rects
+    # deliberately overlap (Room.notch_pin_of), so no wall is ever
+    # synthesized between them there. A bath needs real privacy walls here
+    # (unlike a non-bath room absorbing the same notch as an open alcove via
+    # claim_stair_notch, which gets a thin balustrade rail instead — see
+    # _notch_alcove_rail_svg).
+    from model import l_landing_cells
+    rooms_by_id = {r.id: r for r in rooms}
+    for r in rooms:
+        if r.type not in _NOTCH_BATH_TYPES:
+            continue
+        stair = rooms_by_id.get(getattr(r, "notch_pin_of", None))
+        if stair is None:
+            continue
+        cells_ll = l_landing_cells(stair.rect, stair.stair_board_wall,
+                                   stair.stair_arrive_wall)
+        if cells_ll is None:
+            continue
+        for leg in (cells_ll["leg1"], cells_ll["leg2"]):
+            edge = _wall_shared_edge(r.rect, leg)
+            if edge is None:
+                continue
+            side, coord, start, end = edge
+            walls.append(_wall_rect(side, coord, start, end,
+                                    WALL_THICKNESS_INTERIOR))
 
     return walls
 
@@ -1357,6 +1564,136 @@ def _open_plan_svg(edge, layout, other_endpoints=None) -> str:
         p1s[0], p1s[1], p2s[0], p2s[1], edge.wall, _fill(a), _fill(b))
 
 
+_BALUSTRADE_STYLE = 'stroke="#666" stroke-width="1.2"'
+
+
+def _notch_alcove_rail_svg(room, layout) -> str:
+    """Balustrade for a non-bath room that absorbed an L-landing stair's
+    notch as an open alcove (claim_stair_notch, solver/snap_gaps.py) —
+    marks the two edges where the new alcove floor meets the stair's
+    remaining void (leg1 and leg2) with a thin rail, same as a real
+    stairwell guard-rail. The alcove's other two sides need nothing: one is
+    internal to the claiming room (rect + rect2, no seam drawn at all) and
+    the other already gets a normal wall from Pass A against whatever room
+    is on its far side."""
+    from model import l_landing_cells
+    stair = next((r for r in layout.rooms if r.id == room.notch_pin_of), None)
+    if stair is None or room.rect2 is None:
+        return ""
+    cells = l_landing_cells(stair.rect, stair.stair_board_wall,
+                            stair.stair_arrive_wall)
+    if cells is None:
+        return ""
+    out = []
+    for leg in (cells["leg1"], cells["leg2"]):
+        edge = _wall_shared_edge(room.rect2, leg)
+        if edge is None:
+            continue
+        side, coord, start, end = edge
+        if side in ("N", "S"):
+            p1, p2 = (start, coord), (end, coord)
+        else:
+            p1, p2 = (coord, start), (coord, end)
+        p1s = _to_svg_xy(layout.lot, *p1)
+        p2s = _to_svg_xy(layout.lot, *p2)
+        out.append(f'<line x1="{p1s[0]:.1f}" y1="{p1s[1]:.1f}" x2="{p2s[0]:.1f}" '
+                   f'y2="{p2s[1]:.1f}" {_BALUSTRADE_STYLE} stroke-linecap="butt"/>')
+    return "".join(out)
+
+
+def _stair_rail_svg(edge, layout) -> str:
+    """For a stair boarding/arrival open-plan edge, draw a thin rail line
+    along the shared boundary instead of leaving it fully invisible, with
+    a gap at the correct end of the run marking the actual entrance —
+    where a person steps on/off the flight.
+
+    Ground floor (the stairs room's storey == 1, boarding): the gap sits
+    at the LOW end of the run (opposite room.stair_up) — you step onto the
+    first tread there and ascend away from it. Upper floor (storey > 1,
+    arrival): the gap sits at the HIGH end (in the stair_up direction) —
+    ascent finishes there and you step off onto the upper circulation.
+
+    No-ops (returns "") when neither room is a stairs room, or when this
+    particular edge runs PERPENDICULAR to the flight (an end-cap boundary
+    at the run's short end) — that edge already IS the entrance in full,
+    same as today's fully-open rendering."""
+    rooms_by_id = {r.id: r for r in layout.rooms}
+    a = rooms_by_id.get(edge.room_a)
+    b = rooms_by_id.get(edge.room_b)
+    if a is None or b is None:
+        return ""
+    stair_room = a if a.type == "stairs" else (b if b.type == "stairs" else None)
+    if stair_room is None:
+        return ""
+    if getattr(stair_room, "stair_type", "straight") != "straight":
+        # Turning stairs (l_landing, etc.) have no single "run axis" this
+        # straight-only heuristic applies to, and their board/arrival walls
+        # ARE the true walk-through entrance in full (unlike a straight run,
+        # where only PART of the shared wall is the entrance) — leave fully
+        # open, same as any other open-plan edge. The notch portion of this
+        # same wall (if any) gets its own treatment separately: a solver-
+        # pinned bath gets a real wall (Pass D, _compute_walls), and a
+        # claimed alcove gets its own balustrade (_notch_alcove_rail_svg).
+        return ""
+    up = getattr(stair_room, "stair_up", None)
+    if not up:
+        return ""
+    dx, dy = up
+    vertical_run = abs(dy) > abs(dx)
+    ra = getattr(edge, "cell_a", None) or a.rect
+    rb = getattr(edge, "cell_b", None) or b.rect
+    eps = 1e-3
+
+    if abs(ra.x1 - rb.x0) <= eps or abs(ra.x0 - rb.x1) <= eps:
+        edge_vertical = True
+        x = ra.x1 if abs(ra.x1 - rb.x0) <= eps else ra.x0
+        lo, hi = max(ra.y0, rb.y0), min(ra.y1, rb.y1)
+    elif abs(ra.y1 - rb.y0) <= eps or abs(ra.y0 - rb.y1) <= eps:
+        edge_vertical = False
+        y = ra.y1 if abs(ra.y1 - rb.y0) <= eps else ra.y0
+        lo, hi = max(ra.x0, rb.x0), min(ra.x1, rb.x1)
+    else:
+        return ""
+    if hi - lo <= eps or edge_vertical != vertical_run:
+        return ""   # degenerate, or a perpendicular end-cap — leave fully open
+
+    boarding = stair_room.storey == 1
+    rect = stair_room.rect
+    if vertical_run:
+        entrance = rect.y0 if (dy > 0) == boarding else rect.y1
+    else:
+        entrance = rect.x0 if (dx > 0) == boarding else rect.x1
+    # Anchor the gap at whichever end of the ACTUAL overlap [lo, hi] is
+    # nearer the true entrance coordinate (the flanking neighbor may not
+    # reach all the way to the stair room's own end — the solver only
+    # requires it come within STAIR_END_ZONE_U of it).
+    near_lo = abs(entrance - lo) <= abs(entrance - hi)
+    if near_lo:
+        rail_lo, rail_hi = min(hi, lo + STAIR_OPENING_M), hi
+    else:
+        rail_lo, rail_hi = lo, max(lo, hi - STAIR_OPENING_M)
+    if rail_hi - rail_lo <= eps:
+        return ""   # the gap covers the whole overlap — nothing to rail
+    # Inset the far end (a true perpendicular-wall corner) by the same
+    # amount _open_plan_svg uses, so the rail doesn't poke into that wall.
+    inset = WALL_THICKNESS_INTERIOR / 2.0
+    if near_lo:
+        rail_hi -= inset
+    else:
+        rail_lo += inset
+    if rail_hi - rail_lo <= eps:
+        return ""
+    if edge_vertical:
+        p1, p2 = (x, rail_lo), (x, rail_hi)
+    else:
+        p1, p2 = (rail_lo, y), (rail_hi, y)
+    p1s = _to_svg_xy(layout.lot, *p1)
+    p2s = _to_svg_xy(layout.lot, *p2)
+    return (f'<line x1="{p1s[0]:.1f}" y1="{p1s[1]:.1f}" x2="{p2s[0]:.1f}" '
+            f'y2="{p2s[1]:.1f}" stroke="{WALL_FILL}" stroke-width="2" '
+            f'stroke-linecap="butt"/>')
+
+
 def _counter_svg(ctr, layout) -> str:
     """Dining counter (breakfast bar) on an open-plan kitchen edge: a 0.6 m
     millwork band inside the kitchen along the shared boundary, plus stool
@@ -1399,7 +1736,7 @@ def _counter_svg(ctr, layout) -> str:
     return "".join(parts)
 
 
-def archplan_to_svg(plan) -> str:
+def archplan_to_svg(plan, door_emphasis: bool = False) -> str:
     """Render the full architectural plan: room fills, walls of finite
     thickness (exterior 0.20 m, interior 0.10 m), open-plan transitions
     (where the wall has been suppressed), and doors / windows as openings
@@ -1412,6 +1749,15 @@ def archplan_to_svg(plan) -> str:
       4. open-plan erases (clear room strokes where no wall)
       5. door erases + door panels + swing arcs
       6. window erases + window glass strips
+
+    `door_emphasis` overdraws every door in heavy near-black line work (see
+    _DOOR_HL — it was a saturated magenta until the model started reproducing
+    the magenta). It exists for
+    ONE consumer — polish.py, which hands the drawing to an image model that
+    kept dropping the kitchen's exterior service door and relocating the T&B
+    door across four attempts. Default False, so the technical drawing and all
+    52 baselines are untouched; this is a communication aid, never the plan of
+    record.
     """
     base = layout_to_svg(plan.layout)
     overlays = []
@@ -1461,9 +1807,16 @@ def archplan_to_svg(plan) -> str:
         # un-shared. Passing the pre-computed shared_endpoints set fixes that.
         overlays.append(_open_plan_svg(ope, plan.layout,
                                        other_endpoints=shared_endpoints))
+        overlays.append(_stair_rail_svg(ope, plan.layout))
+    # Balustrade for a non-bath room that absorbed an L-landing stair's
+    # notch as an open alcove (claim_stair_notch) — the bath case gets real
+    # walls instead, from Pass D in _compute_walls.
+    for r in plan.layout.rooms:
+        if getattr(r, "notch_pin_of", None) and r.type not in _NOTCH_BATH_TYPES:
+            overlays.append(_notch_alcove_rail_svg(r, plan.layout))
     # Doors and windows punch openings through walls.
     for d in plan.doors:
-        overlays.append(_door_svg(d, plan.layout))
+        overlays.append(_door_svg(d, plan.layout, emphasis=door_emphasis))
     for w in plan.windows:
         overlays.append(_window_svg(w, plan.layout))
     # Dining counters (counter_divider adjacencies) — drawn last so the
@@ -1574,3 +1927,306 @@ def gallery_html(layouts: List[Layout], title: str) -> str:
 </div>
 <div class="grid">{''.join(cards)}</div>
 </body></html>"""
+
+# ---------------------------------------------------------------------------
+# Furniture / fixture overlay (Phase E.2)
+# ---------------------------------------------------------------------------
+
+# ONE fill for every fixture family, deliberately.
+#
+# The first cut coloured fixtures by family (sanitary ware pale blue, timber
+# warm) and it was a mistake: a pale-blue shower inside a bath reads as a
+# separate ROOM against the public zone's #cfe2f3, and the drawing's whole
+# job is to make room boundaries unambiguous. Room fill means zone; fixture
+# fill must mean "contents", one value, distinct from every zone colour.
+#
+# Kinds are told apart by LINEWORK instead — pillow band, basin ellipse,
+# burner circles — which also survives greyscale printing, which colour
+# coding does not.
+_FIXTURE_FILL = "#e3ded4"
+_FIXTURE_PILLOW = "#cbc4b4"
+_FIXTURE_STROKE = "#8a8378"
+
+# Which glyph a fixture id gets. Explicit, because the first version derived
+# it as `kind.split("_")[0]` and that only worked while the ids were a private
+# vocabulary: against the real library ids it reads `kitchen_sink` as family
+# "kitchen" and silently drops the basin ellipse. An id with no entry here
+# draws as a plain body, which is the correct default for most of the library.
+_FIXTURE_GLYPH = {
+    "bed_single": "bed", "bed_double": "bed",
+    "bed_queen": "bed", "bed_king": "bed",
+    "kitchen_sink": "basin", "lavatory": "basin",
+    "lavatory_pedestal": "basin", "laundry_sink": "basin", "toilet": "basin",
+    "range_electric": "burners", "stove_gas_2burner": "burners",
+}
+
+
+def _fixture_family(kind: str) -> str:
+    return _FIXTURE_GLYPH.get(kind, "")
+
+
+# --- Layer C: draw the library's real symbols -------------------------------
+#
+# Every symbol in fixtures/ is drawn in METRES in its own local space: the wall
+# it backs onto is at y = 0, it faces +y into the room, and the footprint's
+# back-left corner sits at `origin` inside the viewBox. One transform carries
+# the metre-to-pixel conversion and the y-flip together:
+#
+#     translate(px, py) scale(S, -S) rotate(theta) translate(-ox, -oy)
+#
+# S is SCALE, which the library was authored against. The trailing translate
+# puts the footprint's back-left corner on the anchor point — not always (0,0),
+# since the dining tables draw their chairs outside their own footprint.
+#
+# A welcome side effect: the symbol draws its TRUE shape, so an L-sofa and a
+# round table read correctly even though Fixture.rect is only their bounding
+# box. The placer still reasons about the rectangle; only the drawing improves.
+
+# theta=0 is a fixture backed onto its SOUTH wall: after the y-flip, local +y
+# (into the room) points north.
+_SYMBOL_THETA = {"S": 0, "E": 90, "N": 180, "W": 270}
+
+# Which corner of the fixture's rect is the footprint's back-left. "Left" is
+# defined facing INTO the room, so it rotates with the symbol.
+_SYMBOL_ANCHOR = {
+    "S": lambda r: (r.x0, r.y0),
+    "N": lambda r: (r.x1, r.y1),
+    "E": lambda r: (r.x1, r.y0),
+    "W": lambda r: (r.x0, r.y1),
+}
+
+_SYM_INNER = re.compile(r"<svg[^>]*>(.*)</svg>\s*$", re.S)
+_SYM_STRIP = re.compile(r"<(title|desc)>.*?</\1>", re.S)
+_SYM_STROKE = re.compile(r'stroke-width="([\d.]+)"')
+_SYM_VECTOR = re.compile(r'\s*vector-effect="non-scaling-stroke"')
+
+_SYMBOL_CACHE = {}
+
+
+def _symbol_body(fixture_id: str) -> str:
+    """The drawable content of a symbol file, ready to place.
+
+    Two edits to what the library ships, and they go together:
+
+    The library sets `vector-effect="non-scaling-stroke"` on every stroked
+    element so a 0.9 px line stays 0.9 px however the symbol is scaled.
+    Browsers and resvg honour it; **cairosvg does not implement it at all**,
+    and cairosvg is what run.py --png and the whole of polish.py rasterise
+    with. Left alone, scaling by 42 turns a 0.9 px outline into a 38 px slab
+    and every symbol becomes a featureless blob.
+
+    So stroke widths are divided by SCALE, which renders identically at 1:1.
+    The attribute must then be REMOVED, or a renderer that does honour it
+    would apply 0.9/42 px and draw nothing at all. Fixing one without the
+    other is broken in one viewer or the other.
+
+    Cached: this is immutable file content, no per-layout state.
+    """
+    if fixture_id in _SYMBOL_CACHE:
+        return _SYMBOL_CACHE[fixture_id]
+    from fixture_library import load_library
+    with open(load_library().get(fixture_id).svg_path, encoding="utf-8") as fh:
+        raw = fh.read()
+    m = _SYM_INNER.search(raw)
+    body = _SYM_STRIP.sub("", m.group(1)) if m else ""
+    body = _SYM_VECTOR.sub("", body)
+    body = _SYM_STROKE.sub(
+        lambda s: f'stroke-width="{float(s.group(1)) / SCALE:.5f}"', body)
+    _SYMBOL_CACHE[fixture_id] = body
+    return body
+
+
+def fixture_symbol_svg(kind: str, rect, against: str, layout) -> Optional[str]:
+    """One placed library symbol, or None when there is nothing to draw."""
+    if not against or against not in _SYMBOL_THETA:
+        return None                      # free-standing; no wall to orient from
+    try:
+        from fixture_library import load_library
+        spec = load_library().get(kind)
+    except (KeyError, ImportError, OSError):
+        return None
+    body = _symbol_body(kind)
+    if not body:
+        return None
+    mx, my = _SYMBOL_ANCHOR[against](rect)
+    px, py = _to_svg_xy(layout.lot, mx, my)
+    return (f'<g transform="translate({px:.3f},{py:.3f}) '
+            f'scale({SCALE},{-SCALE}) rotate({_SYMBOL_THETA[against]}) '
+            f'translate({-spec.origin_x:.4f},{-spec.origin_y:.4f})">'
+            f'{body}</g>')
+
+
+def fixtures_overlay_svg(fixtures, layout, symbols: bool = True) -> str:
+    """SVG for a list of Fixture-like objects (.rect, .kind, .room).
+
+    Takes plain data rather than importing solver.fixtures, so core/ keeps its
+    layering: the caller places the furniture and hands the rectangles here.
+    Drawn fixture-weight, matching the dining-counter convention.
+
+    With `symbols` (the default) each piece is drawn as its real library
+    symbol. Anything the library has no drawing for — or that is free-standing,
+    with no wall to orient from — falls back to the neutral rectangle and
+    linework glyph below, which is also all `symbols=False` emits.
+    """
+    out = []
+    for f in fixtures:
+        rc = f.rect
+        if symbols:
+            sym = fixture_symbol_svg(f.kind, rc, getattr(f, "against", ""),
+                                     layout)
+            if sym:
+                out.append(sym)
+                continue
+        x0, y0 = _to_svg_xy(layout.lot, rc.x0, rc.y1)     # SVG y is flipped
+        x1, y1 = _to_svg_xy(layout.lot, rc.x1, rc.y0)
+        fam = _fixture_family(f.kind)
+        out.append(f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
+                   f'height="{y1 - y0:.1f}" fill="{_FIXTURE_FILL}" '
+                   f'stroke="{_FIXTURE_STROKE}" stroke-width="0.8" '
+                   f'rx="1.5" opacity="0.95"/>')
+        # A pillow band marks the head end of a bed, so its orientation is
+        # legible without a label.
+        if fam == "bed" and getattr(f, "against", ""):
+            t = 0.22 * (y1 - y0) if f.against in ("N", "S") else 0.22 * (x1 - x0)
+            if f.against == "N":
+                px0, py0, px1, py1 = x0, y0, x1, y0 + t
+            elif f.against == "S":
+                px0, py0, px1, py1 = x0, y1 - t, x1, y1
+            elif f.against == "W":
+                px0, py0, px1, py1 = x0, y0, x0 + t, y1
+            else:
+                px0, py0, px1, py1 = x1 - t, y0, x1, y1
+            out.append(f'<rect x="{px0:.1f}" y="{py0:.1f}" '
+                       f'width="{px1 - px0:.1f}" height="{py1 - py0:.1f}" '
+                       f'fill="{_FIXTURE_PILLOW}" stroke="none" rx="1"/>')
+        if fam == "basin":
+            cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+            r = max(1.5, min(x1 - x0, y1 - y0) * 0.28)
+            out.append(f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{r:.1f}" '
+                       f'ry="{r:.1f}" fill="none" stroke="{_FIXTURE_STROKE}" '
+                       f'stroke-width="0.7"/>')
+        if fam == "burners":
+            cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+            d = min(x1 - x0, y1 - y0) * 0.22
+            for dx, dy in ((-d, -d), (d, -d), (-d, d), (d, d)):
+                out.append(f'<circle cx="{cx + dx:.1f}" cy="{cy + dy:.1f}" '
+                           f'r="{d * 0.55:.1f}" fill="none" '
+                           f'stroke="{_FIXTURE_STROKE}" stroke-width="0.6"/>')
+    return "".join(out)
+
+
+# The room-name and dimension <text> elements emitted by
+# _emit_centered_text_block. Matched on their fill, which is unique to them:
+# ruler numerals use LABEL_FILL and the stair UP/DN glyph carries a
+# paint-order halo, so neither is caught here.
+_LABEL_TEXT_RE = re.compile(
+    r'<text\b[^>]*\bfill="#(?:222|555)"[^>]*>.*?</text>', re.S)
+
+
+def polished_image_overlay(layout, png_bytes: bytes) -> str:
+    """An `<image>` element covering exactly the LOT rectangle.
+
+    For polish.py. The image model is asked to return the lot edge-to-edge
+    with NO text of any kind, because invented dimension figures were the one
+    defect that survived every prompt version — `KITCHEN 3.2x2.3 m . 7.3 sqm`
+    where the plan says `3.1x2.3 m . 7.1 sqm` is exactly the silent
+    disagreement NANO_BANANA_RENDER_DESIGN.md §1 calls worse than useless.
+
+    So the model draws the picture and we draw the words. Splicing this
+    through `inject_overlay` puts the picture over our plan and then lifts our
+    own label text back on top of it, at our coordinates, with our numbers.
+    The metre ruler survives untouched because it lives OUTSIDE the lot
+    rectangle this image covers.
+    """
+    import base64
+    lot = layout.lot
+    x0, y0 = _to_svg_xy(lot, 0.0, lot.depth)        # SVG y is flipped
+    x1, y1 = _to_svg_xy(lot, lot.width, 0.0)
+    b64 = base64.b64encode(png_bytes).decode("ascii")
+    return (f'<image x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
+            f'height="{y1 - y0:.1f}" preserveAspectRatio="none" '
+            f'href="data:image/png;base64,{b64}"/>')
+
+
+_TEXT_ATTR_RE = re.compile(
+    r'<text[^>]*\bx="([\d.-]+)"[^>]*\by="([\d.-]+)"[^>]*'
+    r'\bfont-size="([\d.]+)"[^>]*>(.*?)</text>', re.S)
+
+
+def room_label_masks(layout, height_m: float = 1.15, width_frac: float = 0.86) -> str:
+    """Opaque chips over the label zone of every room, sized to the ROOM.
+
+    For polish.py. The image model is told, as instruction #1 and in capitals,
+    to write no text; it writes room names and invented dimensions anyway, and
+    places them at the room centre — the same place ours go. Masking by our own
+    text width failed whenever its label was longer than ours (it rendered
+    "COMMON TOILET & BATH" over a chip sized for "KITCHEN").
+
+    Keying the chip to the room instead makes the cover-up independent of what
+    the model chose to write, which is the only version that is actually
+    reliable. Uses the same largest-cell rule archplan_to_svg uses to position
+    a label, so the chip and the real label always agree.
+    """
+    out = []
+    # Setback elements (porch, carport, lanai) carry labels too, and the model
+    # writes over them just as happily.
+    for r in list(layout.rooms) + list(getattr(layout, "elements", []) or []):
+        big = max(getattr(r, "cells", None) or [r.rect], key=lambda c: c.area)
+        w = min(big.w * width_frac, big.w - 0.10)
+        h = min(height_m, big.h - 0.10)
+        if w <= 0 or h <= 0:
+            continue
+        cx, cy = (big.x0 + big.x1) / 2.0, (big.y0 + big.y1) / 2.0
+        x0, y0 = _to_svg_xy(layout.lot, cx - w / 2, cy + h / 2)
+        x1, y1 = _to_svg_xy(layout.lot, cx + w / 2, cy - h / 2)
+        out.append(f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" '
+                   f'height="{y1 - y0:.1f}" fill="#fbfbf8" opacity="0.93" '
+                   f'rx="4"/>')
+    return "".join(out)
+
+
+def _label_masks(labels, pad_x=7.0, pad_y=3.0) -> str:
+    """Opaque panels sized to each label line, emitted BEHIND the text.
+
+    For polish.py only. The image model was told three times, in capitals and
+    as instruction #1, to write no text — and wrote its own room names and its
+    own (invented) dimensions anyway. Since it places them at the room centre,
+    exactly where ours go, an opaque panel behind our label covers its label.
+    We stop asking and start painting over.
+
+    Width is estimated from the glyph count rather than measured — there is no
+    font metric available here — so the panel is padded generously. It sits on
+    an opaque near-white so it reads as a label chip, not a hole.
+    """
+    out = []
+    for m in _TEXT_ATTR_RE.finditer(labels):
+        cx, cy, fs = float(m.group(1)), float(m.group(2)), float(m.group(3))
+        txt = re.sub(r"<[^>]+>", "", m.group(4))
+        w = 0.62 * fs * max(len(txt), 1) + 2 * pad_x
+        h = fs * 1.25 + 2 * pad_y
+        out.append(f'<rect x="{cx - w / 2:.1f}" y="{cy - fs - pad_y:.1f}" '
+                   f'width="{w:.1f}" height="{h:.1f}" fill="#fbfbf8" '
+                   f'opacity="0.93" rx="3"/>')
+    return "".join(out)
+
+
+def inject_overlay(svg_doc: str, overlay: str, mask_behind_labels=False) -> str:
+    """Splice an overlay in, keeping the room labels readable ON TOP of it.
+
+    SVG has no z-index — paint order IS stacking order — so an overlay
+    appended at the end covers the room labels, and a bed lands squarely
+    across "MASTER BR / 5.4x3.7 m . 20.0 sqm".
+
+    Rather than teach every drawing pass about a furniture layer (which would
+    move text in all 52 baselines for a feature nothing in the pipeline calls
+    yet), lift the label text out of the finished document and re-emit it
+    after the overlay. Text has no fill or stroke interaction with what it
+    passes over, so promoting it is purely a stacking change — and a document
+    with no overlay is never touched.
+    """
+    if not overlay:
+        return svg_doc
+    labels = "".join(_LABEL_TEXT_RE.findall(svg_doc))
+    body = _LABEL_TEXT_RE.sub("", svg_doc)
+    masks = _label_masks(labels) if mask_behind_labels else ""
+    return body.replace("</svg>", overlay + masks + labels + "</svg>")

@@ -1,0 +1,59 @@
+Task: Convert the provided floor plan image into a 2D architectural render.
+
+Strict Constraints:
+    * Maintain zero structural deviation from the provided image.
+    * Do not add or remove any walls, rooms, doors, windows, or bathrooms.
+    * Preserve the exact placement of all original doors and windows.
+    * Keep the floor plan dimensions exactly as they are without expanding or shortening walls.
+    * Do not add any room, alcove, closet, or fixture nook that is not in the provided image.
+
+What this plan contains — match these counts exactly:
+    * EXACTLY 8 interior rooms: MASTER BR, BEDROOM, BEDROOM, ENSUITE, T&B, HALL, GREAT ROOM, KITCHEN. Plus one outdoor PORCH at the front. 9 labels in total.
+    * EXACTLY 3 bedrooms. Two of them are labelled BEDROOM — that is correct and not a duplication. The third is MASTER BR and is the largest.
+    * EXACTLY 2 toilet/baths: ENSUITE and T&B. Do not add a powder room or a third bathroom, and do not merge or drop either one.
+    * EXACTLY 1 kitchen, 1 great room, 1 hall.
+    * EXACTLY 7 doors:
+        1. MASTER BR to HALL
+        2. MASTER BR to ENSUITE
+        3. BEDROOM (left) to HALL
+        4. BEDROOM (right) to HALL
+        5. T&B to HALL
+        6. GREAT ROOM to outside — the main entrance, on the front (south) wall, opening onto the PORCH
+        7. KITCHEN to outside — a service door on the rear (north) wall
+    * EXACTLY 9 windows. HALL has NO window and no exterior wall — it is the enclosed centre of the plan. T&B has no window either.
+    * This plan is SINGLE STOREY. There are no stairs — do not draw any.
+    * There is NO carport and NO garage — do not draw one, and do not draw a car.
+
+Layout — the plan is organised around a central lobby:
+    * HALL is a small square lobby at the geometric centre. Every bedroom door and the T&B door opens onto it, and its fourth side is open to the GREAT ROOM. There is no corridor anywhere in this plan.
+    * Keep HALL EMPTY — no furniture of any kind.
+
+Setback Rules:
+    * Render the outdoor setbacks for the first floor only. Render the setbacks as neutral ground.
+    * Only render outdoor areas explicitly specified in the plan. The only one here is the PORCH, which is uncovered.
+
+Furniture & Visual Aids:
+    * Every fixture and piece of furniture must sit ENTIRELY INSIDE the room it belongs to. Nothing may cross a wall or a room boundary into a neighbouring room, and no room may borrow floor area from another to fit its furniture. Specifically for this plan:
+        - KITCHEN is a narrow room down the right-hand side. It holds the counter run, sink, range and refrigerator, all along its right-hand (east) wall. The counter must stop at the kitchen's own walls.
+        - GREAT ROOM is a single combined living and dining space, so it holds
+          BOTH the seating group and the dining set. It must contain ALL FOUR
+          of these: (1) a sofa, (2) a centre/coffee table in front of it,
+          (3) a TV, and (4) a dining table with its chairs. Armchairs are
+          optional extras, not a substitute for any of the four. There is no
+          separate LIVING or DINING room in this plan — do not split it, and do
+          not label any part of it LIVING or DINING.
+        - MASTER BR and both BEDROOMs each hold one bed, a bedside table and a wardrobe.
+        - EVERY bathroom holds, at minimum, THREE fixtures: a toilet (water
+          closet), a lavatory (wash basin) and a shower. This plan has 2
+          bathrooms, so draw 2 toilets, 2 lavatories and 2 showers in total —
+          one set in ENSUITE and one set in T&B. Neither bathroom may be left
+          with only cabinets or an empty floor.
+        - A bathtub is OPTIONAL. Include one only where the bathroom is large
+          enough to hold it IN ADDITION to the toilet, lavatory and shower,
+          without shrinking any of those three and without crossing a wall. If
+          it does not fit that way, leave it out.
+        - PORCH is outdoor. Keep it free of indoor furniture.
+    * Scale all fixtures and furniture accurately to the room size. If a fixture does not fit inside its own room, draw a smaller one — never spill it into the next room.
+    * Ensure no furniture fully or partially blocks any door.
+    * Make sure all room names and dimension text remain clearly readable.
+    * Every room label in the provided image must appear in your output with the same text, and every dimension figure must be copied exactly as written. Do not invent, round or alter any number.

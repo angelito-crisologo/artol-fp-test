@@ -1,0 +1,41 @@
+{
+  "id": "tabo_set",
+  "label": "Tabo and pail set",
+  "tier": 2,
+  "category": "bath",
+  "svg": "tabo_set.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.45,
+    "d": 0.45,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.45,
+    "h": 0.45
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "standing to bathe"
+    }
+  ],
+  "rooms": [
+    "common_bath",
+    "ensuite_bath",
+    "bath_toilet",
+    "powder_room"
+  ],
+  "notes": "The wet-corner alternative to a shower stall. A bath that cannot take a 0.90 m stall is not automatically undersized \u2014 a great many PH mid-market baths are designed around this instead."
+}

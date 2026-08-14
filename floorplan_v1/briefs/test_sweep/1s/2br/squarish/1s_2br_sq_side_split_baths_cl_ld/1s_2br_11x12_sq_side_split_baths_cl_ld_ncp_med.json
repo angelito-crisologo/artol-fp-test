@@ -1,0 +1,10 @@
+{
+  "intent": "Sweep fixture (MED) for 1s_2br_sq_side_split_baths_cl_ld -- 11x12 m lot, 49.0 m2 buildable floor. Hand-picked (user-specified 10.5x10.5/11x12/12x12 progression for perfect-square shells).",
+  "lot_width": 11.0,
+  "lot_depth": 12.0,
+  "bedroom_count": 2,
+  "must_haves": [],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/2br/squarish/1s_2br_sq_side_split_baths_cl_ld.json"
+}

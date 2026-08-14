@@ -1,0 +1,39 @@
+{
+  "id": "laundry_sink",
+  "label": "Laundry sink (banggerahan)",
+  "tier": 2,
+  "category": "service",
+  "svg": "laundry_sink.svg",
+  "units": "m",
+  "footprint": {
+    "w": 0.6,
+    "d": 0.5,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 0.6,
+    "h": 0.5
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": true,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.75,
+      "reason": "standing to hand-wash"
+    }
+  ],
+  "rooms": [
+    "service_area",
+    "dirty_kitchen"
+  ],
+  "notes": "Deep concrete or granite sink. Pairs with the washing machine on the same wet wall."
+}

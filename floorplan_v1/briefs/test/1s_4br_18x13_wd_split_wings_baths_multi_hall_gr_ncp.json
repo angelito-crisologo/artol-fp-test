@@ -1,0 +1,17 @@
+{
+  "intent": "4BR / 3 bath SPLIT WINGS canonical smoke test, no carport — the catalog's FIRST 4-bedroom topology. 18x13 lot gives a 14x8 envelope; the solve lands 112.0 m² of floor, inside the 100-150 m² 4BR/3-bath band. Twin symmetric bedroom wings flank a central public core: master + ensuite_m + common_w + hall_w + br_guest1 west, br2 + ensuite2 + common_e + hall_e + br_guest2 east, great_room (entry, front) + kitchen (rear) between them. Every bedroom reaches a bath inside its own wing, and both shared-bath doors open onto their wing's hall lobby rather than onto the LDK — two corrections made against the source precedent (pep_SHD-2015021). This brief also pins the anchor relaxation: the topology was INFEASIBLE at every lot size as authored because left_anchored + right_anchored + front_to_rear_stacks were declared together (the recurring over-constrained-anchors trap); all three are now null and rear_anchored alone does the shaping. Feasible 18x13 / 17x12 / 16x12; 15x11 solves but at 65.3 m² is far below band, so 18x13 is the published minimum.",
+  "lot_width": 18.0,
+  "lot_depth": 13.0,
+  "bedroom_count": 4,
+  "num_baths": 3,
+  "must_haves": [
+    "twin symmetric bedroom wings with their own hall lobby each",
+    "every bedroom's bath inside its own wing",
+    "bath doors onto a hall lobby, never onto the open LDK",
+    "central great room + kitchen core",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/4br/wide/1s_4br_wd_split_wings_baths_multi_hall_gr.json"
+}

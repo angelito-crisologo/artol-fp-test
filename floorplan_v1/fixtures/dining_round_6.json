@@ -1,0 +1,55 @@
+{
+  "id": "dining_round_6",
+  "label": "Round dining table, 6-seat",
+  "tier": 1,
+  "category": "dining",
+  "svg": "dining_round_6.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.35,
+    "d": 1.35,
+    "shape": "circle",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 2.47,
+    "h": 2.47
+  },
+  "origin": {
+    "x": 0.56,
+    "y": 0.56
+  },
+  "anchor": "center",
+  "must_back_wall": false,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.9,
+      "reason": "pulling a chair out and walking behind it"
+    },
+    {
+      "side": "back",
+      "depth": 0.9,
+      "reason": "pulling a chair out and walking behind it"
+    },
+    {
+      "side": "left",
+      "depth": 0.9,
+      "reason": "pulling a chair out and walking behind it"
+    },
+    {
+      "side": "right",
+      "depth": 0.9,
+      "reason": "pulling a chair out and walking behind it"
+    }
+  ],
+  "rooms": [
+    "dining_room",
+    "great_room",
+    "kitchen"
+  ],
+  "notes": "Footprint is the TABLE \u2014 a 1.35 m circle, so the corners of its bounding square are free floor. That is the round table's real advantage on a squarish dining room: same seats, less width, and no one on a corner. Dashed inner circle is a 0.70 m lazy susan."
+}

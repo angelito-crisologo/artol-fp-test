@@ -1,0 +1,41 @@
+{
+  "id": "tv_on_console",
+  "label": "TV on console",
+  "tier": 1,
+  "category": "living",
+  "svg": "tv_on_console.svg",
+  "units": "m",
+  "footprint": {
+    "w": 1.4,
+    "d": 0.4,
+    "shape": "rect",
+    "cells": null
+  },
+  "viewbox": {
+    "w": 1.4,
+    "h": 0.4
+  },
+  "origin": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "anchor": "wall_back",
+  "must_back_wall": true,
+  "needs_plumbing_wall": false,
+  "handed": false,
+  "stretch": null,
+  "clearance": [
+    {
+      "side": "front",
+      "depth": 0.6,
+      "reason": "circulation in front"
+    }
+  ],
+  "rooms": [
+    "living_room",
+    "great_room",
+    "family_room",
+    "master_bedroom"
+  ],
+  "notes": "Footprint is the CONSOLE \u2014 the set sits on top and adds no floor area. The thin bar is the screen seen from above; the small tab behind it is the pedestal foot, which is what distinguishes this from tv_wall_mounted at a glance. Put it on the wall the sofa faces."
+}
