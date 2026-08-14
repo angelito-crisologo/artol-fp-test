@@ -149,6 +149,47 @@ def self_check() -> int:
     return 0
 
 
+def _crop_to_lot(png_bytes: bytes, layout) -> bytes:
+    """Crop the model's image down to just the LOT rectangle.
+
+    `polished_image_overlay` stretches whatever it is given onto the lot, so
+    the image has to BE the lot. It never is: the model is handed our full
+    drawing — ruler, margins, FRONT caption and all — and returns the same
+    framing back, however firmly the prompt asks for edge-to-edge.
+
+    The design note said to find the lot by keying on GREEN pixels (the lawn).
+    That stopped working the moment the prompt switched to neutral-ground
+    setbacks, and colour-keying a generated image was always going to be
+    fragile. This does not look at colour at all: our own canvas geometry is
+    known exactly — MARGIN px of border around lot.width x lot.depth at SCALE
+    px/m — so the lot occupies a known FRACTION of the canvas, and the model
+    reproduces our framing closely enough to reuse it. Measured on two prior
+    renders, the horizontal ink extent matched the source to three decimals.
+
+    Falls back to the uncropped image if Pillow is unavailable, which is worse
+    but still produces something.
+    """
+    try:
+        import io
+        from PIL import Image
+        from render import MARGIN, SCALE
+    except Exception:
+        return png_bytes
+    lot = layout.lot
+    full_w = lot.width * SCALE + 2 * MARGIN
+    full_h = lot.depth * SCALE + 2 * MARGIN
+    fx0, fy0 = MARGIN / full_w, MARGIN / full_h
+    fx1, fy1 = (MARGIN + lot.width * SCALE) / full_w, (MARGIN + lot.depth * SCALE) / full_h
+    im = Image.open(io.BytesIO(png_bytes))
+    w, h = im.size
+    box = (round(fx0 * w), round(fy0 * h), round(fx1 * w), round(fy1 * h))
+    out = io.BytesIO()
+    im.crop(box).save(out, format="PNG")
+    print(f"  cropped model image {w}x{h} -> lot rectangle "
+          f"{box[2]-box[0]}x{box[3]-box[1]} px (by known canvas fraction)")
+    return out.getvalue()
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="floorplan_v1/polish.py",
@@ -205,7 +246,7 @@ def main(argv=None):
     elif args.convert:
         # Counts derived from the manifest, so this cannot go stale against the
         # brief the way a hand-written --prompt-file does.
-        prompt = build_convert_prompt(manifest)
+        prompt = build_convert_prompt(manifest, for_composite=not args.raw_output)
     else:
         prompt = build_prompt(manifest)
 
@@ -301,6 +342,7 @@ def main(argv=None):
     import cairosvg
     from render import (polished_image_overlay, inject_overlay,
                         room_label_masks)
+    data = _crop_to_lot(data, layout)
     composed = inject_overlay(
         svg, polished_image_overlay(layout, data) + room_label_masks(layout))
     with open(base + "_render.svg", "w", encoding="utf-8") as f:

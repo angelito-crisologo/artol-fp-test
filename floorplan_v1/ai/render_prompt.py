@@ -648,7 +648,18 @@ def _unique_doors(manifest):
     return out
 
 
-def build_convert_prompt(manifest: Dict[str, Any]) -> str:
+def build_convert_prompt(manifest: Dict[str, Any],
+                        for_composite: bool = False) -> str:
+    """Convert-framed prompt, counts derived from the manifest.
+
+    `for_composite` switches the OUTPUT CONTRACT, not the framing. The default
+    asks the model to keep every label and copy every figure — right when the
+    returned image IS the deliverable. The composite path wants the opposite:
+    a text-free picture filling the canvas edge to edge, because we then draw
+    the words ourselves at our coordinates with our numbers. Invented dimension
+    figures survived every prompt version including this one, so the composite
+    removes the opportunity rather than arguing with it.
+    """
     rooms = _all_rooms(manifest)
     labels = [_label_of(r) for r in rooms]
     els = [e for e in (manifest.get("setback_elements") or [])]
@@ -756,8 +767,24 @@ def build_convert_prompt(manifest: Dict[str, Any]) -> str:
     # verbatim is CORRECT and there is nothing to warn about.
     a("    * Doors in the supplied image are drawn in HEAVIER line work than the walls")
     a("      so they are easy to find. Reproduce every one of them.")
-    a("    * Make sure all room names and dimension text remain clearly readable.")
-    a("    * Every room label in the provided image must appear in your output with the")
-    a("      same text, and every dimension figure must be copied exactly as written.")
-    a("      Do not invent, round or alter any number.")
+    if for_composite:
+        # These two override everything above; put them last so they are read
+        # last, and state them as an absolute rather than a preference.
+        a("")
+        a("=== OUTPUT FORMAT — ABSOLUTE, OVERRIDES EVERYTHING ABOVE ===")
+        a("    * YOUR IMAGE MUST CONTAIN NO TEXT WHATSOEVER. No room names, no")
+        a("      dimensions, no areas, no scale bar, no numbers, no ruler, no title, no")
+        a("      legend, no north letter, no watermark. Not one character. The room")
+        a("      labels and every figure are drawn afterwards by the software, at the")
+        a("      correct coordinates with the correct numbers; anything you write will")
+        a("      be covered over or will contradict the real plan.")
+        a("    * FILL THE ENTIRE CANVAS WITH THE LOT, edge to edge — the boundary of")
+        a("      your image IS the boundary of the lot. No margin, no frame, no border,")
+        a("      no drop shadow, no page behind it. The composite aligns your image to")
+        a("      the lot rectangle exactly, so any margin shifts the whole plan.")
+    else:
+        a("    * Make sure all room names and dimension text remain clearly readable.")
+        a("    * Every room label in the provided image must appear in your output with the")
+        a("      same text, and every dimension figure must be copied exactly as written.")
+        a("      Do not invent, round or alter any number.")
     return "\n".join(L)

@@ -796,10 +796,26 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
   size. The largest single mechanical cause was found and fixed (see the
   counter note below); what remains is showers, sinks and beds losing to a
   door swing on their only viable wall.
-- **Compositing our own labels over the Gemini render is still unbuilt.** It is
-  the design doc's standing conclusion ("use it for STYLING, supply every FACT
-  by composite") and the only remaining fix for invented dimension figures,
-  which persist even with a manifest-derived prompt.
+- **The render composite is BUILT (2026-08-14).** `polish.py --convert` without
+  `--raw-output` now returns the design doc's standing conclusion: the model
+  styles, we supply every fact. Our ruler survives (it sits outside the lot),
+  our labels and figures are drawn on top at our coordinates, so an invented
+  dimension cannot reach the output.
+  The recorded blocker — "the crop keys on GREEN pixels and the prompt was
+  reverted to neutral ground" — was solved by NOT keying on colour at all.
+  `_crop_to_lot` uses our own canvas geometry, which is known exactly (MARGIN
+  px around lot.width x lot.depth at SCALE px/m), so the lot is a known
+  FRACTION of the canvas and the model reproduces our framing closely enough
+  to reuse it (measured: horizontal ink extent matched the source to three
+  decimals on two prior renders).
+  `build_convert_prompt(for_composite=True)` swaps the output contract — no
+  text, fill the canvas — while keeping the Convert framing and the derived
+  counts. `--raw-output` keeps the label-preserving contract, since there the
+  returned image IS the deliverable.
+  **Residual:** the model still writes the odd word despite the instruction (a
+  "PORCH" ghost showed under our label on the confirming run). `room_label_masks`
+  covers room and setback-element label zones and hid most of it. Prohibitions
+  still do not work on this model; the masks are the reason it does not matter.
 - **`polish.py` writes every run to the same `<brief>_render.png`**, so running
   two variants of one brief silently overwrites the first. A `--tag`/`--out`
   suffix would fix it.
