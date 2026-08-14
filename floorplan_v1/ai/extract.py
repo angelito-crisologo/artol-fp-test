@@ -66,9 +66,12 @@ REQUIREMENTS_SCHEMA = {
             },
             "occupancy_class": {
                 "type": "string", "enum": ["R-1", "R-2", "R-3"],
-                "description": "PD 1096 occupancy class. Default 'R-1' "
-                               "(single-detached) unless a firewall / party "
-                               "wall / duplex is mentioned.",
+                "description": "PD 1096 occupancy class. Default 'R-2' — the "
+                               "project default, and what `Brief` uses when "
+                               "nothing is said. Choose 'R-1' ONLY when the "
+                               "description asks for it by name or cites the "
+                               "stricter 4.5 m front setback; 'R-3' for "
+                               "apartment / multi-family.",
             },
             "swap_master_standard": {
                 "type": "boolean",
@@ -148,7 +151,13 @@ def _normalize(raw: Dict) -> Dict:
         out["num_baths"] = None
     out.setdefault("must_haves", [])
     out.setdefault("avoid", [])
-    out.setdefault("occupancy_class", "R-1")
+    # R-2, matching `Brief.occupancy_class` and the project default. R-1 was
+    # costing every plain description a metre and a half of front setback, and
+    # on a wide lot that is not a nicety: 17 x 12 lands at 13 x 5.5 buildable
+    # under R-1, which `shell_category` calls `extra_wide` — a category no
+    # topology declares, so the app answered a perfectly ordinary brief with
+    # "no existing topology matches".
+    out.setdefault("occupancy_class", "R-2")
     out.setdefault("bedroom_count", 2)
     out.setdefault("swap_master_standard", False)
     out.setdefault("no_master", False)
@@ -195,9 +204,9 @@ class StubExtractor:
         if want_carport:
             carport_type = "ccp" if any(k in text for k in ("claimed carport", "ccp", "l-notch", "partial")) else "fcp"
 
-        occupancy_class = "R-1"
-        if any(k in text for k in ("firewall", "party wall", "duplex")):
-            occupancy_class = "R-2"
+        occupancy_class = "R-2"           # project default; see the tool schema
+        if any(k in text for k in ("r-1", "r1 ", "single-detached lot")):
+            occupancy_class = "R-1"
         elif any(k in text for k in ("apartment", "multi-family", "multi family")):
             occupancy_class = "R-3"
 
