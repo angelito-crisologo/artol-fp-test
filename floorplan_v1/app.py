@@ -103,6 +103,10 @@ st.caption(
 for _key, _default in (
     ("extracted", None), ("extraction_reason", ""), ("intent_text", ""),
     ("candidates", None), ("shell", None), ("results", None), ("brief", None),
+    # Polished renders already paid for, keyed by result id. Kept so a rerun —
+    # which Streamlit does on every widget interaction — cannot silently spend
+    # another $0.04 redrawing a picture we already have.
+    ("renders", {}),
 ):
     st.session_state.setdefault(_key, _default)
 
@@ -140,7 +144,7 @@ if parse_clicked:
             st.session_state["req_lot_width"] = float(fields["lot_width"])
             st.session_state["req_lot_depth"] = float(fields["lot_depth"])
             st.session_state["req_bedroom_count"] = int(fields["bedroom_count"])
-            st.session_state["req_occupancy_class"] = fields.get("occupancy_class", "R-1")
+            st.session_state["req_occupancy_class"] = fields.get("occupancy_class", "R-2")
             st.session_state["req_carport_side"] = fields.get("carport_side") or "none"
             st.session_state["req_carport_type"] = fields.get("carport_type") or "none"
             st.session_state["req_num_baths"] = int(fields.get("num_baths") or 0)
@@ -179,7 +183,7 @@ if st.session_state["extracted"]:
                                              key="req_bedroom_count")
             occ_opts = ["R-1", "R-2", "R-3"]
             occupancy_class = st.selectbox("Occupancy class", occ_opts,
-                                            index=occ_opts.index(f.get("occupancy_class", "R-1")),
+                                            index=occ_opts.index(f.get("occupancy_class", "R-2")),
                                             key="req_occupancy_class")
         with c2:
             side_opts = ["none", "left", "right", "front"]
@@ -341,6 +345,11 @@ if st.session_state["candidates"] is not None:
                     "id": result_id, "ok": True, "svg": svg,
                     "issues": layout.issues, "score": layout.score,
                     "reason": reason,
+                    # Carried for the polished-render button, which needs the
+                    # real geometry: the manifest is built from the layout and
+                    # the brief, and the composite lays the model's image over
+                    # this exact lot. The SVG alone cannot give it either.
+                    "layout": layout, "brief": st.session_state["brief"],
                 })
             except RuntimeError as e:
                 results.append({
@@ -349,6 +358,67 @@ if st.session_state["candidates"] is not None:
                 })
         progress.empty()
         st.session_state["results"] = results
+
+# --------------------------------------------------------------------- #
+# Polished render (Gemini "Nano Banana") — MANUAL, per result.
+#
+# The whole polish stack is imported INSIDE the click branch below, never at
+# module level, and `polish.py --self-check` enforces that. Starting the app,
+# parsing a brief or solving a plan therefore cannot so much as load the image
+# SDK, let alone spend anything: the only route to a paid call is a person
+# pressing this button.
+#
+# What gets sent is the plan with NO furniture. The model's job here is to
+# STYLE, and the design doc's standing conclusion is that we supply every
+# fact — its picture goes under our own labels and figures, at our
+# coordinates, so a number it invents cannot reach the output.
+# --------------------------------------------------------------------- #
+def _polished_render_ui(r):
+    st.divider()
+    rid = r["id"]
+    cached = st.session_state["renders"].get(rid)
+    if cached is not None:
+        st.image(cached, caption="Gemini render under our labels — "
+                                 "ILLUSTRATIVE ONLY; the SVG above is the "
+                                 "plan of record.")
+        st.download_button(
+            "Download render (PNG)", data=cached,
+            file_name=f"{rid}_render.png", mime="image/png",
+            key=f"dlpng_{rid}",
+        )
+        if st.button("Render again (~$0.04)", key=f"repolish_{rid}"):
+            st.session_state["renders"].pop(rid, None)
+            st.rerun()
+        return
+
+    st.caption(
+        "**Polished render** — sends this plan *without furniture* to Gemini "
+        "for styling, then draws our own labels and dimensions back on top. "
+        "Costs about $0.04 per click, billed to the app's Gemini key, and "
+        "takes 10–30 s. The result is illustrative only."
+    )
+    key = _get_secret("GEMINI_API_KEY")
+    if not key:
+        st.info("Set `GEMINI_API_KEY` in the app's secrets to enable this.")
+        return
+    if not st.button("Polished render (Gemini)", key=f"polish_{rid}"):
+        return
+    with st.spinner("Rendering — one image, 10–30 s..."):
+        try:
+            import polish                   # noqa: E402 — inside the click
+            out = polish.render_polished(
+                r["layout"], r["brief"], plain=True, composite=True,
+                api_key=key)
+        except ImportError as e:
+            st.error(f"The render stack is not installed here: {e}. "
+                     "Needs `google-genai`, `cairosvg` and `pillow`.")
+            return
+        except Exception as e:
+            st.error(f"Render failed: {type(e).__name__}: {e}")
+            return
+    st.session_state["renders"][rid] = out["png"]
+    st.rerun()
+
 
 # --------------------------------------------------------------------- #
 # Step 5 — results
@@ -369,6 +439,7 @@ if st.session_state["results"]:
                     "Download SVG", data=r["svg"], file_name=f"{r['id']}.svg",
                     mime="image/svg+xml", key=f"dl_{r['id']}",
                 )
+                _polished_render_ui(r)
             with eval_tab:
                 st.caption(r["reason"])
                 errs = [i for i in r["issues"] if i.severity == "error"]

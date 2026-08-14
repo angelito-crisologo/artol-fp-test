@@ -1,11 +1,18 @@
 # Web front end (floorplan_v1/app.py) + the existing solver pipeline it drives.
-# cairosvg is intentionally NOT included: the app renders SVG directly in the
-# browser, so no server-side PNG conversion is needed.
 streamlit>=1.35
 anthropic>=0.34
 ortools>=9.9
-# NOTE: google-genai is deliberately NOT listed either. The polished-render
-# command (floorplan_v1/polish.py, see NANO_BANANA_RENDER_DESIGN.md) is a
-# local, manually-invoked tool — the deployed app never calls it, so shipping
-# the SDK to Streamlit Cloud would only bloat the deploy. Install locally:
-#   source .venv/bin/activate && pip install google-genai
+
+# The polished-render button on a result (floorplan_v1/polish.py, see
+# NANO_BANANA_RENDER_DESIGN.md). These three used to be deliberately absent
+# because the deployed app never called Gemini; it now does, but ONLY when
+# someone presses that button — `python3 floorplan_v1/polish.py --self-check`
+# proves the app has no module-level import of any of them, so a deploy that
+# nobody clicks still never loads the SDK or spends a peso.
+#
+# cairosvg additionally needs the native cairo library, which on Streamlit
+# Cloud comes from packages.txt (libcairo2) — a Python-only requirements file
+# is not enough for it.
+google-genai>=1.0
+cairosvg>=2.7
+pillow>=10.0

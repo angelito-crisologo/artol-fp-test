@@ -121,31 +121,66 @@ def _solve(brief_name):
     return layout, topo, brief, R.OUT
 
 
+# Files that may not reach this stack, and how strictly.
+#
+# `run.py` and `build_catalog.py` GENERATE and PUBLISH: they run unattended,
+# over every brief, so for them the ban is absolute — not even a lazy import
+# inside a function, because there would be nothing to stop something calling
+# that function in a loop.
+#
+# `app.py` is different, and the difference is a person. It is an interactive
+# tester where a render happens because someone clicked a button and confirmed
+# a cost. What must stay impossible there is a paid call that nobody asked
+# for, and that is exactly what a MODULE-LEVEL import would enable: the SDK
+# would load on every app start, and the render path would be one stray call
+# away at all times. So app.py is held to the weaker-but-real rule — the
+# import must sit inside a function body, reachable only from a click.
+_BAN_ABSOLUTE = ("run.py",
+                 os.path.join("..", "tools", "topology_catalog", "build_catalog.py"))
+_BAN_MODULE_LEVEL = ("app.py",)
+_BANNED_TOKENS = ("polish", "render_prompt", "google.genai",
+                  "from google import genai")
+
+
+def _offending_imports(path: str, module_level_only: bool):
+    out = []
+    src = open(path, encoding="utf-8").read()
+    for i, line in enumerate(src.splitlines(), 1):
+        ls = line.strip()
+        if not (ls.startswith("import ") or ls.startswith("from ")):
+            continue
+        if module_level_only and line[:1] in (" ", "\t"):
+            continue                      # indented: inside a function body
+        if any(tok in ls for tok in _BANNED_TOKENS):
+            out.append(f"{os.path.basename(path)}:{i}: {ls}")
+    return out
+
+
 def self_check() -> int:
     """Verify the isolation guarantee (design §4.1): nothing in the generation
     or publishing path may import this module or the prompt builder."""
-    targets = ["run.py", "app.py",
-               os.path.join("..", "tools", "topology_catalog", "build_catalog.py")]
-    banned = ("polish", "render_prompt", "google.genai", "from google import genai")
     bad = []
-    for t in targets:
+    for t in _BAN_ABSOLUTE:
         p = os.path.join(_HERE, t)
-        if not os.path.exists(p):
-            continue
-        src = open(p, encoding="utf-8").read()
-        for token in banned:
-            for i, line in enumerate(src.splitlines(), 1):
-                ls = line.strip()
-                if token in ls and (ls.startswith("import ") or ls.startswith("from ")):
-                    bad.append(f"{os.path.basename(p)}:{i}: {ls}")
+        if os.path.exists(p):
+            bad += _offending_imports(p, module_level_only=False)
+    for t in _BAN_MODULE_LEVEL:
+        p = os.path.join(_HERE, t)
+        if os.path.exists(p):
+            bad += _offending_imports(p, module_level_only=True)
     if bad:
         print("FAIL — the generation path imports the polish stack:")
         for b in bad:
             print("   ", b)
         return 1
-    print("OK — run.py / app.py / build_catalog.py import neither polish.py, "
-          "render_prompt, nor the Gemini SDK.")
-    print("     No code path leads from generating a floor plan to a paid API call.")
+    print("OK — run.py / build_catalog.py import neither polish.py, "
+          "render_prompt, nor the Gemini SDK, at any level.")
+    print("     app.py has no MODULE-LEVEL import of them either: starting the "
+          "app cannot load the SDK,")
+    print("     and its render button imports inside the click handler, behind "
+          "a cost confirmation.")
+    print("     No code path leads from generating a floor plan to an "
+          "unrequested paid API call.")
     return 0
 
 
@@ -190,6 +225,89 @@ def _crop_to_lot(png_bytes: bytes, layout) -> bytes:
     return out.getvalue()
 
 
+# ---------------------------------------------------------------------------
+# The render, as three steps the CLI and the Streamlit button both use.
+#
+# Split rather than wrapped in one call because `main()` has to hold the
+# prompt and the raster BEFORE spending anything — its cache signature is
+# computed from them, and a cached run makes no API call at all.
+# ---------------------------------------------------------------------------
+def build_render_inputs(layout, brief, *, plain=False, convert=True,
+                        composite=True, prompt_override=None):
+    """(png, svg, fixtures, manifest, prompt) — everything but the API call."""
+    from render_manifest import build_manifest_for_layout
+    from render_prompt import build_prompt, build_convert_prompt
+
+    # The raster is built FIRST: it is what places the furniture, and the
+    # manifest must describe the image we actually send, not a different one.
+    png, svg, fixtures = _render_png(layout, None, None, plain=plain)
+    manifest = build_manifest_for_layout(layout, brief, fixtures)
+    if prompt_override is not None:
+        prompt = prompt_override         # verbatim; nothing appended
+    elif convert:
+        prompt = build_convert_prompt(manifest, for_composite=composite)
+    else:
+        prompt = build_prompt(manifest)
+    return png, svg, fixtures, manifest, prompt
+
+
+def call_model(png: bytes, prompt: str, api_key: str) -> bytes:
+    """The one paid step. Returns the model's image bytes, untouched."""
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=api_key)
+    resp = client.models.generate_content(
+        model=MODEL,
+        contents=[types.Part.from_bytes(data=png, mime_type="image/png"), prompt],
+        config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+    )
+    for cand in (resp.candidates or []):
+        for part in (getattr(cand.content, "parts", None) or []):
+            blob = getattr(part, "inline_data", None)
+            if blob is not None and getattr(blob, "data", None):
+                return blob.data
+    raise RuntimeError(f"no image in the response. Model said: "
+                       f"{getattr(resp, 'text', None)!r}")
+
+
+def compose(svg: str, layout, data: bytes):
+    """(composite_svg, composite_png) — the model's picture under our facts.
+
+    The standing conclusion of the design doc: the model styles, we supply
+    every fact. Its image is laid over our plan and our own labels are lifted
+    back on top, at our coordinates, so an invented dimension cannot reach the
+    output; the metre ruler survives because it sits outside the lot.
+    """
+    import cairosvg
+    from render import (polished_image_overlay, inject_overlay,
+                        room_label_masks)
+    cropped = _crop_to_lot(data, layout)
+    composed = inject_overlay(
+        svg, polished_image_overlay(layout, cropped) + room_label_masks(layout))
+    return composed, cairosvg.svg2png(bytestring=composed.encode("utf-8"),
+                                      scale=2.0)
+
+
+def render_polished(layout, brief, *, plain=True, composite=True, api_key=None):
+    """One call, for a caller that has a solved layout and no argparse.
+
+    `plain=True` by default here — the app's button sends the drawing with NO
+    furniture, which is the whole point of asking the model to style it.
+    Returns a dict; `png` is what to show.
+    """
+    if not api_key:
+        raise RuntimeError("no GEMINI_API_KEY")
+    png, svg, _fx, manifest, prompt = build_render_inputs(
+        layout, brief, plain=plain, composite=composite)
+    data = call_model(png, prompt, api_key)
+    if not composite:
+        return {"png": data, "svg": None, "raw": data,
+                "source_png": png, "prompt": prompt, "manifest": manifest}
+    composed_svg, composed_png = compose(svg, layout, data)
+    return {"png": composed_png, "svg": composed_svg, "raw": data,
+            "source_png": png, "prompt": prompt, "manifest": manifest}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="floorplan_v1/polish.py",
@@ -228,27 +346,21 @@ def main(argv=None):
     if not args.brief:
         ap.error("--brief is required (there is deliberately no 'polish everything' mode)")
 
-    from render_manifest import build_manifest_for_layout
-    from render_prompt import (build_prompt, build_convert_prompt,
-                               PROMPT_VERSION, CONVERT_PROMPT_VERSION)
+    from render_prompt import PROMPT_VERSION, CONVERT_PROMPT_VERSION
 
     layout, topo, brief, out_dir = _solve(args.brief)
-    # The raster is built FIRST: it is what places the furniture, and the
-    # manifest must describe the image we actually send, not a different one.
-    png, svg, fixtures = _render_png(layout, topo, args.brief, plain=args.plain)
-    manifest = build_manifest_for_layout(layout, brief, fixtures)
+    override = None
     if args.prompt_file:
         # Verbatim. A hand-written prompt is a controlled experiment; silently
         # appending our manifest JSON or fidelity clauses would change what is
         # being tested and make the result unattributable.
         with open(args.prompt_file, encoding="utf-8") as f:
-            prompt = f.read()
-    elif args.convert:
-        # Counts derived from the manifest, so this cannot go stale against the
-        # brief the way a hand-written --prompt-file does.
-        prompt = build_convert_prompt(manifest, for_composite=not args.raw_output)
-    else:
-        prompt = build_prompt(manifest)
+            override = f.read()
+    # `--convert` derives its counts from the manifest, so it cannot go stale
+    # against the brief the way a hand-written --prompt-file does.
+    png, svg, fixtures, manifest, prompt = build_render_inputs(
+        layout, brief, plain=args.plain, convert=args.convert,
+        composite=not args.raw_output, prompt_override=override)
 
     os.makedirs(out_dir, exist_ok=True)
     base = os.path.join(out_dir, args.brief)
@@ -297,27 +409,10 @@ def main(argv=None):
             print("  aborted.")
             return 1
 
-    from google import genai
-    from google.genai import types
-    client = genai.Client(api_key=key)
-    resp = client.models.generate_content(
-        model=MODEL,
-        contents=[types.Part.from_bytes(data=png, mime_type="image/png"), prompt],
-        config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
-    )
-
-    data = None
-    for cand in (resp.candidates or []):
-        for part in (getattr(cand.content, "parts", None) or []):
-            blob = getattr(part, "inline_data", None)
-            if blob is not None and getattr(blob, "data", None):
-                data = blob.data
-                break
-        if data:
-            break
-    if not data:
-        txt = getattr(resp, "text", None)
-        raise SystemExit(f"no image in the response. Model said: {txt!r}")
+    try:
+        data = call_model(png, prompt, key)
+    except RuntimeError as e:
+        raise SystemExit(str(e))
 
     with open(base + "_raw.png", "wb") as f:
         f.write(data)                       # exactly what came back, untouched
@@ -339,16 +434,11 @@ def main(argv=None):
               "plan of record.")
         return 0
 
-    import cairosvg
-    from render import (polished_image_overlay, inject_overlay,
-                        room_label_masks)
-    data = _crop_to_lot(data, layout)
-    composed = inject_overlay(
-        svg, polished_image_overlay(layout, data) + room_label_masks(layout))
+    composed, composed_png = compose(svg, layout, data)
     with open(base + "_render.svg", "w", encoding="utf-8") as f:
         f.write(composed)
-    cairosvg.svg2png(bytestring=composed.encode("utf-8"), write_to=out_png,
-                     scale=2.0)
+    with open(out_png, "wb") as f:
+        f.write(composed_png)
     open(stamp, "w").write(sig)
     print(f"  wrote {base}_render.svg  (composite: model image + our labels)")
     print(f"  wrote {out_png}")

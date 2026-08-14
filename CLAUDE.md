@@ -190,6 +190,28 @@ automatically when floor plans are generated. `run.py` has no polish flag and
 no import of the polish stack; `python3 polish.py --self-check` proves it and
 should stay passing.
 
+**Amended 2026-08-14 (user's call): the rule is two-tier, not two-tier by
+accident.** `app.py` now carries a per-result **"Polished render (Gemini)"**
+button, which the old check forbade outright — it banned `app.py` from
+importing the stack at ANY level, function bodies included. Now `run.py` and
+`build_catalog.py` keep the ABSOLUTE ban, because they run unattended over
+every brief and a lazy import there is one loop away from a bill; `app.py` is
+held to **no MODULE-LEVEL import**, so starting the app cannot load the Gemini
+SDK and the only route to a paid call is a person pressing the button.
+`self_check()` tests the two rules separately — keep it passing rather than
+dropping a target from it. The button sends the plan with **no furniture**
+(`plain=True`) and composites, caches each render in
+`session_state["renders"]` so Streamlit's reruns cannot re-bill, and shows an
+info message instead of a button when `GEMINI_API_KEY` is unset. `polish.py`
+was split into `build_render_inputs` / `call_model` / `compose` (+ a one-call
+`render_polished`) so the CLI and the button share one implementation; the CLI
+keeps its pre-call cache signature, which is why it is three functions and not
+one. Deploying it means `requirements.txt` now ships `google-genai`,
+`cairosvg` and `pillow`, plus a repo-root `packages.txt` with `libcairo2`
+(Cloud needs the native cairo library; a Python-only requirements file is not
+enough). **Consequence to keep in mind: on the hosted app the button bills
+your Gemini key for anyone who has the app password.**
+
 `polish.py` flags: `--brief` (required, no sweep mode), `--plain` (solver
 drawing unmodified), `--prompt-file` (verbatim — nothing appended, so a
 hand-written prompt stays a controlled experiment), `--raw-output` (skip the
@@ -667,6 +689,12 @@ earlier the same day, no-hall-in-1BR rule), and — added 2026-07-19/20 — 4
 
 ## Recently completed
 
+**Extractor defaults to R-2; app gains a per-result Gemini render button (2026-08-14):** Two app-side changes, verified against the LIVE deployment before and after.
+- **`ai/extract.py` defaulted every brief to R-1**, and that was quietly costing the app its whole wide-shell catalog. R-1's 4.5 m front setback turns a 17 × 12 lot into 13 × 5.5 buildable, which `shell_category` calls **`extra_wide`** — a category no topology declares — so a perfectly ordinary "3 bedroom bungalow on a 17x12 lot" came back from the hosted app as *"No existing topology matches this bedroom count + lot shape yet"*. Now R-2 (matching `Brief.occupancy_class` and the project default) in all four places: the tool-schema description, `_normalize`'s setdefault, the stub keyword path, and `app.py`'s two form fallbacks. R-1 is chosen only when the description asks for it by name. Same lot now classifies `wide` and returns the three new wide 3BR topologies. **The `extra_wide` matching gap itself is still unfixed** — this changed which lots land in it, not that it is empty.
+- **The render button** — see the amended isolation rule under the polish section above. Lives inside each result's Floor Plan tab (`app.py:376` `_polished_render_ui`, called at `app.py:442`), deliberately NOT a step-5 section, so the button always refers to the plan on screen and each topology caches its own image.
+- Verified live at `artol-fp.streamlit.app` that the six topologies added 2026-08-12/14 ARE deployed (3BR 17 × 12 lists all three new wide ones; 4BR 18 × 13 lists `1s_4br_wd_split_wings_baths_multi_hall_gr`). The app enumerates `topologies/` at runtime, so a push is all a new topology needs — no catalog rebuild.
+- Headless coverage: `streamlit.testing.v1.AppTest` drives parse-free requirements → match → run → button-present. **The Gemini call itself is still untested** — everything around it is (plain raster carries 0 fixtures, Convert prompt derives real counts, crop/overlay/rasterise proven by feeding `compose()` the source image).
+
 **Dead-strip reclaiming overhauled; scope reframed as customer-discussion output (2026-08-06):** A scoping call from the user reframes several rules: **these plans are initial customer-discussion documents and a brief for the architect who produces the official drawing — not construction sets.** Post-solve cleanup may therefore favour a readable plan over strict rule-keeping. What is not negotiable is anything that makes the plan an unusable brief (a hard PD 1096 violation).
 - **Claimant selection was geometry-blind** — it ranked purely on room type, so a 3.80 m-wide strip went to a room touching 0.52 m of it while the bedroom touching all 3.80 m was passed over. Two layers: type-rank-only selection, AND the master-supremacy guard disqualifying the correct claimant so it fell through to nonsense. Now keyed on `(-contact, type_rank)`.
 - **Rules relaxed per the scope call:** master-supremacy removed *from the claimer only* (still enforced at solve time + snap growth, so only the labels can show a standard marginally larger than master); type priority is a tie-break not a gate; `MIN_ALCOVE_THICKNESS_M` → 0.25; `CLAIM_MIN_CONTACT_FRAC` → 0.2.
@@ -771,11 +799,23 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
   `2s_2br_8x11_nw_side_spine_stair_bath_hall_ncp` emits a `compact_fallback`
   suggestion and exists to exercise the auto-switch. **Re-run that audit after
   any setback or room-size change**; `run.py --test` will not tell you.
-- **Layer D's `corner` anchor is still unbuilt** — `sofa_l` (the piece the
-  library calls the most common PH living-room item) needs two walls meeting at
-  the footprint origin and an L footprint on `Fixture`. Round dining tables are
-  likewise placed on their bounding box, so the free corners a circle buys are
-  not exploited. Living/dining/great/carport ARE placed as of 2026-08-14.
+- **Layer D's `corner` anchor is BUILT (2026-08-14) — the L-sofa is placed.**
+  `Fixture.parts` + `.solids` carry the real L footprint; the bounding box is
+  kept only as a box, and anything asking "is this space taken" must read
+  `solids`. Three traps, all of which cost real furniture before they were
+  found: `check_door_clearance` judged the L on its BOX and deleted 28 sofas
+  that stood clear of the doorway; writing `f.rect` without translating
+  `parts` desynced the two, so the box left a doorway the sofa was still in
+  (use `Fixture.move_to`); and `check_clearances` resolved left/right off
+  `against` alone, so every MIRRORED piece measured its open-side gap into the
+  corner wall it was tucked against. Corner placement is now gated on the
+  library's own clearances — the L is seated only where the room can give it
+  the documented gaps, which is 13 rooms across the suite, all of them large
+  lots, none reported tight. Suite counts are identical to before the L
+  existed (942 placed / 116 unfit / 233 tight), so this buys a better piece of
+  furniture, not more of it.
+  **Still deferred:** round dining tables are placed on their bounding box, so
+  the free corners a circle buys are not exploited.
 - **Fit report ANALYSED 2026-08-14 — the headline number was misleading.** Of
   114 "did not fit" entries, **101 are rooms that HAVE the space and are only
   blocked by a doorway; just 13 rooms genuinely have nowhere to put the
