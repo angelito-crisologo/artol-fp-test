@@ -32,11 +32,23 @@ repo.
 1. https://share.streamlit.io -> New app -> pick the repo/branch.
 2. **Main file path:** `floorplan_v1/app.py`
 3. Deploy. It reads `requirements.txt` from the repo root automatically.
+3b. It also reads `packages.txt` (apt packages) — currently `libcairo2`,
+   which `cairosvg` needs to rasterise a plan for the polished render. A
+   Python-only requirements file will not install it, and without it the
+   render button fails at the compositing step.
 4. App -> Settings -> Secrets, paste:
    ```
    ANTHROPIC_API_KEY = "sk-ant-..."
    APP_PASSWORD = "choose-something-your-partner-can-type"
+   GEMINI_API_KEY = "..."          # optional; enables the render button
    ```
+   **Your local `.streamlit/secrets.toml` is gitignored and is NOT deployed** —
+   every key has to be entered here by hand. A key that works locally is
+   simply absent up here until you add it, which is what the button's "Set
+   GEMINI_API_KEY in the app's secrets to enable this." message means.
+   Leaving `GEMINI_API_KEY` out is a valid choice: everything else works and
+   the button shows that message instead. Putting it in means anyone with
+   `APP_PASSWORD` can spend ~$0.04 per click against it.
 5. Reboot the app so the secrets take effect. Share the `*.streamlit.app`
    URL + the password with your partner.
 
