@@ -50,6 +50,16 @@ grouping, etc.) if extending it for a new topology-JSON key.
 
 ## Pending (not yet reflected in `artol-topologies/`)
 
+_Nothing pending — regenerated 2026-08-14._
+
+## Applied history
+
+### Regenerated 2026-08-14 — 44 topologies / 51 implementations
+(41 verified, 10 not yet tested; was 41/48.) Also removed one ORPHAN left
+behind by the build: `build_catalog.py` adds and overwrites but never deletes,
+so the deleted wide `center_spine` survived in `data/topologies/` until swept
+by hand. Everything below was folded into that build.
+
 **2026-08-14 — the four WIDE 3BR topologies resolved: 3 shipped, 1 deleted**
 Completes the `1s/3br/wide/` set, unvalidated since 2026-07-18. All four
 declared left+right+rear together, but the signature turned out to be a reason
@@ -579,7 +589,6 @@ geometry cleanup only; never touches solver feasibility.
 
 _Everything else was applied in the 2026-08-05 regen below._
 
-## Applied history
 
 **2026-08-05 — SHARED CODE `solver/solver.py`: graded preferred-credit ADOPTED (default ON)**
 Supersedes the "NO REGEN NEEDED" entry further down — that entry described the

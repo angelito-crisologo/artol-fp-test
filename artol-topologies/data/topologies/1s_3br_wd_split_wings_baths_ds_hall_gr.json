@@ -155,7 +155,7 @@
       "kitchen"
     ]
   },
-  "fallback_topology": "1s/3br/wide/1s_3br_wd_center_spine_baths_ds_hall_gr.json",
+  "fallback_topology": "1s/3br/wide/1s_3br_wd_half_spine_baths_ds_hall_lk.json",
   "match_bedroom_widths": true,
   "left_anchored": [
     "br2",
@@ -171,21 +171,7 @@
     "kitchen",
     "ensuite"
   ],
-  "front_to_rear_stacks": [
-    [
-      "br2",
-      "hall",
-      "br3"
-    ],
-    [
-      "great",
-      "kitchen"
-    ],
-    [
-      "master",
-      "ensuite"
-    ]
-  ],
+  "front_to_rear_stacks": null,
   "lot_adjustment_profiles": [
     {
       "name": "compact_wd_split_wings_baths_ds_hall_gr",
@@ -273,6 +259,19 @@
     "frontage. Ventilation: every habitable room holds an exterior wall.",
     "",
     "Carport: NCP base form; declare via brief on either flank. Mirror when",
-    "brief.carport_side='left'."
+    "brief.carport_side='left'.",
+    "",
+    "STATUS: VERIFIED 2026-08-14. Canonical 17x12 \u2014 91.0 m2, 0 errors, 0 warnings.",
+    "Feasible 13x10 through 18x13; in-band (80-120 m2) from 16x12 up.",
+    "Was INFEASIBLE at every lot size as authored. NOT the over-constrained-anchors",
+    "trap despite declaring left+right+rear together \u2014 those are fine here and the",
+    "topology solves with all three kept. The blocker was front_to_rear_stacks,",
+    "found by bisection at 25x18; it is now null.",
+    "KNOWN WEAKNESS: the hall runs oversized for a circulation node \u2014 8.4 m2 at",
+    "16x12, 10.9 at 17x12, 19.2 at 18x13, where a hall node should be 4-6. The",
+    "post-solve passes funnel slack into it. Treat ~17x12 as the practical ceiling;",
+    "above that the hall stops reading as circulation.",
+    "FALLBACK REPOINTED: was 1s_3br_wd_center_spine_baths_ds_hall_gr, deleted",
+    "2026-08-14 as degenerate; now points at the half_spine_lk sibling."
   ]
 }

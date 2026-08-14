@@ -133,7 +133,6 @@
   "match_bedroom_widths": false,
   "ensuite_alcove_joins_master": true,
   "ldk_horizontal": true,
-  "claim_dead_strips": true,
   "left_anchored": [
     "master",
     "living"

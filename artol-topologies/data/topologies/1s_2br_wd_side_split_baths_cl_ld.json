@@ -162,7 +162,6 @@
     ]
   ],
   "bedroom_band_fills_width": false,
-  "claim_dead_strips": true,
   "left_anchored": [
     "master",
     "ensuite"

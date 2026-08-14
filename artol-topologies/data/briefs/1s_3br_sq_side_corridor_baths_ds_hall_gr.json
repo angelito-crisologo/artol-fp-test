@@ -1,0 +1,17 @@
+{
+  "intent": "3BR / 2 bath SIDE CORRIDOR canonical smoke test, no carport. 13.5x13.5 lot gives a 10.5x9.5 envelope; the solve lands 80.7 m\u00b2 of floor at 0 errors and 1 warning (window_area_habitable, present at every size tested). That is the smallest IN-BAND size for 3BR/2-bath (80-120 m\u00b2) \u2014 13x13 also solves but at 72.0 m\u00b2 falls below the band floor. A single corridor serves the entire private zone: master, br2, br3, bath1 and bath2 all door onto `hall`, which opens into the great_room. Per-room areas move between runs (CP-SAT is non-deterministic even with a fixed seed), so treat the total and the arrangement as the contract. This brief pins the anchor relaxation: the topology was INFEASIBLE at every lot size as authored because left_anchored + right_anchored + front_to_rear_stacks were declared together (the over-constrained-anchors trap); no single knob and no pair is sufficient, all three are now null, and rear_anchored plus match_bedroom_widths do the shaping. Canonical size is the band floor rather than mid-band deliberately: the bedroom hierarchy is tight (master ~12.9 against br2 ~13.1) and degrades as the lot grows, so a larger canonical would show a standard bedroom clearly outsizing the master.",
+  "lot_width": 13.5,
+  "lot_depth": 13.5,
+  "bedroom_count": 3,
+  "num_baths": 2,
+  "must_haves": [
+    "one corridor serving every bedroom and both baths",
+    "corridor opening into the great room",
+    "distributed baths, no ensuite",
+    "bedroom column alongside the corridor",
+    "no carport"
+  ],
+  "avoid": [],
+  "occupancy_class": "R-2",
+  "topology": "1s/3br/squarish/1s_3br_sq_side_corridor_baths_ds_hall_gr.json"
+}

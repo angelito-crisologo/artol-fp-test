@@ -28,7 +28,81 @@ into false ones. Read them as history; read the table as current fact.
 
 Detail: `SHELL_CAPPING_DESIGN.md` §1a.
 
-## Session handoff (2026-08-06) — READ THIS FIRST
+## Session handoff (2026-08-14) — READ THIS FIRST
+
+Branch **`setbacks-sizing-capping-2026-08`**, pushed to `origin`. **58 pass /
+0 fail, 51 sweep pass.** Working tree clean except two files left alone
+deliberately (`floorplan_v1/sweep_discover.py`, `stair-types-04.jpg`).
+
+### The fixtures library is adopted — Layers A, B and C are done
+
+`floorplan_v1/fixtures/` is a 55-symbol SVG + manifest library, **authored
+against this renderer** (42 px/m matches `core/render.py::SCALE`; its
+`fx-body`/stroke colours are byte-identical to `_FIXTURE_FILL`/`_FIXTURE_STROKE`).
+
+- **A — `core/fixture_library.py`** loads `fixtures/index.json`. Every
+  dimension constant `solver/fixtures.py` used to hardcode already matched it
+  to the centimetre, so the swap moved no geometry. `Fixture.kind` IS the
+  library id now, so `LIB.get(f.kind)` always resolves.
+- **B — `check_clearances` / `ClearanceIssue`.** Per-side, per-reason
+  clearances replace one `CLEARANCE = 0.60` that applied to a single fixture
+  and **never fired once**. Reports only; never moves anything.
+- **C — real symbols.** `fixture_symbol_svg` places the library drawing with
+  `translate(px,py) scale(S,-S) rotate(θ) translate(-ox,-oy)`. **cairosvg does
+  not implement `vector-effect="non-scaling-stroke"`** — stroke widths are
+  divided by SCALE *and* the attribute removed; doing either alone is broken in
+  one renderer or the other.
+- **D — NOT started.** No placers for living/dining/great/carport, so the
+  public half of every furnished plan is empty. `car` must hook
+  `core/setback_elements.py`, not the room loop — carport and lanai are setback
+  elements here, not rooms. D needs three new anchor strategies (centre, free,
+  corner) plus two-cell and circular footprints on `Fixture`.
+
+**`run.py --furnish`** writes `<name>.furnished.svg` as a SIDECAR beside the
+plain plan and prints the fit report. Off by default, lazy-imported, and no
+baseline moves. Before this, `place_fixtures` had exactly one consumer in the
+repo (`polish.py`) so furniture appeared in NO generated plan.
+
+Three placement defect classes were fixed, all verified at 0 across 633
+fixtures: furniture drawn **inside wall bands** (a Room's rect is the wall
+CENTRELINE, so two beds on a party wall met at 0.000 m), **44 fixture-on-
+fixture overlaps**, and furniture **deleted while other walls stood empty**.
+Counter/sink/range overlaps are BY DESIGN — a sink is set into its counter —
+so any overlap check must exempt that pair.
+
+### Topology catalog: 6 added, 2 deleted
+
+Nine files came through in two batches. Every one that was infeasible was the
+**over-constrained-anchors trap**, and all four in the first batch carried a
+note blaming "a reproducible, environment-specific solver issue". There was
+never an environment issue — it was the same authoring mistake in six files.
+
+Added: `1s_4br_wd_split_wings_baths_multi_hall_gr` (the catalog's **first
+4BR**), `1s_3br_sq_side_corridor_baths_ds_hall_gr`,
+`1s_3br_sq_front_back_split_baths_ds_hall_gr`,
+`1s_3br_wd_side_split_baths_cl_hall_gr`,
+`1s_3br_wd_split_wings_baths_ds_hall_gr`,
+`1s_3br_wd_half_spine_baths_ds_hall_lk`.
+Deleted: both `center_spine` files (squarish and wide) — degenerate at every
+feasible size (the wide one produced a **1.2 m² ensuite**).
+
+`1s_3br_sq_half_spine_baths_ds_hall_gr` is **retained unshipped on purpose**:
+its parti cannot survive being made feasible, and what it resolves to shipped
+separately as `front_back_split_baths_ds_hall_gr`. Full trail in its notes.
+
+### Polished render (Gemini) — `polish.py --convert`
+
+The prompt is now BUILT from the manifest (`build_convert_prompt`), so counts
+cannot go stale against the brief. The hand-written
+`ai/prompts/convert_render.txt` is specific to the plan it was written for;
+pointed at another brief it asserted "exactly 1 toilet/bath" and the model duly
+dropped a bathroom and put a bed in the kitchen. Door emphasis is no longer
+magenta — the model was copying the colour into its output, and telling it not
+to did not work.
+
+---
+
+## Session handoff (2026-08-06)
 
 Branch **`setbacks-sizing-capping-2026-08`**, 4 commits, working tree clean
 except two files left alone deliberately (`floorplan_v1/sweep_discover.py`,
@@ -259,14 +333,14 @@ fixture exists). Lot sizes are LOT, not buildable.
 
 | topology | min lot | pairs with |
 |---|---|---|
-| `1s_1br_nw_front_back_split_bath_gr` | 8 × 11 | *(fallback impl — see its gated sibling)* |
+| `1s_1br_nw_front_back_split_bath_gr` | 8 × 11 | *(fallback impl — see `1s_1br_nw_front_back_split_bath_ld`)* |
 | `1s_1br_nw_front_back_split_bath_ld` | 9 × 12 | `1s_1br_nw_front_back_split_bath_gr` below 35 m² buildable |
 | `1s_1br_nw_front_rear_bath_gr` | 8 × 11 |  |
-| `1s_1br_sq_side_split_bath_gr` | 8.5 × 9.5 | *(fallback impl — see its gated sibling)* |
+| `1s_1br_sq_side_split_bath_gr` | 8.5 × 9.5 | *(fallback impl — see `1s_1br_sq_side_split_bath_ld`)* |
 | `1s_1br_sq_side_split_bath_ld` | 11 × 11 | `1s_1br_sq_side_split_bath_gr` below 42 m² buildable |
-| `1s_1br_wd_side_split_bath_gr` | 10 × 9 | *(fallback impl — see its gated sibling)* |
+| `1s_1br_wd_side_split_bath_gr` | 10 × 9 | *(fallback impl — see `1s_1br_wd_side_split_bath_ld`)* |
 | `1s_1br_wd_side_split_bath_ld` | 11 × 9 | `1s_1br_wd_side_split_bath_gr` below 27.9 m² buildable |
-| `1s_1br_wd_split_wing_bath_gr` | 10 × 9 | *(fallback impl — see its gated sibling)* |
+| `1s_1br_wd_split_wing_bath_gr` | 10 × 9 | *(fallback impl — see `1s_1br_wd_split_wing_bath_ld`)* |
 | `1s_1br_wd_split_wing_bath_ld` | 11 × 9 | `1s_1br_wd_split_wing_bath_gr` below 27.9 m² buildable |
 | `1s_2br_nw_side_corridor_baths_ds_hall` | 8 × 17 |  |
 | `1s_2br_nw_side_corridor_baths_ds_rear_kitchen` | 10 × 14 |  |
@@ -278,16 +352,22 @@ fixture exists). Lot sizes are LOT, not buildable.
 | `1s_2br_wd_front_back_split_bath_hall_ld` | 12 × 10 |  |
 | `1s_2br_wd_front_back_split_baths_ds_gr` | 14 × 10 |  |
 | `1s_2br_wd_quadrant_split_baths_ds_ld` | 12 × 10 |  |
-| `1s_2br_wd_side_split_bath_hall_gr` | 11 × 10 | *(fallback impl — see its gated sibling)* |
-| `1s_2br_wd_side_split_bath_hall_ld` | 12 × 10 | `1s_2br_wd_side_split_bath_hall_gr` below 40 m² buildable |
-| `1s_2br_wd_side_split_baths_cl_gr` | 11 × 10 | *(fallback impl — see its gated sibling)* |
-| `1s_2br_wd_side_split_baths_cl_ld` | 12 × 10 | `1s_2br_wd_side_split_baths_cl_gr` below 40 m² buildable |
+| `1s_2br_wd_side_split_bath_hall_gr` | 11 × 10 | *(fallback impl — see `1s_2br_wd_side_split_bath_hall_ld`)* |
+| `1s_2br_wd_side_split_bath_hall_ld` | 12 × 11 | `1s_2br_wd_side_split_bath_hall_gr` below 40 m² buildable |
+| `1s_2br_wd_side_split_baths_cl_gr` | 11 × 10 | *(fallback impl — see `1s_2br_wd_side_split_baths_cl_ld`)* |
+| `1s_2br_wd_side_split_baths_cl_ld` | 12 × 11 | `1s_2br_wd_side_split_baths_cl_gr` below 40 m² buildable |
 | `1s_2br_wd_side_split_baths_ds_gr` | 14 × 12 |  |
 | `1s_3br_sq_bedroom_lobby_hub_baths_ds_hall_gr` | 11 × 12.25 |  |
 | `1s_3br_sq_front_back_split_baths_cl_hall_lk` | 13.3 × 13 |  |
+| `1s_3br_sq_front_back_split_baths_ds_hall_gr` | 14 × 14 |  |
 | `1s_3br_sq_hall_core_baths_ds_hall_gr` | 13 × 13.5 |  |
-| `2s_2br_nw_side_spine_stair_bath` | 8 × 11 | *(fallback impl — see its gated sibling)* |
-| `2s_2br_nw_side_spine_stair_bath_hall` | 8 × 11 | `2s_2br_nw_side_spine_stair_bath` below 28 m² buildable |
+| `1s_3br_sq_side_corridor_baths_ds_hall_gr` | 13.5 × 13.5 |  |
+| `1s_3br_wd_half_spine_baths_ds_hall_lk` | 17 × 12 |  |
+| `1s_3br_wd_side_split_baths_cl_hall_gr` | 16 × 12 |  |
+| `1s_3br_wd_split_wings_baths_ds_hall_gr` | 17 × 12 |  |
+| `1s_4br_wd_split_wings_baths_multi_hall_gr` | 18 × 13 |  |
+| `2s_2br_nw_side_spine_stair_bath` | 8 × 11 | *(fallback impl — see `2s_2br_nw_side_spine_stair_bath_hall`)* |
+| `2s_2br_nw_side_spine_stair_bath_hall` | 8 × 12 | `2s_2br_nw_side_spine_stair_bath` below 28 m² buildable |
 | `2s_2br_sq_l_landing_stair_bath_gr` | 9.5 × 9.5 |  |
 | `2s_2br_sq_rear_stair_bath_gr` | 10 × 11 |  |
 | `2s_2br_wd_rear_stair_bath_gr` | 11 × 10 |  |
@@ -295,11 +375,22 @@ fixture exists). Lot sizes are LOT, not buildable.
 | `2s_3br_sq_rear_stair_baths_ds_gr` | 10.5 × 11.5 |  |
 | `2s_3br_wd_rear_stair_baths_ds_gr` | 12 × 10 |  |
 
-**13 topologies have no fixture, so no verified minimum:**
-`1s_2br_nw_front_back_split_bath`, `1s_2br_nw_front_carport_spine_bath`,
-`1s_2br_nw_side_corridor_bath_hall`, and the 10 unvalidated 3BR files
-(`1s/3br/narrow/*` ×4, `1s/3br/wide/*` ×4, `1s_3br_sq_l_wrap_baths_ds_hall_gr`,
-`1s_3br_sq_side_split_baths_cl_hall_gr`) — see Open/deferred.
+**10 topologies have no verified minimum** (regenerated 2026-08-14):
+
+`1s_2br_nw_front_back_split_bath`,
+`1s_2br_nw_front_carport_spine_bath`,
+`1s_2br_nw_side_corridor_bath_hall`,
+`1s_3br_nw_front_back_split_baths_ds_hall_gr`,
+`1s_3br_nw_side_corridor_baths_cl_hall_gr`,
+`1s_3br_nw_side_corridor_baths_ds_hall_gr`,
+`1s_3br_nw_split_columns_baths_cl_lk`,
+`1s_3br_sq_half_spine_baths_ds_hall_gr`,
+`1s_3br_sq_l_wrap_baths_ds_hall_gr`,
+`1s_3br_sq_side_split_baths_cl_hall_gr`
+
+Six are the long-standing unvalidated 3BR backlog (4 narrow, 2 squarish);
+three are narrow 2BR; and `1s_3br_sq_half_spine_baths_ds_hall_gr` is retained
+DELIBERATELY unshipped — see the handoff.
 
 ## Current focus (as of 2026-06-25)
 
@@ -543,8 +634,9 @@ above and [[multistorey-topology-authoring]] for how to author more):
   all-standards rule raised the 1s hall-core ccp minimum: its brief
   re-tuned 13.5×14 → 13.5×14.5; 9 baselines refreshed deliberately.
 
-**Test suite status (2026-08-05): `run.py --test` 51 pass / 0 fail / 0 error,
-`sweep_test.py` 51 pass / 0 fail.** Includes the 2 `bedroom_lobby_hub` briefs
+**Test suite status (2026-08-14): `run.py --test` 58 pass / 0 fail / 0 error,
+`sweep_test.py` 51 pass / 0 fail.** (Was 51/51 on 2026-08-05; +7 briefs from the
+2026-08-05 lobby-hub pair and the six topologies added 2026-08-12/14.) Includes the 2 `bedroom_lobby_hub` briefs
 added this session (49 → 51), and reflects the front-setback change: 26 test
 briefs re-based +1 m depth and renamed, all 51 baselines refreshed (a
 deliberate blanket `--update-baselines` — every baseline legitimately moved
@@ -584,7 +676,7 @@ earlier the same day, no-hall-in-1BR rule), and — added 2026-07-19/20 — 4
 2. **Buildable-shell capping implemented** (`SHELL_CAPPING_DESIGN.md` §2). `ai/pipeline.py` gains `topology_target_area` / `capped_setbacks` / `make_capped_lot`, wired into `run.py::_run_hand_authored`. When the raw shell exceeds `sum(preferred_high) × 1.10` (with a 1.05 deadband) it shrinks **aspect-preserving** to that target and pushes the surplus into setbacks: front up to a 4.5 m cap, rear takes the rest of the depth, sides split the width. `shell_category` deliberately still runs on the RAW lot — capping must not feed back into topology matching. On the one oversized brief: shell **125.4 → 95.6 m²**, master **38.31 → 19.80** (was ~2× its 20.0 cap). Only 1 of 51 briefs is above the threshold, so the suite barely exercises it — **oversized-lot fixtures are still owed**.
 3. **Six gr/ld pairs collapsed into size-gated siblings.** Each `_ld` now declares `fallback_below_buildable_sqm` → its `_gr`, so the runner picks automatically and the pair presents as ONE topology. Gates: `1s_1br_sq_side_split_bath` 42.0, `1s_1br_nw_front_back_split_bath` 35.0, `1s_1br_wd_side_split_bath` / `_split_wing_bath` 27.9, `1s_2br_wd_side_split_bath_hall` / `_baths_cl` 40.0 m² buildable. **The gate is evaluated on the RAW envelope** — capping shrinks oversized shells, so measuring after capping would route a generous lot *down* to the compact sibling.
 5. **Graded preferred-credit ADOPTED, default ON** — `solver/solver.py` now defaults to `GRADED_PREF` on / `GRADED_SHAPE=concave` / `GRADED_KNEE_ANCHOR=zero` / `STEP_DIV=8`, replacing the all-or-nothing step that made raising any preferred-low harmful. **Rooms pinned at their hard minimum: 20 → 12**, total area −0.6 m² (neutral). Re-measured against the shipped state before adopting — and the anchor preference **flipped from band to zero** versus the original investigation, because that was measured under a 2 m front setback with no capping. `ARTOL_GRADED_PREF=0` restores the old behaviour. 25 baselines refreshed. See `SIZING_OBJECTIVE_INVESTIGATION.md` §8.
-4. **Catalog collapses 48 files → 41 entries.** `build_catalog.py::group_siblings` groups on the `fallback_below_buildable_sqm` link (not the `_gr`/`_ld` name suffix), which also catches the hall/hall-less 2s pair. Gallery cards and detail pages both use tabs, gated impl as **Default**, compact sibling as **Fallback**. Header reads `Topologies 41 / Implementations 48`.
+4. **Catalog collapses 48 files → 41 entries.** `build_catalog.py::group_siblings` groups on the `fallback_below_buildable_sqm` link (not the `_gr`/`_ld` name suffix), which also catches the hall/hall-less 2s pair. Gallery cards and detail pages both use tabs, gated impl as **Default**, compact sibling as **Fallback**. Header read `Topologies 41 / Implementations 48` at the time; after the 2026-08-14 regen it reads **`Topologies 44 / Implementations 51`** (41 verified, 10 not yet tested).
 
 **Room-sizing tiers investigated; preferred-low "cliff" diagnosed; graded-credit prototype built, NOT adopted (2026-08-05):** Full write-up in **`SIZING_OBJECTIVE_INVESTIGATION.md`** (repo root) — read it before touching room-size numbers or the sizing terms in `solver.py`'s objective. Headlines:
 - **The declared 3-tier progression is really 2 tiers.** `sizing_policy.progression` promises preferred → relaxed_minimum → hard_minimum, but nothing reads `soft.min_area_sqm` / `soft.min_dimensions_m` (the latter appears in zero .py files). Only hard-min, preferred-low (soft) and preferred-high (a hard CAP, not an aspiration) exist in code. Don't confuse these with `lot_adjustment_profiles`' `auto_apply`/`preferred_apply`, a separate 2-tier system that reuses the word "preferred" and does the real per-shell tuning.
@@ -660,6 +752,32 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
 
 ## Open / deferred
 
+- **TWO SWEEP FIXTURES ARE SILENTLY TESTING THE WRONG TOPOLOGY (found
+  2026-08-14, NOT fixed).** `1s_2br_12x10_wd_side_split_bath_hall_ld_ncp_med`
+  and `1s_2br_12x10_wd_side_split_baths_cl_ld_ncp_med` both fall back to their
+  `_gr` sibling with a `topology_fallback` WARNING and still count as sweep
+  passes — the exact silent-substitution trap this file warns about. Cause is
+  the 2026-08-05 front-setback change: at 12×10 the buildable depth is now 5 m
+  and both `_ld` topologies need ≥6, so they were missed by the +1 m depth
+  rebase that fixed the 26 `briefs/test/` fixtures. **Fix is to re-base both to
+  12×11**, which the regenerated minimum-lot table already reports as their
+  true minimum. (The 2s `8x11..._stair_bath_hall` brief also substitutes, but
+  that one is BY DESIGN — it emits a `compact_fallback` suggestion and exists
+  to exercise the auto-switch.)
+- **Layer D of the fixtures work is not started** — no placers for
+  living/dining/great/carport, so the public half of every `--furnish` plan is
+  empty. This is the most visible gap in the furnished output.
+- **The 108 unfit / 215 clearance findings from `--furnish` are unseparated**
+  between genuine room-size defects and placement quality. That analysis is
+  what the fixture work was built to enable and it has not been done.
+- **Compositing our own labels over the Gemini render is still unbuilt.** It is
+  the design doc's standing conclusion ("use it for STYLING, supply every FACT
+  by composite") and the only remaining fix for invented dimension figures,
+  which persist even with a manifest-derived prompt.
+- **`polish.py` writes every run to the same `<brief>_render.png`**, so running
+  two variants of one brief silently overwrites the first. A `--tag`/`--out`
+  suffix would fix it.
+
 - **`bedroom_lobby_hub`: a corridor can still pass as the lobby at other sizes (2026-08-05, partially addressed).** The ccp brief was re-based off the degenerate 12×12 boundary to 12.5×12.5, which fixes the case that was actually in the suite — but the underlying cause is untouched: the compact profile's `hallway: min_least_dim_m: 0.95` permits a 1 m-wide "lobby", so nothing structurally prevents a 12×12-shaped solve if some future brief or lot lands there. Raising that floor to ~1.5 m is the real fix (it would also push the raw ccp floor above 12×12). Separately, this parti has an unenforced UPPER bound — nothing stops the hub stretching to aspect 4.00 at 15×15; ~14×14 is a documented convention, not a constraint. See [[bedroom-lobby-hub-topology]].
 - **10 of 13 3BR topologies unvalidated** (the 12 dropped into
   `topologies/1s/3br/{narrow,squarish,wide}/` 2026-07-18, plus
@@ -713,6 +831,34 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
 - **1BR topologies need `private_area_floor: false`** — the solver's hard "private ≥ public" area rule assumes a multi-bedroom private wing; a single bedroom can never satisfy it against a full LDK. See [[solver-topology-overrides]].
 - **Zone ratio (private/public split) is now per-topology configurable, not just on/off.** `zone_ratio_private_floor_pct` / `zone_ratio_private_target_pct` (both default 50.0/55.0, reproducing the old fixed 55/45-favoring-private behavior byte-for-byte for every topology that doesn't set them) generalize what used to be hardcoded constants in `solver.py`'s zone-ratio block. Use for a deliberately public-heavy design (target < 50 — keep floor ≤ target on that side of 50 or the hard floor contradicts the soft target and the block goes infeasible). See [[zone-ratio-configurable]].
 - **Dead-strip reclaiming is ALWAYS ON and deliberately permissive — there is no `claim_dead_strips` flag any more** (removed 2026-08-06 from the dataclass, loader, 7 copy sites and 5 topology JSONs; don't go looking for a switch). Rationale: these plans are **customer-discussion documents** and a brief for the architect who draws the official version, not construction sets — an unexplained interior void reads as a mistake, while a slightly irregular room reads as "this space belongs to the living room". So the claimer favours the room that obviously owns a strip over rule-keeping: no master-supremacy check (it still holds at solve time and during snap growth, so only the LABELS can show a standard marginally larger), room-type priority is a tie-break not a gate, thickness floor 0.25 m, contact floor 0.2. **The one rule that survives is the daylight guard** — a claim is skipped if it would cut a window-requiring room off from the exterior, because that is a hard PD 1096 §808 error that makes the plan an unusable brief. Don't remove it when loosening further. Prefer this over `match_widths`/width-pinning, which ADD solver constraints and break feasibility at exactly the tight sizes you're trying to fix.
+- **The anchor-trap SIGNATURE is a reason to TEST, not a diagnosis.** Nine
+  topologies arriving 2026-08-12/14 all declared `left_anchored` +
+  `right_anchored` + `rear_anchored` together, but the causes differed and one
+  file had no problem at all: `1s_3br_wd_side_split_baths_cl_hall_gr` solves as
+  authored with all three kept, and `1s_3br_wd_split_wings` was broken by
+  `front_to_rear_stacks` instead — "fixing" its anchors would have removed
+  constraints that were never at fault. Always bisect at an oversized envelope
+  (25×25 squarish, 25×18 wide) and let the bisection name the culprit.
+- **A solve is not proof the parti survived, and that decides whether a
+  topology ships under its own name.** Three outcomes recurred: the parti holds
+  (`side_corridor`, `wd_split_wings` — ship as authored); the parti dies but
+  what remains is a good building (squarish `half_spine` → shipped as
+  `front_back_split_baths_ds_hall_gr`, parent retained for redraw); or the
+  result is degenerate (both `center_spine` files — deleted; the wide one gave
+  a **1.2 m² ensuite**). Always dump room rects and look at the render before
+  writing a brief.
+- **Read a topology's `notes` sceptically — six files carried a WRONG
+  diagnosis.** They claimed "a reproducible, environment-specific solver issue
+  affecting the spine/hall parti family broadly, not a defect this file
+  introduces", and cited each other as corroboration. Every one was the
+  over-constrained-anchors trap in the file itself. A `STATUS:` block asserting
+  the environment is at fault should be re-tested, not believed.
+- **A `lot_adjustment_profiles` entry can be DEAD CODE.** Both squarish
+  `half_spine` and `side_corridor` shipped profiles whose
+  `buildable_area_lt_sqm` threshold sits BELOW any lot the topology can
+  actually solve, so they never fire. Check the threshold against the
+  topology's real feasible range before assuming a profile is doing work —
+  and note that forcing one on can make the solve infeasible instead.
 - **New 3BR topologies: check for the over-constrained-anchors trap before trusting feasibility.** Declaring `left_anchored`+`right_anchored`+`rear_anchored` together routinely fights a topology's own `front_to_rear_stacks`/adjacency graph and produces infeasibility at EVERY lot size (proven twice, 2026-07-19). Test at an oversized envelope first; if infeasible, bisect anchor lists before suspecting adjacencies. See [[solver-topology-overrides]].
 - **Authoring a 2-storey topology:** follow [[multistorey-topology-authoring]] step by step (storey tags, the three stair adjacency kinds, the always-on stair-run override, `zone_balance_rooms` for public-heavy ground floors, hall/hall-less as siblings not a conditional room). Architecture background in `MULTISTOREY_V2_DESIGN.md`.
 - **Prefer a fixed door over `door_host_group` when the desired host scores worse than the alternative** — Pass 1a's auto-scorer will silently flip a group's default to whichever host wins on circulation-overlap, so a group can't reliably hold a deliberately-suboptimal-scoring choice. See [[br1-topology-catalog]] (door-host-group finding on `wd_side_split_bath_gr`).
@@ -746,4 +892,8 @@ ensuite-alcove bedrooms (`stack_bias` heuristic) and added the squarish
 - Room-sizing tiers, the preferred-low cliff, and the graded-credit prototype: `SIZING_OBJECTIVE_INVESTIGATION.md` (repo root)
 - `docs/archive/` — superseded one-time docs (pre-Mac-reset backup/memory-export, Phase-1 reports); `docs/reference/` — NBC full text, `common-configs/`, unconverted 2s specs
 - Buildable-shell capping design + the front-setback prerequisite: `SHELL_CAPPING_DESIGN.md` (repo root)
-- Topology HTML catalog: `artol-topologies/` (published site, build artifact — don't hand-edit). Regenerate with `source .venv/bin/activate && python3 tools/topology_catalog/build_catalog.py` (checked in 2026-07-20; solves every topology's canonical test brief through the real solver, ~seconds for the current catalog). Change log: `TOPOLOGY_CHANGES.md` (repo root).
+- Topology HTML catalog: `artol-topologies/` (published site, build artifact — don't hand-edit).
+  **`build_catalog.py` ADDS and OVERWRITES but never DELETES** — a topology removed from
+  `topologies/` leaves an orphan in `artol-topologies/data/topologies/` after a regen
+  (found 2026-08-14 with the deleted wide `center_spine`). Sweep for orphans by comparing
+  that directory against the live topology ids whenever a file is deleted. Regenerate with `source .venv/bin/activate && python3 tools/topology_catalog/build_catalog.py` (checked in 2026-07-20; solves every topology's canonical test brief through the real solver, ~seconds for the current catalog). Change log: `TOPOLOGY_CHANGES.md` (repo root).
