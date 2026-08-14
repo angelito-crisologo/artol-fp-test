@@ -48,3 +48,11 @@ floorplan_v1/cache/
 # into .venv/ which isn't committed)
 .claude/
 .agents/
+
+# Loose reference images dropped at the repo root while authoring topologies
+# (source floor-plan photos/scans). They are working material, not project
+# artifacts — a 309 KB stair-types JPG was committed by an over-broad
+# `git add -A` on 2026-08-14 and removed again here.
+/*.jpg
+/*.jpeg
+/*.png
